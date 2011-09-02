@@ -96,6 +96,5 @@ namespace TestCMS
             output(frag);
             Assert.AreEqual(@"<div></div>", (string)frag);
         }
-
     }
 }

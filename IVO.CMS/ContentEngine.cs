@@ -61,30 +61,41 @@ namespace IVO.CMS
             // Create a string builder used to build the output polyglot HTML5 document fragment:
             StringBuilder sb = new StringBuilder(item.Blob.Contents.Length);
 
+#if FakeRoot
             // NOTE: this effectively limits us to 2GB documents due to the use of `int`s, but I don't think
             // that's really a big thing to worry about in a web-based CMS.
 
-            // Hack to allow a document fragment:
+            // HACK to allow a document fragment:
             byte[] rootedContents = new byte[item.Blob.Contents.Length + rootOpen.Length + rootClose.Length];
             Array.Copy(rootOpen, 0, rootedContents, 0, rootOpen.Length);
             Array.Copy(item.Blob.Contents, 0, rootedContents, rootOpen.Length, item.Blob.Contents.Length);
             Array.Copy(rootClose, 0, rootedContents, rootOpen.Length + item.Blob.Contents.Length, rootClose.Length);
+#endif
 
             // Start an XmlReader over the contents:
+#if FakeRoot
             using (MemoryStream ms = new MemoryStream(rootedContents))
-            using (StreamReader sr = new StreamReader(ms, Encoding.UTF8))
+            using (XmlTextReader xr = new XmlTextReader(ms))
+#else
+            using (MemoryStream ms = new MemoryStream(item.Blob.Contents))
             using (XmlTextReader xr = new XmlTextReader(ms, XmlNodeType.Element, new XmlParserContext(null, null, null, XmlSpace.Default)))
+#endif
             {
+#if FakeRoot
                 // Skip the fake root opening element:
                 xr.ReadStartElement(rootElementName);
+#else
+                // Start reading the document:
+                xr.Read();
+#endif
 
-                // Begin reading document elements:
                 do
                 {
+#if FakeRoot
                     // Skip the closing EndElement for the fake root:
                     if (xr.Depth == 0 || xr.EOF)
                         break;
-
+#endif
                     switch (xr.NodeType)
                     {
                         case XmlNodeType.Element:
@@ -150,8 +161,10 @@ namespace IVO.CMS
                 } while (xr.Read());
             }
 
+#if FakeRoot
             // Clear the reference to make GC's job a bit easier:
             rootedContents = null;
+#endif
 
             string result = sb.ToString();
             return new HTMLFragment(result);
