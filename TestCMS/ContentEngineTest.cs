@@ -35,5 +35,14 @@ namespace TestCMS
             var frag = ce.RenderBlob(bl);
             output(frag);
         }
+
+        [TestMethod]
+        public void TestRenderBlobWithContent()
+        {
+            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<div><p>Some content &amp; stuff here. Maybe some &lt; entities &gt; and such?</p>&#x00D;&#x00A;</div>"));
+            var ce = new ContentEngine();
+            var frag = ce.RenderBlob(bl);
+            output(frag);
+        }
     }
 }

@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Xml;
 using IVO.Definition.Models;
+using System.Web;
 
 namespace IVO.CMS
 {
@@ -92,6 +93,12 @@ namespace IVO.CMS
                             // NOTE: Whitespace strips out '\r' chars apparently.
                             sb.Append(xr.Value);
                             break;
+
+                        case XmlNodeType.Text:
+                            // HTML-encode the text:
+                            sb.Append(HttpUtility.HtmlEncode(xr.Value));
+                            break;
+
                         default:
                             throw new NotImplementedException();
                     }
