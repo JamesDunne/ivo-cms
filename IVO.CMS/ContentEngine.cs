@@ -21,11 +21,13 @@ namespace IVO.CMS
         private bool throwOnError;
         private List<SemanticError> errors;
         private bool injectErrorComments;
+        private DateTimeOffset viewDate;
 
-        public ContentEngine(ITreeRepository trrepo, IBlobRepository blrepo, bool throwOnError = false, bool injectErrorComments = true)
+        public ContentEngine(ITreeRepository trrepo, IBlobRepository blrepo, DateTimeOffset viewDate, bool throwOnError = false, bool injectErrorComments = true)
         {
             this.trrepo = trrepo;
             this.blrepo = blrepo;
+            this.viewDate = viewDate;
             this.throwOnError = throwOnError;
             this.injectErrorComments = injectErrorComments;
             this.errors = new List<SemanticError>();
@@ -232,7 +234,11 @@ namespace IVO.CMS
                 case "import": processImportElement(xr, sb, item); break;
                 case "targeted": processTargetedElement(xr, sb, item); break;
                 case "scheduled": processScheduledElement(xr, sb, item); break;
+                case "list":  break;
                 default:
+                    // Not a built-in 'cms-' element name, check the custom element provider:
+
+
                     // Unrecognized 'cms-' element name, skip it entirely:
                     if (xr.IsEmptyElement) break;
 
@@ -275,7 +281,7 @@ namespace IVO.CMS
 
         private void processTargetedElement(XmlTextReader xr, StringBuilder sb, ContentItem item)
         {
-            // <targeted>
+            // <cms-targeted>
             //   <!--
             //     Order matters. Most specific targets come first; least specific targets go last.
             //     Target attributes are user-defined. They must be valid XML attributes.
@@ -292,7 +298,7 @@ namespace IVO.CMS
             //   <else>
             //     ... default content displayed if the above targets do not match ...
             //   </else>
-            // </targeted>
+            // </cms-targeted>
             skipElementAndChildren("cms-targeted", xr);
         }
 
@@ -302,13 +308,13 @@ namespace IVO.CMS
             // and the entire month of October but NOT the month of September.
             // 'from' is inclusive date/time.
             // 'to'   is exclusive date/time.
-            // <scheduled>
-            //   <date-range from="2011-08-01 00:00 -0500" to="2011-09-01 00:00 -0500" />
-            //   <date-range from="2011-10-01 00:00 -0500" to="2011-11-01 00:00 -0500" />
+            // <cms-scheduled>
+            //   <range from="2011-08-01 00:00 -0500" to="2011-09-01 00:00 -0500" />
+            //   <range from="2011-10-01 00:00 -0500" to="2011-11-01 00:00 -0500" />
             //   <content>
             //     ...
             //   </content>
-            // </scheduled>
+            // </cms-scheduled>
             skipElementAndChildren("cms-scheduled", xr);
         }
     }
