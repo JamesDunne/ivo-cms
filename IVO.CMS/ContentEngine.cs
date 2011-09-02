@@ -67,45 +67,35 @@ namespace IVO.CMS
                     switch (xr.NodeType)
                     {
                         case XmlNodeType.Element:
-                            switch (xr.LocalName)
+                            if (xr.LocalName.StartsWith("cms-"))
                             {
-                                case "scheduled":
-                                    processScheduledElement(xr, sb);
-                                    break;
-                                case "audience":
-                                    processAudienceElement(xr, sb);
-                                    break;
-                                case "import":
-                                    processImportElement(xr, sb);
-                                    break;
-
-                                // Normal XHTML node, just add its child nodes for processing:
-                                default:
-                                    sb.AppendFormat("<{0}", xr.LocalName);
-
-                                    if (xr.HasAttributes && xr.MoveToFirstAttribute())
-                                        do
-                                        {
-                                            string localName = xr.LocalName;
-                                            char quoteChar = xr.QuoteChar;
-                                            sb.AppendFormat(" {0}={1}", localName, quoteChar);
-                                            // TODO: verify this is correct
-                                            while (xr.ReadAttributeValue())
-                                            {
-                                                string content = xr.ReadContentAsString();
-                                                string attrEncoded = System.Web.HttpUtility.HtmlAttributeEncode(content);
-                                                sb.Append(attrEncoded);
-                                            }
-                                            sb.Append(quoteChar);
-                                        } while (xr.MoveToNextAttribute());
-
-                                    if (xr.IsEmptyElement)
-                                        sb.Append(" />");
-                                    else
-                                        sb.Append(">");
-                                    break;
+                                processCMSInstruction(xr.LocalName, xr, sb);
+                                break;
                             }
 
+                            // Normal XHTML node, start adding contents:
+                            sb.AppendFormat("<{0}", xr.LocalName);
+
+                            if (xr.HasAttributes && xr.MoveToFirstAttribute())
+                                do
+                                {
+                                    string localName = xr.LocalName;
+                                    char quoteChar = xr.QuoteChar;
+                                    sb.AppendFormat(" {0}={1}", localName, quoteChar);
+                                    // TODO: verify this is correct
+                                    while (xr.ReadAttributeValue())
+                                    {
+                                        string content = xr.ReadContentAsString();
+                                        string attrEncoded = System.Web.HttpUtility.HtmlAttributeEncode(content);
+                                        sb.Append(attrEncoded);
+                                    }
+                                    sb.Append(quoteChar);
+                                } while (xr.MoveToNextAttribute());
+
+                            if (xr.IsEmptyElement)
+                                sb.Append(" />");
+                            else
+                                sb.Append(">");
                             break;
                         case XmlNodeType.EndElement:
                             sb.AppendFormat("</{0}>", xr.LocalName);
@@ -146,6 +136,52 @@ namespace IVO.CMS
             return new HTMLFragment(result);
         }
 
+        private void skipElementAndChildren(string elementName, XmlReader xr)
+        {
+            if (xr.NodeType != XmlNodeType.Element) throw new InvalidOperationException();
+            if (xr.LocalName != elementName) throw new InvalidOperationException();
+            if (xr.IsEmptyElement)
+            {
+                return;
+            }
+            
+            int knownDepth = xr.Depth;
+
+            // Read until we get back to the current depth:
+            while (xr.Read() && xr.Depth > knownDepth) { }
+
+            if (xr.NodeType != XmlNodeType.EndElement) throw new InvalidOperationException();
+            if (xr.LocalName != elementName) throw new InvalidOperationException();
+
+            //xr.ReadEndElement(/* elementName */);
+        }
+
+        private void processCMSInstruction(string elementName, XmlReader xr, StringBuilder sb)
+        {
+            int knownDepth = xr.Depth;
+
+            // Skip the 'cms-' prefix and delegate to the instruction handlers:
+            switch (elementName.Substring(4))
+            {
+                case "import": processImportElement(xr, sb); break;
+                case "targeted": processTargetedElement(xr, sb); break;
+                case "scheduled": processScheduledElement(xr, sb); break;
+                default:
+                    // Unrecognized 'cms-' element name, skip it entirely:
+                    if (xr.IsEmptyElement) break;
+
+                    // Read until we get back to our current depth level:
+                    while (xr.Read() && xr.Depth > knownDepth) {}
+                    
+                    // Ensure that the 'cms-' element is closed:
+                    if (xr.NodeType != XmlNodeType.EndElement) throw new InvalidOperationException();
+                    if (xr.LocalName != elementName) throw new InvalidOperationException();
+                    
+                    //xr.ReadEndElement(/* elementName */);
+                    break;
+            }
+        }
+
         private void processImportElement(XmlReader xr, StringBuilder sb)
         {
             // Imports content directly from another blob, addressable by a relative path or an absolute path.
@@ -159,12 +195,12 @@ namespace IVO.CMS
             // bring the canonicalized path above the root of the tree (which is impossible).
 
             // Recursively call RenderBlob on the imported blob and include the rendered HTMLFragment into this rendering.
-            throw new NotImplementedException();
+            skipElementAndChildren("cms-import", xr);
         }
 
-        private void processAudienceElement(XmlReader xr, StringBuilder sb)
+        private void processTargetedElement(XmlReader xr, StringBuilder sb)
         {
-            // <audience>
+            // <targeted>
             //   <!--
             //     Order matters. Most specific targets come first; least specific targets go last.
             //     Target attributes are user-defined. They must be valid XML attributes.
@@ -181,8 +217,8 @@ namespace IVO.CMS
             //   <else>
             //     ... default content displayed if the above targets do not match ...
             //   </else>
-            // </audience>
-            throw new NotImplementedException();
+            // </targeted>
+            skipElementAndChildren("cms-targeted", xr);
         }
 
         private void processScheduledElement(XmlReader xr, StringBuilder sb)
@@ -198,7 +234,7 @@ namespace IVO.CMS
             //     ...
             //   </content>
             // </scheduled>
-            throw new NotImplementedException();
+            skipElementAndChildren("cms-scheduled", xr);
         }
     }
 }

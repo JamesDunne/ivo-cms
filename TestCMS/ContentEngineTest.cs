@@ -35,9 +35,9 @@ namespace TestCMS
         [TestMethod]
         public void TestRenderBlob()
         {
+            var ce = getContentEngine();
             Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<a><b/><c/></a>
 <b></b>"));
-            var ce = getContentEngine();
             var frag = ce.RenderBlob(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
             output(frag);
         }
@@ -45,9 +45,9 @@ namespace TestCMS
         [TestMethod]
         public void TestRenderBlobAttributes()
         {
+            var ce = getContentEngine();
             Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<a style=""color: &amp;too&quot;here&quot;"" href=""http://www.google.com/?a=1&amp;b=2"" target=""_blank""><b/><c/></a>
 <b class=""abc""></b>"));
-            var ce = getContentEngine();
             var frag = ce.RenderBlob(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
             output(frag);
         }
@@ -55,10 +55,41 @@ namespace TestCMS
         [TestMethod]
         public void TestRenderBlobWithContent()
         {
-            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<div><p>Some content &amp; stuff here. Maybe some &lt; entities &gt; and such?</p>&#x00D;&#x00A;</div>"));
             var ce = getContentEngine();
+            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<div><p>Some content &amp; stuff here. Maybe some &lt; entities &gt; and such?</p>&#x00D;&#x00A;</div>"));
             var frag = ce.RenderBlob(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
             output(frag);
         }
+
+        [TestMethod]
+        public void TestImport()
+        {
+            var ce = getContentEngine();
+            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<div><cms-import absolute-path=""/template/head.html"" /></div>"));
+            var frag = ce.RenderBlob(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
+            output(frag);
+            Assert.AreEqual(@"<div></div>", (string)frag);
+        }
+
+        [TestMethod]
+        public void TestScheduled()
+        {
+            var ce = getContentEngine();
+            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<div><cms-scheduled><range from="""" to=""""/><content>Schedule content here!</content></cms-scheduled></div>"));
+            var frag = ce.RenderBlob(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
+            output(frag);
+            Assert.AreEqual(@"<div></div>", (string)frag);
+        }
+
+        [TestMethod]
+        public void TestUnknownSkipped()
+        {
+            var ce = getContentEngine();
+            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<div><cms-unknown crap=""some stuff""><custom-tag>Skipped stuff.</custom-tag>Random gibberish that will be removed.</cms-unknown></div>"));
+            var frag = ce.RenderBlob(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
+            output(frag);
+            Assert.AreEqual(@"<div></div>", (string)frag);
+        }
+
     }
 }
