@@ -11,7 +11,19 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IVO.Implementation.SQL", "I
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asynq", "IVO\Asynq\Asynq.csproj", "{42EFAFD3-5939-492C-8B93-DFD1969BA925}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestCMS", "TestCMS\TestCMS.csproj", "{71880BA6-9953-4618-9B5F-C14018BD7822}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{33E590DB-63C2-4CF4-A50F-C8BAC673FE2D}"
+	ProjectSection(SolutionItems) = preProject
+		IVO.CMS.vsmdi = IVO.CMS.vsmdi
+		Local.testsettings = Local.testsettings
+		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
+	EndProjectSection
+EndProject
 Global
+	GlobalSection(TestCaseManagementSettings) = postSolution
+		CategoryFile = IVO.CMS.vsmdi
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -33,6 +45,10 @@ Global
 		{42EFAFD3-5939-492C-8B93-DFD1969BA925}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{42EFAFD3-5939-492C-8B93-DFD1969BA925}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{42EFAFD3-5939-492C-8B93-DFD1969BA925}.Release|Any CPU.Build.0 = Release|Any CPU
+		{71880BA6-9953-4618-9B5F-C14018BD7822}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71880BA6-9953-4618-9B5F-C14018BD7822}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71880BA6-9953-4618-9B5F-C14018BD7822}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71880BA6-9953-4618-9B5F-C14018BD7822}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,55 +1,110 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Text;
-using IVO.Definition.Models;
-using System.Xml.Linq;
 using System.Xml;
+using IVO.Definition.Models;
 
 namespace IVO.CMS
 {
     public sealed class ContentEngine
     {
+        private const string rootElementName = "_root_";
+
+        private static readonly byte[] rootOpen = Encoding.UTF8.GetBytes("<" + rootElementName + ">");
+        private static readonly byte[] rootClose = Encoding.UTF8.GetBytes("</" + rootElementName +">");
+
         public HTMLFragment RenderBlob(Blob bl)
         {
-            // Load the XML from the blob that is encoded as UTF-8:
-            XDocument xd = XDocument.Parse(Encoding.UTF8.GetString(bl.Contents));
+            // NOTE: I would much prefer to load in a Stream from the persistence store rather than a `byte[]`.
+
             // Create a string builder used to build the output polyglot HTML5 document fragment:
             StringBuilder sb = new StringBuilder(bl.Contents.Length);
 
-            Stack<XNode> stk = new Stack<XNode>();
-            stk.Push(xd);
-            while (stk.Count > 0)
-            {
-                XNode n = stk.Pop();
-                XElement xe;
+            // NOTE: this effectively limits us to 2GB documents due to the use of `int`s, but I don't think
+            // that's really a big thing to worry about in a web-based CMS.
 
-                switch (n.NodeType)
+            // Hack to allow a document fragment:
+            byte[] rootedContents = new byte[bl.Contents.Length + rootOpen.Length + rootClose.Length];
+            Array.Copy(rootOpen, 0, rootedContents, 0, rootOpen.Length);
+            Array.Copy(bl.Contents, 0, rootedContents, rootOpen.Length, bl.Contents.Length);
+            Array.Copy(rootClose, 0, rootedContents, rootOpen.Length + bl.Contents.Length, rootClose.Length);
+
+            // Start an XmlReader over the contents:
+            using (MemoryStream ms = new MemoryStream(rootedContents))
+            using (StreamReader sr = new StreamReader(ms, Encoding.UTF8))
+            using (XmlReader xr = XmlReader.Create(sr))
+            {
+                // Skip the fake root opening element:
+                xr.ReadStartElement(rootElementName);
+
+                // Begin reading document elements:
+                do
                 {
-                    case XmlNodeType.Element:
-                        xe = (XElement)n;
-                        sb.AppendFormat("<{0}", xe.Name);
-                        if (xe.HasAttributes)
-                        {
-                            sb.Append(String.Join(" ", from at in xe.Attributes() select at.ToString()));
-                        }
-                        if (xe.IsEmpty)
-                        {
-                            sb.Append(" />");
+                    // Skip the closing EndElement for the fake root:
+                    if (xr.Depth == 0 || xr.EOF)
+                        break;
+
+                    switch (xr.NodeType)
+                    {
+                        case XmlNodeType.Element:
+                            switch (xr.LocalName)
+                            {
+                                case "schedule":
+                                    processScheduleElement(xr, sb);
+                                    break;
+                                case "audience":
+                                    processAudienceElement(xr, sb);
+                                    break;
+
+                                // Normal XHTML node, just add its child nodes for processing:
+                                default:
+                                    sb.AppendFormat("<{0}", xr.LocalName);
+
+                                    if (xr.HasAttributes && xr.MoveToFirstAttribute())
+                                        do
+                                        {
+                                            string localName = xr.LocalName;
+                                            char quoteChar = xr.QuoteChar;
+                                            sb.AppendFormat(" {0}={1}", localName, quoteChar);
+                                            // TODO: verify this is correct
+                                            while (xr.ReadAttributeValue())
+                                            {
+                                                string content = xr.ReadContentAsString();
+                                                sb.Append(content);
+                                            }
+                                            sb.Append(quoteChar);
+                                        } while (xr.MoveToNextAttribute());
+
+                                    if (xr.IsEmptyElement)
+                                        sb.Append(" />");
+                                    else
+                                        sb.Append(">");
+                                    break;
+                            }
+
                             break;
-                        }
-                        break;
-                    case XmlNodeType.EndElement:
-                        xe = (XElement)n;
-                        sb.AppendFormat("</{0}>", xe.Name);
-                        break;
-                    default:
-                        break;
-                }
+                        case XmlNodeType.EndElement:
+                            sb.AppendFormat("</{0}>", xr.LocalName);
+                            break;
+
+                        default:
+                            throw new NotImplementedException();
+                    }
+                } while (xr.Read());
             }
 
             string result = sb.ToString();
             return new HTMLFragment(result);
+        }
+
+        private void processAudienceElement(XmlReader xr, StringBuilder sb)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void processScheduleElement(XmlReader xr, StringBuilder sb)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -3,15 +3,17 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
+    <ProductVersion>
+    </ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{0DA004BF-4D35-459C-99D3-956C4DF7EE9E}</ProjectGuid>
+    <ProjectGuid>{71880BA6-9953-4618-9B5F-C14018BD7822}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>IVO.CMS</RootNamespace>
-    <AssemblyName>IVO.CMS</AssemblyName>
+    <RootNamespace>TestCMS</RootNamespace>
+    <AssemblyName>TestCMS</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -31,35 +33,40 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AsyncCtpLibrary, Version=1.0.4107.18181, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\IVO\IVO\References\AsyncCtpLibrary.dll</HintPath>
-    </Reference>
+    <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ContentEngine.cs" />
-    <Compile Include="HTMLFragment.cs" />
+    <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
+      <Visible>False</Visible>
+    </CodeAnalysisDependentAssemblyPaths>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ContentEngineTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\ivo\IVO\IVO.Definition\IVO.Definition.csproj">
+    <ProjectReference Include="..\IVO.CMS\IVO.CMS.csproj">
+      <Project>{0DA004BF-4D35-459C-99D3-956C4DF7EE9E}</Project>
+      <Name>IVO.CMS</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\IVO\Asynq\Asynq.csproj">
+      <Project>{42EFAFD3-5939-492C-8B93-DFD1969BA925}</Project>
+      <Name>Asynq</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\IVO\IVO\IVO.Definition\IVO.Definition.csproj">
       <Project>{29D4825B-A343-45AA-99FB-CE6671E78178}</Project>
       <Name>IVO.Definition</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\ivo\IVO\IVO.Implementation.SQL\IVO.Implementation.SQL.csproj">
+    <ProjectReference Include="..\IVO\IVO\IVO.Implementation.SQL\IVO.Implementation.SQL.csproj">
       <Project>{BCD16F4B-3915-43B7-B1C8-5A9132D97615}</Project>
       <Name>IVO.Implementation.SQL</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Internal\" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
