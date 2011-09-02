@@ -121,7 +121,7 @@ namespace TestCMS
             output(frag);
             
             // FIXME: remove unnecessary whitespace?
-            Assert.AreEqual("<div>\r\n  \r\n</div>", (string)frag);
+            Assert.AreEqual("<div>\r\n  Schedule content here!\r\n</div>", (string)frag);
         }
 
         [TestMethod]

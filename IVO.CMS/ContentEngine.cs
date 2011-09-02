@@ -236,6 +236,8 @@ namespace IVO.CMS
                 return;
 
             int knownDepth = xr.Depth;
+            // Shouldn't return false:
+            if (!xr.Read()) semanticError(xr, sb, item, "could not read content after <content> start element");
 
             // Stream-copy and process inner custom cms- elements until we get back to the current depth:
             streamContent(xr, sb, xtr => processCustomElementsAction(xtr, sb, item), xtr => (xtr.Depth == knownDepth));
@@ -256,22 +258,13 @@ namespace IVO.CMS
                 case "import": processImportElement(xr, sb, item); break;
                 case "targeted": processTargetedElement(xr, sb, item); break;
                 case "scheduled": processScheduledElement(xr, sb, item); break;
-                case "list":  break;
+                case "list": throw new NotImplementedException();
                 default:
                     // Not a built-in 'cms-' element name, check the custom element provider:
 
 
                     // Unrecognized 'cms-' element name, skip it entirely:
-                    if (xr.IsEmptyElement) break;
-
-                    // Read until we get back to our current depth level:
-                    while (xr.Read() && xr.Depth > knownDepth) {}
-                    
-                    // Ensure that the 'cms-' element is closed:
-                    if (xr.NodeType != XmlNodeType.EndElement) throw new InvalidOperationException();
-                    if (xr.LocalName != elementName) throw new InvalidOperationException();
-                    
-                    //xr.ReadEndElement(/* elementName */);
+                    skipElementAndChildren(elementName, xr, sb, item);
                     break;
             }
         }
@@ -395,9 +388,16 @@ namespace IVO.CMS
                 {
                     semanticError(xr, sb, item, "unexpected element");
                 }
-            };
-            
-            xr.ReadEndElement(/* "cms-scheduled" */);
+            }
+
+            // Skip Whitespace and Comments etc. until we find the end element:
+            while (xr.NodeType != XmlNodeType.EndElement && xr.Read()) { }
+
+            // Validate:
+            if (xr.LocalName != "cms-scheduled") semanticError(xr, sb, item, "expected end <cms-scheduled/> element");
+
+            // Don't read this element because the next `xr.Read()` in the main loop will:
+            //xr.ReadEndElement(/* "cms-scheduled" */);
         }
     }
 }
