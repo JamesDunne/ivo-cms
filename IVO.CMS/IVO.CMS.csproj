@@ -48,17 +48,21 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\ivo\IVO\IVO.Definition\IVO.Definition.csproj">
+    <Folder Include="Internal\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\IVO\Asynq\Asynq.csproj">
+      <Project>{42EFAFD3-5939-492C-8B93-DFD1969BA925}</Project>
+      <Name>Asynq</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\IVO\IVO\IVO.Definition\IVO.Definition.csproj">
       <Project>{29D4825B-A343-45AA-99FB-CE6671E78178}</Project>
       <Name>IVO.Definition</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\ivo\IVO\IVO.Implementation.SQL\IVO.Implementation.SQL.csproj">
+    <ProjectReference Include="..\IVO\IVO\IVO.Implementation.SQL\IVO.Implementation.SQL.csproj">
       <Project>{BCD16F4B-3915-43B7-B1C8-5A9132D97615}</Project>
       <Name>IVO.Implementation.SQL</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Internal\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
