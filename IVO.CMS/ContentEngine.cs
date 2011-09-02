@@ -56,6 +56,9 @@ namespace IVO.CMS
                                 case "audience":
                                     processAudienceElement(xr, sb);
                                     break;
+                                case "import":
+                                    processImportElement(xr, sb);
+                                    break;
 
                                 // Normal XHTML node, just add its child nodes for processing:
                                 default:
@@ -107,6 +110,11 @@ namespace IVO.CMS
 
             string result = sb.ToString();
             return new HTMLFragment(result);
+        }
+
+        private void processImportElement(XmlReader xr, StringBuilder sb)
+        {
+            throw new NotImplementedException();
         }
 
         private void processAudienceElement(XmlReader xr, StringBuilder sb)
