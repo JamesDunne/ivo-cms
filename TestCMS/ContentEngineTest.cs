@@ -41,6 +41,7 @@ namespace TestCMS
             var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
             var frag = ce.RenderContentItem(item);
             output(frag);
+            Assert.AreEqual("<a><b /><c /></a>\n<b></b>", (string)frag);
         }
 
         [TestMethod]
@@ -52,6 +53,7 @@ namespace TestCMS
             var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
             var frag = ce.RenderContentItem(item);
             output(frag);
+            Assert.AreEqual("<a style=\"color: &amp;too&quot;here&quot;\" href=\"http://www.google.com/?a=1&amp;b=2\" target=\"_blank\"><b /><c /></a>\n<b class=\"abc\"></b>", (string)frag);
         }
 
         [TestMethod]
@@ -62,6 +64,7 @@ namespace TestCMS
             var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
             var frag = ce.RenderContentItem(item);
             output(frag);
+            Assert.AreEqual("<div><p>Some content &amp; stuff here. Maybe some &lt; entities &gt; and such?</p>\r\n</div>", (string)frag);
         }
 
         [TestMethod]
