@@ -1,0 +1,3 @@
+[submodule "ivo"]
+	path = ivo
+	url = git@github.com:JamesDunne/Immutable-Versioned-Objects.git
