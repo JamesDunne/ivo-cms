@@ -122,6 +122,19 @@ namespace IVO.CMS
             } while (xr.Read());
         }
 
+        private bool processCustomElementsAction(XmlTextReader xr, StringBuilder sb, ContentItem item)
+        {
+            if (xr.NodeType == XmlNodeType.Element && xr.LocalName.StartsWith("cms-"))
+            {
+                processCMSInstruction(xr.LocalName, xr, sb, item);
+                
+                // Skip normal copying behavior for this element:
+                return false;
+            }
+
+            return true;
+        }
+
         public HTMLFragment RenderContentItem(ContentItem item)
         {
             // NOTE: I would much prefer to load in a Stream from the persistence store rather than a `byte[]`.
@@ -171,27 +184,19 @@ namespace IVO.CMS
                 streamContent(
                     xr, sb,
                     // Action method to process custom elements:
-                    ixr =>
-                    {
-                        if (ixr.NodeType == XmlNodeType.Element && ixr.LocalName.StartsWith("cms-"))
-                        {
-                            processCMSInstruction(xr.LocalName, ixr, sb, item);
-                            // Skip normal copying behavior:
-                            return false;
-                        }
-
-                        return true;
-                    },
+                    ixr => processCustomElementsAction(ixr, sb, item),
                     // Custom exit condition:
                     ixr =>
-                    {
 #if FakeRoot
+                    {
                         // Skip the closing EndElement for the fake root:
                         if (ixr.Depth == 0 || ixr.EOF)
                             return true;
-#endif
                         return false;
                     }
+#else
+                        false
+#endif
                 );
             }
 
@@ -204,22 +209,39 @@ namespace IVO.CMS
             return new HTMLFragment(result);
         }
 
-        private void skipElementAndChildren(string elementName, XmlReader xr)
+        private void skipElementAndChildren(string elementName, XmlTextReader xr, StringBuilder sb, ContentItem item)
         {
-            if (xr.NodeType != XmlNodeType.Element) throw new InvalidOperationException();
-            if (xr.LocalName != elementName) throw new InvalidOperationException();
+            if (xr.NodeType != XmlNodeType.Element) semanticError(xr, sb, item, String.Format("expected start <{0}> element", elementName));
+            if (xr.LocalName != elementName) semanticError(xr, sb, item, String.Format("expected start <{0}> element", elementName));
             if (xr.IsEmptyElement)
-            {
                 return;
-            }
             
             int knownDepth = xr.Depth;
 
             // Read until we get back to the current depth:
             while (xr.Read() && xr.Depth > knownDepth) { }
 
-            if (xr.NodeType != XmlNodeType.EndElement) throw new InvalidOperationException();
-            if (xr.LocalName != elementName) throw new InvalidOperationException();
+            if (xr.NodeType != XmlNodeType.EndElement) semanticError(xr, sb, item, String.Format("expected end </{0}> element", elementName));
+            if (xr.LocalName != elementName) semanticError(xr, sb, item, String.Format("expected end <{0}/> element", elementName));
+
+            //xr.ReadEndElement(/* elementName */);
+        }
+
+        private void streamElementChildren(string elementName, XmlTextReader xr, StringBuilder sb, ContentItem item)
+        {
+            if (xr.NodeType != XmlNodeType.Element) semanticError(xr, sb, item, String.Format("expected start <{0}> element", elementName));
+            if (xr.LocalName != elementName) semanticError(xr, sb, item, String.Format("expected start <{0}> element", elementName));
+            // Nothing to do:
+            if (xr.IsEmptyElement)
+                return;
+
+            int knownDepth = xr.Depth;
+
+            // Stream-copy and process inner custom cms- elements until we get back to the current depth:
+            streamContent(xr, sb, xtr => processCustomElementsAction(xtr, sb, item), xtr => (xtr.Depth == knownDepth));
+
+            if (xr.NodeType != XmlNodeType.EndElement) semanticError(xr, sb, item, String.Format("expected end </{0}> element", elementName));
+            if (xr.LocalName != elementName) semanticError(xr, sb, item, String.Format("expected end <{0}/> element", elementName));
 
             //xr.ReadEndElement(/* elementName */);
         }
@@ -299,7 +321,7 @@ namespace IVO.CMS
             //     ... default content displayed if the above targets do not match ...
             //   </else>
             // </cms-targeted>
-            skipElementAndChildren("cms-targeted", xr);
+            skipElementAndChildren("cms-targeted", xr, sb, item);
         }
 
         private void processScheduledElement(XmlTextReader xr, StringBuilder sb, ContentItem item)
@@ -315,7 +337,67 @@ namespace IVO.CMS
             //     ...
             //   </content>
             // </cms-scheduled>
-            skipElementAndChildren("cms-scheduled", xr);
+            
+            //skipElementAndChildren("cms-scheduled", xr);
+
+            bool displayContent = false;
+
+            while (xr.Read())
+            {
+                if (xr.NodeType != XmlNodeType.Element) continue;
+
+                if (xr.LocalName == "range")
+                {
+                    // If we're already good to display, don't bother evaluating further schedule ranges:
+                    if (displayContent) continue;
+
+                    string fromAttr, toAttr;
+
+                    // Validate the element's form:
+                    if (!xr.IsEmptyElement) semanticError(xr, sb, item, "range element must be empty");
+                    if (!xr.HasAttributes) semanticError(xr, sb, item, "range element must have attributes");
+                    if ((fromAttr = xr.GetAttribute("from")) == null) semanticError(xr, sb, item, "range element must have 'from' attribute");
+                    if ((toAttr = xr.GetAttribute("to")) == null) semanticError(xr, sb, item, "range element must have 'to' attribute");
+
+                    // Parse the dates:
+                    DateTimeOffset fromDate, toDateTmp;
+                    DateTimeOffset toDate = DateTimeOffset.Now;
+
+                    if (!DateTimeOffset.TryParse(fromAttr, out fromDate)) semanticError(xr, sb, item, "could not parse 'from' attribute as a date/time");
+                    if (!String.IsNullOrWhiteSpace(toAttr))
+                    {
+                        if (!DateTimeOffset.TryParse(toAttr, out toDateTmp)) semanticError(xr, sb, item, "could not parse 'to' attribute as a date/time");
+                        toDate = toDateTmp;
+                    }
+
+                    // Validate the range is ordered correctly:
+                    if (toDate <= fromDate) semanticError(xr, sb, item, "'to' date must be later than 'from' date or empty");
+
+                    // Check the schedule range:
+                    if (viewDate >= fromDate && viewDate < toDate)
+                        displayContent = true;
+                }
+                else if (xr.LocalName == "content")
+                {
+                    if (displayContent)
+                    {
+                        // Stream the inner content into the StringBuilder until we get back to the end </content> element.
+                        streamElementChildren("content", xr, sb, item);
+                        xr.ReadEndElement(/* "content" */);
+                    }
+                    else
+                    {
+                        skipElementAndChildren("content", xr, sb, item);
+                    }
+                    break;
+                }
+                else
+                {
+                    semanticError(xr, sb, item, "unexpected element");
+                }
+            };
+            
+            xr.ReadEndElement(/* "cms-scheduled" */);
         }
     }
 }

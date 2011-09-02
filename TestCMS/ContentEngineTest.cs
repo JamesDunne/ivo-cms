@@ -102,7 +102,7 @@ namespace TestCMS
             var ce = getContentEngine(b.AddDays(5));
 
             Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(String.Format(
-                @"<div>
+@"<div>
   <cms-scheduled>
     <range from=""{0}"" to=""{2}""/>
     <range from=""{1}"" to=""{2}""/>
@@ -120,6 +120,7 @@ namespace TestCMS
             var frag = ce.RenderContentItem(item);
             output(frag);
             
+            // FIXME: remove unnecessary whitespace?
             Assert.AreEqual("<div>\r\n  \r\n</div>", (string)frag);
         }
 
