@@ -70,7 +70,8 @@ namespace IVO.CMS
                                             while (xr.ReadAttributeValue())
                                             {
                                                 string content = xr.ReadContentAsString();
-                                                sb.Append(content);
+                                                string attrEncoded = System.Web.HttpUtility.HtmlAttributeEncode(content);
+                                                sb.Append(attrEncoded);
                                             }
                                             sb.Append(quoteChar);
                                         } while (xr.MoveToNextAttribute());
@@ -87,6 +88,10 @@ namespace IVO.CMS
                             sb.AppendFormat("</{0}>", xr.LocalName);
                             break;
 
+                        case XmlNodeType.Whitespace:
+                            // NOTE: Whitespace strips out '\r' chars apparently.
+                            sb.Append(xr.Value);
+                            break;
                         default:
                             throw new NotImplementedException();
                     }

@@ -11,13 +11,29 @@ namespace TestCMS
     [TestClass]
     public class ContentEngineTest
     {
+        private void output(HTMLFragment fragment)
+        {
+            Console.WriteLine(((string)fragment).Replace("\n", Environment.NewLine));
+        }
+
         [TestMethod]
         public void TestRenderBlob()
         {
-            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<a><b/><c/></a><b></b>"));
+            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<a><b/><c/></a>
+<b></b>"));
             var ce = new ContentEngine();
             var frag = ce.RenderBlob(bl);
-            Console.WriteLine((string)frag);
+            output(frag);
+        }
+
+        [TestMethod]
+        public void TestRenderBlobAttributes()
+        {
+            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<a style=""color: &amp;too&quot;here&quot;"" href=""http://www.google.com/?a=1&amp;b=2"" target=""_blank""><b/><c/></a>
+<b class=""abc""></b>"));
+            var ce = new ContentEngine();
+            var frag = ce.RenderBlob(bl);
+            output(frag);
         }
     }
 }
