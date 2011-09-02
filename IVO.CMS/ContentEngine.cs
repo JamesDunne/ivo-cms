@@ -45,6 +45,81 @@ namespace IVO.CMS
                 sb.AppendFormat("<!-- IVOCMS Error in '{0}' ({1}:{2}): {3} -->", err.Item.Path, err.LineNumber, err.LinePosition, err.Message);
         }
 
+        /// <summary>
+        /// Streaming copy from XmlTextReader and writing out to StringBuilder with event hooks for custom processing.
+        /// </summary>
+        /// <param name="xr"></param>
+        /// <param name="sb"></param>
+        /// <param name="action"></param>
+        /// <param name="exit"></param>
+        private void streamContent(XmlTextReader xr, StringBuilder sb, Func<XmlTextReader, bool> action, Func<XmlTextReader, bool> exit)
+        {
+            do
+            {
+                if (exit(xr)) break;
+                if (!action(xr)) continue;
+
+                switch (xr.NodeType)
+                {
+                    case XmlNodeType.Element:
+                        // Normal XHTML node, start adding contents:
+                        sb.AppendFormat("<{0}", xr.LocalName);
+
+                        if (xr.HasAttributes && xr.MoveToFirstAttribute())
+                            do
+                            {
+                                string localName = xr.LocalName;
+                                char quoteChar = xr.QuoteChar;
+
+                                sb.AppendFormat(" {0}={1}", localName, quoteChar);
+
+                                while (xr.ReadAttributeValue())
+                                {
+                                    string content = xr.ReadContentAsString();
+                                    string attrEncoded = System.Web.HttpUtility.HtmlAttributeEncode(content);
+                                    sb.Append(attrEncoded);
+                                }
+
+                                sb.Append(quoteChar);
+                            } while (xr.MoveToNextAttribute());
+
+                        if (xr.IsEmptyElement)
+                            sb.Append(" />");
+                        else
+                            sb.Append(">");
+                        break;
+                    case XmlNodeType.EndElement:
+                        sb.AppendFormat("</{0}>", xr.LocalName);
+                        break;
+
+                    case XmlNodeType.Whitespace:
+                        // NOTE: Whitespace node strips out '\r' chars apparently.
+                        sb.Append(xr.Value);
+                        break;
+
+                    case XmlNodeType.Text:
+                        // HTML-encode the text:
+                        sb.Append(HttpUtility.HtmlEncode(xr.Value));
+                        break;
+
+                    case XmlNodeType.EntityReference:
+                        sb.Append(HttpUtility.HtmlEncode(xr.Value));
+                        break;
+
+                    case XmlNodeType.Comment:
+                        // FIXME: encode the comment text somehow? What rules?
+                        sb.AppendFormat("<!--{0}-->", xr.Value);
+                        break;
+
+                    case XmlNodeType.CDATA:
+                        throw new NotSupportedException("CDATA is not supported by this CMS.");
+
+                    default:
+                        throw new NotImplementedException();
+                }
+            } while (xr.Read());
+        }
+
         public HTMLFragment RenderContentItem(ContentItem item)
         {
             // NOTE: I would much prefer to load in a Stream from the persistence store rather than a `byte[]`.
@@ -89,76 +164,33 @@ namespace IVO.CMS
                 xr.Read();
 #endif
 
-                do
-                {
-#if FakeRoot
-                    // Skip the closing EndElement for the fake root:
-                    if (xr.Depth == 0 || xr.EOF)
-                        break;
-#endif
-                    switch (xr.NodeType)
+                // Stream the content from the XmlTextReader, writing out to the StringBuilder and interpreting
+                // custom elements along the way:
+                streamContent(
+                    xr, sb,
+                    // Action method to process custom elements:
+                    ixr =>
                     {
-                        case XmlNodeType.Element:
-                            if (xr.LocalName.StartsWith("cms-"))
-                            {
-                                processCMSInstruction(xr.LocalName, xr, sb, item);
-                                break;
-                            }
+                        if (ixr.NodeType == XmlNodeType.Element && ixr.LocalName.StartsWith("cms-"))
+                        {
+                            processCMSInstruction(xr.LocalName, ixr, sb, item);
+                            // Skip normal copying behavior:
+                            return false;
+                        }
 
-                            // Normal XHTML node, start adding contents:
-                            sb.AppendFormat("<{0}", xr.LocalName);
-
-                            if (xr.HasAttributes && xr.MoveToFirstAttribute())
-                                do
-                                {
-                                    string localName = xr.LocalName;
-                                    char quoteChar = xr.QuoteChar;
-                                    sb.AppendFormat(" {0}={1}", localName, quoteChar);
-                                    // TODO: verify this is correct
-                                    while (xr.ReadAttributeValue())
-                                    {
-                                        string content = xr.ReadContentAsString();
-                                        string attrEncoded = System.Web.HttpUtility.HtmlAttributeEncode(content);
-                                        sb.Append(attrEncoded);
-                                    }
-                                    sb.Append(quoteChar);
-                                } while (xr.MoveToNextAttribute());
-
-                            if (xr.IsEmptyElement)
-                                sb.Append(" />");
-                            else
-                                sb.Append(">");
-                            break;
-                        case XmlNodeType.EndElement:
-                            sb.AppendFormat("</{0}>", xr.LocalName);
-                            break;
-
-                        case XmlNodeType.Whitespace:
-                            // NOTE: Whitespace node strips out '\r' chars apparently.
-                            sb.Append(xr.Value);
-                            break;
-
-                        case XmlNodeType.Text:
-                            // HTML-encode the text:
-                            sb.Append(HttpUtility.HtmlEncode(xr.Value));
-                            break;
-
-                        case XmlNodeType.EntityReference:
-                            sb.Append(HttpUtility.HtmlEncode(xr.Value));
-                            break;
-
-                        case XmlNodeType.Comment:
-                            // FIXME: encode the comment text somehow? What rules?
-                            sb.AppendFormat("<!--{0}-->", xr.Value);
-                            break;
-
-                        case XmlNodeType.CDATA:
-                            throw new NotSupportedException("CDATA is not supported by this CMS.");
-
-                        default:
-                            throw new NotImplementedException();
+                        return true;
+                    },
+                    // Custom exit condition:
+                    ixr =>
+                    {
+#if FakeRoot
+                        // Skip the closing EndElement for the fake root:
+                        if (ixr.Depth == 0 || ixr.EOF)
+                            return true;
+#endif
+                        return false;
                     }
-                } while (xr.Read());
+                );
             }
 
 #if FakeRoot
