@@ -5,6 +5,7 @@ using System.Web;
 using System.Xml;
 using IVO.Definition.Models;
 using IVO.Definition.Repositories;
+using System.Collections.Generic;
 
 namespace IVO.CMS
 {
@@ -17,14 +18,34 @@ namespace IVO.CMS
 
         private ITreeRepository trrepo;
         private IBlobRepository blrepo;
+        private bool throwOnError;
+        private List<SemanticError> errors;
+        private bool injectErrorComments;
 
-        public ContentEngine(ITreeRepository trrepo, IBlobRepository blrepo)
+        public ContentEngine(ITreeRepository trrepo, IBlobRepository blrepo, bool throwOnError = false, bool injectErrorComments = true)
         {
             this.trrepo = trrepo;
             this.blrepo = blrepo;
+            this.throwOnError = throwOnError;
+            this.injectErrorComments = injectErrorComments;
+            this.errors = new List<SemanticError>();
         }
 
-        public HTMLFragment RenderBlob(CanonicalizedAbsolutePath path, TreeID rootid, Blob bl)
+        private void semanticError(XmlTextReader xr, StringBuilder sb, ContentItem item, string message)
+        {
+            var err = new SemanticError(message, item, xr.LineNumber, xr.LinePosition);
+
+            if (throwOnError) throw err;
+
+            // Track the error:
+            errors.Add(err);
+
+            // Inject an HTML comment describing the error:
+            if (injectErrorComments)
+                sb.AppendFormat("<!-- IVOCMS Error in '{0}' ({1}:{2}): {3} -->", err.Item.Path, err.LineNumber, err.LinePosition, err.Message);
+        }
+
+        public HTMLFragment RenderContentItem(ContentItem item)
         {
             // NOTE: I would much prefer to load in a Stream from the persistence store rather than a `byte[]`.
             // It seems the only way to do this from a SqlDataReader is with its GetBytes() method. Furthermore,
@@ -38,21 +59,21 @@ namespace IVO.CMS
             // data copies, thus defeating the purpose of streaming from the persistence store.
 
             // Create a string builder used to build the output polyglot HTML5 document fragment:
-            StringBuilder sb = new StringBuilder(bl.Contents.Length);
+            StringBuilder sb = new StringBuilder(item.Blob.Contents.Length);
 
             // NOTE: this effectively limits us to 2GB documents due to the use of `int`s, but I don't think
             // that's really a big thing to worry about in a web-based CMS.
 
             // Hack to allow a document fragment:
-            byte[] rootedContents = new byte[bl.Contents.Length + rootOpen.Length + rootClose.Length];
+            byte[] rootedContents = new byte[item.Blob.Contents.Length + rootOpen.Length + rootClose.Length];
             Array.Copy(rootOpen, 0, rootedContents, 0, rootOpen.Length);
-            Array.Copy(bl.Contents, 0, rootedContents, rootOpen.Length, bl.Contents.Length);
-            Array.Copy(rootClose, 0, rootedContents, rootOpen.Length + bl.Contents.Length, rootClose.Length);
+            Array.Copy(item.Blob.Contents, 0, rootedContents, rootOpen.Length, item.Blob.Contents.Length);
+            Array.Copy(rootClose, 0, rootedContents, rootOpen.Length + item.Blob.Contents.Length, rootClose.Length);
 
             // Start an XmlReader over the contents:
             using (MemoryStream ms = new MemoryStream(rootedContents))
             using (StreamReader sr = new StreamReader(ms, Encoding.UTF8))
-            using (XmlReader xr = XmlReader.Create(sr))
+            using (XmlTextReader xr = new XmlTextReader(ms, XmlNodeType.Element, new XmlParserContext(null, null, null, XmlSpace.Default)))
             {
                 // Skip the fake root opening element:
                 xr.ReadStartElement(rootElementName);
@@ -69,7 +90,7 @@ namespace IVO.CMS
                         case XmlNodeType.Element:
                             if (xr.LocalName.StartsWith("cms-"))
                             {
-                                processCMSInstruction(xr.LocalName, xr, sb);
+                                processCMSInstruction(xr.LocalName, xr, sb, item);
                                 break;
                             }
 
@@ -156,16 +177,16 @@ namespace IVO.CMS
             //xr.ReadEndElement(/* elementName */);
         }
 
-        private void processCMSInstruction(string elementName, XmlReader xr, StringBuilder sb)
+        private void processCMSInstruction(string elementName, XmlTextReader xr, StringBuilder sb, ContentItem item)
         {
             int knownDepth = xr.Depth;
 
             // Skip the 'cms-' prefix and delegate to the instruction handlers:
             switch (elementName.Substring(4))
             {
-                case "import": processImportElement(xr, sb); break;
-                case "targeted": processTargetedElement(xr, sb); break;
-                case "scheduled": processScheduledElement(xr, sb); break;
+                case "import": processImportElement(xr, sb, item); break;
+                case "targeted": processTargetedElement(xr, sb, item); break;
+                case "scheduled": processScheduledElement(xr, sb, item); break;
                 default:
                     // Unrecognized 'cms-' element name, skip it entirely:
                     if (xr.IsEmptyElement) break;
@@ -182,7 +203,7 @@ namespace IVO.CMS
             }
         }
 
-        private void processImportElement(XmlReader xr, StringBuilder sb)
+        private void processImportElement(XmlTextReader xr, StringBuilder sb, ContentItem item)
         {
             // Imports content directly from another blob, addressable by a relative path or an absolute path.
             // Relative path is always relative to the current blob's absolute path.
@@ -195,10 +216,19 @@ namespace IVO.CMS
             // bring the canonicalized path above the root of the tree (which is impossible).
 
             // Recursively call RenderBlob on the imported blob and include the rendered HTMLFragment into this rendering.
-            skipElementAndChildren("cms-import", xr);
+
+            //skipElementAndChildren("cms-import", xr);
+
+            // xr is pointing to "cms-import" Element.
+            if (!xr.IsEmptyElement) semanticError(xr, sb, item, "cms-import element must be empty");
+            
+            if (xr.HasAttributes && xr.MoveToFirstAttribute())
+            {
+                // TODO
+            }
         }
 
-        private void processTargetedElement(XmlReader xr, StringBuilder sb)
+        private void processTargetedElement(XmlTextReader xr, StringBuilder sb, ContentItem item)
         {
             // <targeted>
             //   <!--
@@ -221,7 +251,7 @@ namespace IVO.CMS
             skipElementAndChildren("cms-targeted", xr);
         }
 
-        private void processScheduledElement(XmlReader xr, StringBuilder sb)
+        private void processScheduledElement(XmlTextReader xr, StringBuilder sb, ContentItem item)
         {
             // Specifies that content should be scheduled for the entire month of August
             // and the entire month of October but NOT the month of September.

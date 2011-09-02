@@ -38,7 +38,8 @@ namespace TestCMS
             var ce = getContentEngine();
             Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<a><b/><c/></a>
 <b></b>"));
-            var frag = ce.RenderBlob(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
+            var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
+            var frag = ce.RenderContentItem(item);
             output(frag);
         }
 
@@ -48,7 +49,8 @@ namespace TestCMS
             var ce = getContentEngine();
             Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<a style=""color: &amp;too&quot;here&quot;"" href=""http://www.google.com/?a=1&amp;b=2"" target=""_blank""><b/><c/></a>
 <b class=""abc""></b>"));
-            var frag = ce.RenderBlob(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
+            var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
+            var frag = ce.RenderContentItem(item);
             output(frag);
         }
 
@@ -57,7 +59,8 @@ namespace TestCMS
         {
             var ce = getContentEngine();
             Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<div><p>Some content &amp; stuff here. Maybe some &lt; entities &gt; and such?</p>&#x00D;&#x00A;</div>"));
-            var frag = ce.RenderBlob(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
+            var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
+            var frag = ce.RenderContentItem(item);
             output(frag);
         }
 
@@ -66,7 +69,8 @@ namespace TestCMS
         {
             var ce = getContentEngine();
             Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<div><cms-import absolute-path=""/template/head.html"" /></div>"));
-            var frag = ce.RenderBlob(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
+            var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
+            var frag = ce.RenderContentItem(item);
             output(frag);
             Assert.AreEqual(@"<div></div>", (string)frag);
         }
@@ -76,7 +80,8 @@ namespace TestCMS
         {
             var ce = getContentEngine();
             Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<div><cms-scheduled><range from="""" to=""""/><content>Schedule content here!</content></cms-scheduled></div>"));
-            var frag = ce.RenderBlob(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
+            var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
+            var frag = ce.RenderContentItem(item);
             output(frag);
             Assert.AreEqual(@"<div></div>", (string)frag);
         }
@@ -86,7 +91,8 @@ namespace TestCMS
         {
             var ce = getContentEngine();
             Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<div><cms-unknown crap=""some stuff""><custom-tag>Skipped stuff.</custom-tag>Random gibberish that will be removed.</cms-unknown></div>"));
-            var frag = ce.RenderBlob(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
+            var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
+            var frag = ce.RenderContentItem(item);
             output(frag);
             Assert.AreEqual(@"<div></div>", (string)frag);
         }

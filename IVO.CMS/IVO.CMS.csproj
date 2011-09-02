@@ -44,8 +44,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ContentEngine.cs" />
+    <Compile Include="ContentItem.cs" />
     <Compile Include="HTMLFragment.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SemanticError.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Internal\" />
