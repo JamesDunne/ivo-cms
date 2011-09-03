@@ -34,62 +34,58 @@ namespace TestCMS
             return new ContentEngine(trrepo, blrepo, realDate);
         }
 
-        [TestMethod]
-        public void TestRenderBlob()
+        private void assertTranslated(string blob, string expected)
         {
             var ce = getContentEngine();
-            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<a><b/><c/></a>
-<b></b>"));
+            assertTranslated(ce, blob, expected);
+        }
+
+        private void assertTranslated(ContentEngine ce, string blob, string expected)
+        {
+            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(blob));
             output((HTMLFragment)Encoding.UTF8.GetString(bl.Contents));
             output((HTMLFragment)"-----------------------------------------");
 
             var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
             var frag = ce.RenderContentItem(item);
             output(frag);
-            Assert.AreEqual("<a><b /><c /></a>\r\n<b></b>", (string)frag);
+            Assert.AreEqual(expected, (string)frag);
+        }
+
+        [TestMethod]
+        public void TestRenderBlob()
+        {
+            assertTranslated(
+                "<a><b/><c/></a>\r\n<b></b>",
+                "<a><b /><c /></a>\r\n<b></b>"
+            );
         }
 
         [TestMethod]
         public void TestRenderBlobAttributes()
         {
-            var ce = getContentEngine();
-            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<a style=""color: &amp;too&quot;here&quot;"" href=""http://www.google.com/?a=1&amp;b=2"" target=""_blank""><b/><c/></a>
-<b class=""abc""></b>"));
-            output((HTMLFragment)Encoding.UTF8.GetString(bl.Contents));
-            output((HTMLFragment)"-----------------------------------------");
-
-            var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
-            var frag = ce.RenderContentItem(item);
-            output(frag);
-            Assert.AreEqual("<a style=\"color: &amp;too&quot;here&quot;\" href=\"http://www.google.com/?a=1&amp;b=2\" target=\"_blank\"><b /><c /></a>\r\n<b class=\"abc\"></b>", (string)frag);
+            assertTranslated(
+                "<a style=\"color: &amp;too&quot;here&quot;\" href=\"http://www.google.com/?a=1&amp;b=2\" target=\"_blank\"><b/><c/></a>\r\n<b class=\"abc\"></b>",
+                "<a style=\"color: &amp;too&quot;here&quot;\" href=\"http://www.google.com/?a=1&amp;b=2\" target=\"_blank\"><b /><c /></a>\r\n<b class=\"abc\"></b>"
+            );
         }
 
         [TestMethod]
         public void TestRenderBlobWithContent()
         {
-            var ce = getContentEngine();
-            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<div><p>Some content &amp; stuff here. Maybe some &lt; entities &gt; and such?</p>&#x00D;&#x00A;</div>"));
-            output((HTMLFragment)Encoding.UTF8.GetString(bl.Contents));
-            output((HTMLFragment)"-----------------------------------------");
-
-            var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
-            var frag = ce.RenderContentItem(item);
-            output(frag);
-            Assert.AreEqual("<div><p>Some content &amp; stuff here. Maybe some &lt; entities &gt; and such?</p>\r\n</div>", (string)frag);
+            assertTranslated(
+                "<div><p>Some content &amp; stuff here. Maybe some &lt; entities &gt; and such?</p>&#x00D;&#x00A;</div>",
+                "<div><p>Some content &amp; stuff here. Maybe some &lt; entities &gt; and such?</p>\r\n</div>"
+            );
         }
 
         [TestMethod]
         public void TestImport()
         {
-            var ce = getContentEngine();
-            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<div><cms-import absolute-path=""/template/head.html"" /></div>"));
-            output((HTMLFragment)Encoding.UTF8.GetString(bl.Contents));
-            output((HTMLFragment)"-----------------------------------------");
-
-            var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
-            var frag = ce.RenderContentItem(item);
-            output(frag);
-            Assert.AreEqual(@"<div></div>", (string)frag);
+            assertTranslated(
+                "<div><cms-import absolute-path=\"/template/head.html\" /></div>",
+                "<div></div>"
+            );
         }
 
         [TestMethod]
@@ -101,7 +97,9 @@ namespace TestCMS
             // Use b + 5 days as the viewing date for scheduling:
             var ce = getContentEngine(b.AddDays(5));
 
-            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(String.Format(
+            assertTranslated(
+                ce,
+                String.Format(
 @"<div>
   <cms-scheduled>
     <range from=""{0}"" to=""{2}""/>
@@ -109,33 +107,23 @@ namespace TestCMS
     <content>Schedule content here!</content>
   </cms-scheduled>
 </div>",
-                a.ToString("u"),
-                b.ToString("u"),
-                c.ToString("u")
-            )));
-            output((HTMLFragment) Encoding.UTF8.GetString(bl.Contents));
-            output((HTMLFragment) "-----------------------------------------");
-
-            var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
-            var frag = ce.RenderContentItem(item);
-            output(frag);
-            
-            // FIXME: remove unnecessary whitespace?
-            Assert.AreEqual("<div>\r\n  Schedule content here!\r\n</div>", (string)frag);
+                    a.ToString("u"),
+                    b.ToString("u"),
+                    c.ToString("u")
+                ),
+@"<div>
+  Schedule content here!
+</div>"
+            );
         }
 
         [TestMethod]
         public void TestUnknownSkipped()
         {
-            var ce = getContentEngine();
-            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(@"<div><cms-unknown crap=""some stuff""><custom-tag>Skipped stuff.</custom-tag>Random gibberish that will be removed.</cms-unknown></div>"));
-            output((HTMLFragment)Encoding.UTF8.GetString(bl.Contents));
-            output((HTMLFragment)"-----------------------------------------");
-
-            var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
-            var frag = ce.RenderContentItem(item);
-            output(frag);
-            Assert.AreEqual(@"<div></div>", (string)frag);
+            assertTranslated(
+                "<div><cms-unknown crap=\"some stuff\"><custom-tag>Skipped stuff.</custom-tag>Random gibberish that will be removed.</cms-unknown></div>",
+                "<div></div>"
+            );
         }
     }
 }

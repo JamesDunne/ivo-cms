@@ -6,6 +6,7 @@ using System.Xml;
 using IVO.Definition.Models;
 using IVO.Definition.Repositories;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace IVO.CMS
 {
@@ -31,6 +32,11 @@ namespace IVO.CMS
             this.throwOnError = throwOnError;
             this.injectErrorComments = injectErrorComments;
             this.errors = new List<SemanticError>();
+        }
+
+        public ReadOnlyCollection<SemanticError> GetErrors()
+        {
+            return new ReadOnlyCollection<SemanticError>(errors);
         }
 
         private void semanticError(XmlTextReader xr, StringBuilder sb, ContentItem item, string message)
