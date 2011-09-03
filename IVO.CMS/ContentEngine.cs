@@ -277,7 +277,7 @@ namespace IVO.CMS
                 else
                 {
                     // Apply the relative path to the current item's absolute path:
-                    path = item.Path.Concat(new RelativePath(relPath.Split(CanonicalizedAbsolutePath.PathSeparator)));
+                    path = item.Path.GetContainingFolderPath().Concat(new RelativePath(relPath.Split(CanonicalizedAbsolutePath.PathSeparator)));
                 }
 
                 // Fetch the Blob given the absolute path constructed:

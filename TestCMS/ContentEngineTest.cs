@@ -8,6 +8,8 @@ using IVO.CMS;
 using IVO.Definition.Repositories;
 using IVO.Implementation.SQL;
 using Asynq;
+using IVO.Definition.Containers;
+using System.Threading.Tasks;
 
 namespace TestCMS
 {
@@ -24,13 +26,17 @@ namespace TestCMS
             return new DataContext(@"Data Source=.\SQLEXPRESS;Initial Catalog=IVO;Integrated Security=SSPI");
         }
 
+        private DataContext db;
+        private ITreeRepository trrepo;
+        private IBlobRepository blrepo;
+
         private ContentEngine getContentEngine(DateTimeOffset? viewDate = null)
         {
             DateTimeOffset realDate = viewDate ?? DateTimeOffset.Now;
 
-            var db = getDataContext();
-            ITreeRepository trrepo = new TreeRepository(db);
-            IBlobRepository blrepo = new BlobRepository(db);
+            db = getDataContext();
+            trrepo = new TreeRepository(db);
+            blrepo = new BlobRepository(db);
             return new ContentEngine(trrepo, blrepo, realDate);
         }
 
@@ -43,10 +49,20 @@ namespace TestCMS
         private void assertTranslated(ContentEngine ce, string blob, string expected)
         {
             Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(blob));
-            output((HTMLFragment)Encoding.UTF8.GetString(bl.Contents));
+            assertTranslated(ce, bl, new TreeID(), expected);
+        }
+
+        private void assertTranslated(ContentEngine ce, Blob bl, TreeID rootid, string expected)
+        {
+            var item = new ContentItem(new CanonicalizedAbsolutePath("test"), rootid, bl);
+            assertTranslated(ce, new ContentItem(new CanonicalizedAbsolutePath("test"), rootid, bl), expected);
+        }
+
+        private void assertTranslated(ContentEngine ce, ContentItem item, string expected)
+        {
+            output((HTMLFragment)Encoding.UTF8.GetString(item.Blob.Contents));
             output((HTMLFragment)"-----------------------------------------");
 
-            var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
             var frag = ce.RenderContentItem(item);
             output(frag);
 
@@ -86,11 +102,72 @@ namespace TestCMS
         }
 
         [TestMethod]
-        public void TestImport()
+        public void TestImportAbsolute()
         {
+            var ce = getContentEngine();
+
+            Blob blHead = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Head</div>"));
+            Blob blTest = new Blob.Builder(Encoding.UTF8.GetBytes("<div><cms-import absolute-path=\"/template/head\" /></div>"));
+            Tree trTemplate = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
+                    new TreeBlobReference.Builder("head", blHead.ID)
+                }
+            );
+            Tree trRoot = new Tree.Builder(
+                new List<TreeTreeReference> { new TreeTreeReference.Builder("template", trTemplate.ID) },
+                new List<TreeBlobReference> {
+                    new TreeBlobReference.Builder("test", blTest.ID)
+                }
+            );
+
+            // Persist the blob contents:
+            var blTask = blrepo.PersistBlobs(new BlobContainer(blHead, blTest));
+            blTask.Wait();
+            // Persist the trees:
+            var trTask = trrepo.PersistTree(trRoot.ID, new TreeContainer(trTemplate, trRoot));
+            trTask.Wait();
+
             assertTranslated(
-                "<div><cms-import absolute-path=\"/template/head.html\" /></div>",
-                "<div></div>"
+                ce,
+                blTest,
+                trRoot.ID,
+                "<div><div>Head</div></div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestImportRelative()
+        {
+            var ce = getContentEngine();
+
+            Blob blHead = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Head</div>"));
+            Blob blTest = new Blob.Builder(Encoding.UTF8.GetBytes("<div><cms-import relative-path=\"template/head\" /></div>"));
+            Tree trTemplate = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
+                    new TreeBlobReference.Builder("head", blHead.ID)
+                }
+            );
+            Tree trRoot = new Tree.Builder(
+                new List<TreeTreeReference> { new TreeTreeReference.Builder("template", trTemplate.ID) },
+                new List<TreeBlobReference> {
+                    new TreeBlobReference.Builder("test", blTest.ID)
+                }
+            );
+
+            // Persist the blob contents:
+            var blTask = blrepo.PersistBlobs(new BlobContainer(blHead, blTest));
+            blTask.Wait();
+            // Persist the trees:
+            var trTask = trrepo.PersistTree(trRoot.ID, new TreeContainer(trTemplate, trRoot));
+            trTask.Wait();
+
+            assertTranslated(
+                ce,
+                blTest,
+                trRoot.ID,
+                "<div><div>Head</div></div>"
             );
         }
 
