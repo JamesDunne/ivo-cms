@@ -7,6 +7,7 @@ using IVO.Definition.Models;
 using IVO.Definition.Repositories;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 
 namespace IVO.CMS
 {
@@ -143,6 +144,14 @@ namespace IVO.CMS
 
         public HTMLFragment RenderContentItem(ContentItem item)
         {
+            StringBuilder sb = renderContentItem(item);
+
+            string result = sb.ToString();
+            return new HTMLFragment(result);
+        }
+
+        private StringBuilder renderContentItem(ContentItem item)
+        {
             // NOTE: I would much prefer to load in a Stream from the persistence store rather than a `byte[]`.
             // It seems the only way to do this from a SqlDataReader is with its GetBytes() method. Furthermore,
             // this would require the blob query to be executed with the CommandBehavior.SequentialAccess and
@@ -169,8 +178,7 @@ namespace IVO.CMS
                 streamContent(xr, sb, action: ixr => processCustomElementsAction(ixr, sb, item), exit: ixr => false);
             }
 
-            string result = sb.ToString();
-            return new HTMLFragment(result);
+            return sb;
         }
 
         private void skipElementAndChildren(string elementName, XmlTextReader xr, StringBuilder sb, ContentItem item)
@@ -186,7 +194,7 @@ namespace IVO.CMS
             while (xr.Read() && xr.Depth > knownDepth) { }
 
             if (xr.NodeType != XmlNodeType.EndElement) semanticError(xr, sb, item, String.Format("expected end </{0}> element", elementName));
-            if (xr.LocalName != elementName) semanticError(xr, sb, item, String.Format("expected end <{0}/> element", elementName));
+            if (xr.LocalName != elementName) semanticError(xr, sb, item, String.Format("expected end </{0}> element", elementName));
 
             //xr.ReadEndElement(/* elementName */);
         }
@@ -207,7 +215,7 @@ namespace IVO.CMS
             streamContent(xr, sb, action: xtr => processCustomElementsAction(xtr, sb, item), exit: xtr => (xtr.Depth == knownDepth));
 
             if (xr.NodeType != XmlNodeType.EndElement) semanticError(xr, sb, item, String.Format("expected end </{0}> element", elementName));
-            if (xr.LocalName != elementName) semanticError(xr, sb, item, String.Format("expected end <{0}/> element", elementName));
+            if (xr.LocalName != elementName) semanticError(xr, sb, item, String.Format("expected end </{0}> element", elementName));
 
             //xr.ReadEndElement(/* elementName */);
         }
@@ -254,7 +262,42 @@ namespace IVO.CMS
             
             if (xr.HasAttributes && xr.MoveToFirstAttribute())
             {
-                // TODO
+                string relPath = xr.GetAttribute("relative-path");
+                string absPath = xr.GetAttribute("absolute-path");
+
+                // Check mutual exclusion of attributes:
+                if ((absPath == null) == (relPath == null)) semanticError(xr, sb, item, "cms-import must have either 'relative-path' or 'absolute-path' attribute but not both");
+                
+                // Canonicalize the path:
+                CanonicalizedAbsolutePath path;
+                if (absPath != null)
+                {
+                    path = new CanonicalizedAbsolutePath(absPath.Substring(1).Split(CanonicalizedAbsolutePath.PathSeparator));
+                }
+                else
+                {
+                    // Apply the relative path to the current item's absolute path:
+                    path = item.Path.Concat(new RelativePath(relPath.Split(CanonicalizedAbsolutePath.PathSeparator)));
+                }
+
+                // Fetch the Blob given the absolute path constructed:
+                Task<Blob> tBlob = blrepo.GetBlobByAbsolutePath(item.RootTreeID, path);
+                
+                // TODO: we could probably asynchronously load blobs and render their contents
+                // then at a final sync point go in and inject their contents into the proper
+                // places in each imported blob's parent StringBuilder.
+                tBlob.Wait();
+
+                // No blob? Put up an error:
+                if (tBlob.Result == null)
+                {
+                    semanticError(xr, sb, item, String.Format("path '{0}' not found", path));
+                    return;
+                }
+                
+                // Render the blob inline:
+                StringBuilder sbImported = renderContentItem(new ContentItem(path, item.RootTreeID, tBlob.Result));
+                sb.Append(sbImported.ToString());
             }
         }
 
@@ -315,6 +358,7 @@ namespace IVO.CMS
                     if (!xr.IsEmptyElement) semanticError(xr, sb, item, "range element must be empty");
                     if (!xr.HasAttributes) semanticError(xr, sb, item, "range element must have attributes");
                     if ((fromAttr = xr.GetAttribute("from")) == null) semanticError(xr, sb, item, "range element must have 'from' attribute");
+                    // TODO: is 'to' required if it can be empty?
                     if ((toAttr = xr.GetAttribute("to")) == null) semanticError(xr, sb, item, "range element must have 'to' attribute");
 
                     // Parse the dates:
