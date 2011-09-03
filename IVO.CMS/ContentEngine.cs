@@ -269,15 +269,17 @@ namespace IVO.CMS
                 if ((absPath == null) == (relPath == null)) semanticError(xr, sb, item, "cms-import must have either 'relative-path' or 'absolute-path' attribute but not both");
                 
                 // Canonicalize the path:
-                CanonicalizedAbsolutePath path;
+                CanonicalBlobPath path;
                 if (absPath != null)
                 {
-                    path = new CanonicalizedAbsolutePath(absPath.Substring(1).Split(CanonicalizedAbsolutePath.PathSeparator));
+                    path = ((AbsoluteBlobPath)absPath).Canonicalize();
                 }
                 else
                 {
                     // Apply the relative path to the current item's absolute path:
-                    path = item.Path.GetContainingFolderPath().Concat(new RelativePath(relPath.Split(CanonicalizedAbsolutePath.PathSeparator)));
+                    RelativeBlobPath rbp = (RelativeBlobPath)relPath;
+                    CanonicalTreePath ctp = (item.Path.Tree + rbp.Tree).Canonicalize();
+                    path = new CanonicalBlobPath(ctp, rbp.Name);
                 }
 
                 // Fetch the Blob given the absolute path constructed:

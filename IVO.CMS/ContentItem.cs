@@ -8,14 +8,14 @@ namespace IVO.CMS
 {
     public sealed class ContentItem
     {
-        public ContentItem(CanonicalizedAbsolutePath path, TreeID rootid, Blob bl)
+        public ContentItem(CanonicalBlobPath path, TreeID rootid, Blob bl)
         {
             this.Path = path;
             this.RootTreeID = rootid;
             this.Blob = bl;
         }
 
-        public CanonicalizedAbsolutePath Path { get; private set; }
+        public CanonicalBlobPath Path { get; private set; }
         public TreeID RootTreeID { get; private set; }
         public Blob Blob { get; private set; }
     }

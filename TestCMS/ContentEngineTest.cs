@@ -54,8 +54,8 @@ namespace TestCMS
 
         private void assertTranslated(ContentEngine ce, Blob bl, TreeID rootid, string expected)
         {
-            var item = new ContentItem(new CanonicalizedAbsolutePath("test"), rootid, bl);
-            assertTranslated(ce, new ContentItem(new CanonicalizedAbsolutePath("test"), rootid, bl), expected);
+            var item = new ContentItem(new CanonicalBlobPath(((AbsoluteTreePath)"").Canonicalize(), "test"), rootid, bl);
+            assertTranslated(ce, item, expected);
         }
 
         private void assertTranslated(ContentEngine ce, ContentItem item, string expected)
