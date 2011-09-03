@@ -40,7 +40,7 @@ namespace IVO.CMS
             return new ReadOnlyCollection<SemanticError>(errors);
         }
 
-        private void semanticError(XmlTextReader xr, StringBuilder sb, ContentItem item, string message)
+        private void semanticError(XmlTextReader xr, StringBuilder sb, BlobTreePath item, string message)
         {
             var err = new SemanticError(message, item, xr.LineNumber, xr.LinePosition);
 
@@ -129,7 +129,7 @@ namespace IVO.CMS
             } while (xr.Read());
         }
 
-        private bool processCustomElementsAction(XmlTextReader xr, StringBuilder sb, ContentItem item)
+        private bool processCustomElementsAction(XmlTextReader xr, StringBuilder sb, BlobTreePath item)
         {
             if (xr.NodeType == XmlNodeType.Element && xr.LocalName.StartsWith("cms-"))
             {
@@ -142,7 +142,7 @@ namespace IVO.CMS
             return true;
         }
 
-        public HTMLFragment RenderContentItem(ContentItem item)
+        public HTMLFragment RenderContentItem(BlobTreePath item)
         {
             StringBuilder sb = renderContentItem(item);
 
@@ -150,7 +150,7 @@ namespace IVO.CMS
             return new HTMLFragment(result);
         }
 
-        private StringBuilder renderContentItem(ContentItem item)
+        private StringBuilder renderContentItem(BlobTreePath item)
         {
             // NOTE: I would much prefer to load in a Stream from the persistence store rather than a `byte[]`.
             // It seems the only way to do this from a SqlDataReader is with its GetBytes() method. Furthermore,
@@ -181,7 +181,7 @@ namespace IVO.CMS
             return sb;
         }
 
-        private void skipElementAndChildren(string elementName, XmlTextReader xr, StringBuilder sb, ContentItem item)
+        private void skipElementAndChildren(string elementName, XmlTextReader xr, StringBuilder sb, BlobTreePath item)
         {
             if (xr.NodeType != XmlNodeType.Element) semanticError(xr, sb, item, String.Format("expected start <{0}> element", elementName));
             if (xr.LocalName != elementName) semanticError(xr, sb, item, String.Format("expected start <{0}> element", elementName));
@@ -199,7 +199,7 @@ namespace IVO.CMS
             //xr.ReadEndElement(/* elementName */);
         }
 
-        private void streamElementChildren(string elementName, XmlTextReader xr, StringBuilder sb, ContentItem item)
+        private void streamElementChildren(string elementName, XmlTextReader xr, StringBuilder sb, BlobTreePath item)
         {
             if (xr.NodeType != XmlNodeType.Element) semanticError(xr, sb, item, String.Format("expected start <{0}> element", elementName));
             if (xr.LocalName != elementName) semanticError(xr, sb, item, String.Format("expected start <{0}> element", elementName));
@@ -220,7 +220,7 @@ namespace IVO.CMS
             //xr.ReadEndElement(/* elementName */);
         }
 
-        private void processCMSInstruction(string elementName, XmlTextReader xr, StringBuilder sb, ContentItem item)
+        private void processCMSInstruction(string elementName, XmlTextReader xr, StringBuilder sb, BlobTreePath item)
         {
             int knownDepth = xr.Depth;
 
@@ -241,7 +241,7 @@ namespace IVO.CMS
             }
         }
 
-        private void processImportElement(XmlTextReader xr, StringBuilder sb, ContentItem item)
+        private void processImportElement(XmlTextReader xr, StringBuilder sb, BlobTreePath item)
         {
             // Imports content directly from another blob, addressable by a relative path or an absolute path.
             // Relative path is always relative to the current blob's absolute path.
@@ -283,7 +283,7 @@ namespace IVO.CMS
                 }
 
                 // Fetch the Blob given the absolute path constructed:
-                Task<Blob> tBlob = blrepo.GetBlobByAbsolutePath(item.RootTreeID, path);
+                Task<BlobTreePath> tBlob = blrepo.GetBlobByAbsolutePath(item.RootTreeID, path);
                 
                 // TODO: we could probably asynchronously load blobs and render their contents
                 // then at a final sync point go in and inject their contents into the proper
@@ -298,12 +298,12 @@ namespace IVO.CMS
                 }
                 
                 // Render the blob inline:
-                StringBuilder sbImported = renderContentItem(new ContentItem(path, item.RootTreeID, tBlob.Result));
+                StringBuilder sbImported = renderContentItem(tBlob.Result);
                 sb.Append(sbImported.ToString());
             }
         }
 
-        private void processTargetedElement(XmlTextReader xr, StringBuilder sb, ContentItem item)
+        private void processTargetedElement(XmlTextReader xr, StringBuilder sb, BlobTreePath item)
         {
             // Order matters. Most specific targets come first; least specific targets go last.
             // Target attributes are user-defined. They must be valid XML attributes.
@@ -327,7 +327,7 @@ namespace IVO.CMS
             skipElementAndChildren("cms-targeted", xr, sb, item);
         }
 
-        private void processScheduledElement(XmlTextReader xr, StringBuilder sb, ContentItem item)
+        private void processScheduledElement(XmlTextReader xr, StringBuilder sb, BlobTreePath item)
         {
             // Specifies that content should be scheduled for the entire month of August
             // and the entire month of October but NOT the month of September.

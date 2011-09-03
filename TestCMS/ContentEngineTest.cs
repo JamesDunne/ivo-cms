@@ -54,11 +54,11 @@ namespace TestCMS
 
         private void assertTranslated(ContentEngine ce, Blob bl, TreeID rootid, string expected)
         {
-            var item = new ContentItem(new CanonicalBlobPath(((AbsoluteTreePath)"").Canonicalize(), "test"), rootid, bl);
+            var item = new BlobTreePath(rootid, new CanonicalBlobPath(((AbsoluteTreePath)"").Canonicalize(), "test"), bl);
             assertTranslated(ce, item, expected);
         }
 
-        private void assertTranslated(ContentEngine ce, ContentItem item, string expected)
+        private void assertTranslated(ContentEngine ce, BlobTreePath item, string expected)
         {
             output((HTMLFragment)Encoding.UTF8.GetString(item.Blob.Contents));
             output((HTMLFragment)"-----------------------------------------");
@@ -106,33 +106,42 @@ namespace TestCMS
         {
             var ce = getContentEngine();
 
-            Blob blHead = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Head</div>"));
-            Blob blTest = new Blob.Builder(Encoding.UTF8.GetBytes("<div><cms-import absolute-path=\"/template/head\" /></div>"));
+            Blob blHeader = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Header</div>"));
+            Blob blFooter = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Footer</div>"));
+            Blob blTest = new Blob.Builder(Encoding.UTF8.GetBytes("<div><cms-import absolute-path=\"/template/header\" /><cms-import absolute-path=\"/template/footer\" /></div>"));
             Tree trTemplate = new Tree.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("head", blHead.ID)
+                    new TreeBlobReference.Builder("header", blHeader.ID),
+                    new TreeBlobReference.Builder("footer", blFooter.ID)
                 }
             );
-            Tree trRoot = new Tree.Builder(
-                new List<TreeTreeReference> { new TreeTreeReference.Builder("template", trTemplate.ID) },
+            Tree trPages = new Tree.Builder(
+                new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
                     new TreeBlobReference.Builder("test", blTest.ID)
                 }
             );
+            Tree trRoot = new Tree.Builder(
+                new List<TreeTreeReference> {
+                    new TreeTreeReference.Builder("template", trTemplate.ID),
+                    new TreeTreeReference.Builder("pages", trPages.ID)
+                },
+                new List<TreeBlobReference>(0)
+            );
 
             // Persist the blob contents:
-            var blTask = blrepo.PersistBlobs(new BlobContainer(blHead, blTest));
+            var blTask = blrepo.PersistBlobs(new ImmutableContainer<BlobID, Blob>(bl => bl.ID, blHeader, blFooter, blTest));
             blTask.Wait();
             // Persist the trees:
-            var trTask = trrepo.PersistTree(trRoot.ID, new TreeContainer(trTemplate, trRoot));
+            var trTask = trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
             trTask.Wait();
 
             assertTranslated(
                 ce,
                 blTest,
                 trRoot.ID,
-                "<div><div>Head</div></div>"
+                "<div><div>Header</div><div>Footer</div></div>"
             );
         }
 
@@ -141,33 +150,41 @@ namespace TestCMS
         {
             var ce = getContentEngine();
 
-            Blob blHead = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Head</div>"));
-            Blob blTest = new Blob.Builder(Encoding.UTF8.GetBytes("<div><cms-import relative-path=\"template/head\" /></div>"));
+            Blob blHeader = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Header</div>"));
+            Blob blFooter = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Footer</div>"));
+            Blob blTest = new Blob.Builder(Encoding.UTF8.GetBytes("<div><cms-import relative-path=\"../template/header\" /><cms-import relative-path=\"../template/footer\" /></div>"));
             Tree trTemplate = new Tree.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("head", blHead.ID)
+                    new TreeBlobReference.Builder("header", blHeader.ID),
+                    new TreeBlobReference.Builder("footer", blFooter.ID)
                 }
             );
-            Tree trRoot = new Tree.Builder(
-                new List<TreeTreeReference> { new TreeTreeReference.Builder("template", trTemplate.ID) },
+            Tree trPages = new Tree.Builder(
+                new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
                     new TreeBlobReference.Builder("test", blTest.ID)
                 }
             );
+            Tree trRoot = new Tree.Builder(
+                new List<TreeTreeReference> {
+                    new TreeTreeReference.Builder("template", trTemplate.ID),
+                    new TreeTreeReference.Builder("pages", trPages.ID)
+                },
+                new List<TreeBlobReference>(0)
+            );
 
             // Persist the blob contents:
-            var blTask = blrepo.PersistBlobs(new BlobContainer(blHead, blTest));
+            var blTask = blrepo.PersistBlobs(new ImmutableContainer<BlobID, Blob>(bl => bl.ID, blHeader, blFooter, blTest));
             blTask.Wait();
             // Persist the trees:
-            var trTask = trrepo.PersistTree(trRoot.ID, new TreeContainer(trTemplate, trRoot));
+            var trTask = trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
             trTask.Wait();
 
             assertTranslated(
                 ce,
-                blTest,
-                trRoot.ID,
-                "<div><div>Head</div></div>"
+                new BlobTreePath(trRoot.ID, ((AbsoluteBlobPath)"/pages/test").Canonicalize(), blTest),
+                "<div><div>Header</div><div>Footer</div></div>"
             );
         }
 
