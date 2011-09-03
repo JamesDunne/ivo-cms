@@ -157,59 +157,17 @@ namespace IVO.CMS
             // Create a string builder used to build the output polyglot HTML5 document fragment:
             StringBuilder sb = new StringBuilder(item.Blob.Contents.Length);
 
-#if FakeRoot
-            // NOTE: this effectively limits us to 2GB documents due to the use of `int`s, but I don't think
-            // that's really a big thing to worry about in a web-based CMS.
-
-            // HACK to allow a document fragment:
-            byte[] rootedContents = new byte[item.Blob.Contents.Length + rootOpen.Length + rootClose.Length];
-            Array.Copy(rootOpen, 0, rootedContents, 0, rootOpen.Length);
-            Array.Copy(item.Blob.Contents, 0, rootedContents, rootOpen.Length, item.Blob.Contents.Length);
-            Array.Copy(rootClose, 0, rootedContents, rootOpen.Length + item.Blob.Contents.Length, rootClose.Length);
-#endif
-
             // Start an XmlReader over the contents:
-#if FakeRoot
-            using (MemoryStream ms = new MemoryStream(rootedContents))
-            using (XmlTextReader xr = new XmlTextReader(ms))
-#else
             using (MemoryStream ms = new MemoryStream(item.Blob.Contents))
             using (XmlTextReader xr = new XmlTextReader(ms, XmlNodeType.Element, new XmlParserContext(null, null, null, XmlSpace.Default)))
-#endif
             {
-#if FakeRoot
-                // Skip the fake root opening element:
-                xr.ReadStartElement(rootElementName);
-#else
                 // Start reading the document:
                 xr.Read();
-#endif
 
                 // Stream the content from the XmlTextReader, writing out to the StringBuilder and interpreting
                 // custom elements along the way:
-                streamContent(
-                    xr, sb,
-                    // Action method to process custom elements:
-                    ixr => processCustomElementsAction(ixr, sb, item),
-                    // Custom exit condition:
-                    ixr =>
-#if FakeRoot
-                    {
-                        // Skip the closing EndElement for the fake root:
-                        if (ixr.Depth == 0 || ixr.EOF)
-                            return true;
-                        return false;
-                    }
-#else
-                        false
-#endif
-                );
+                streamContent(xr, sb, action: ixr => processCustomElementsAction(ixr, sb, item), exit: ixr => false);
             }
-
-#if FakeRoot
-            // Clear the reference to make GC's job a bit easier:
-            rootedContents = null;
-#endif
 
             string result = sb.ToString();
             return new HTMLFragment(result);
@@ -246,7 +204,7 @@ namespace IVO.CMS
             if (!xr.Read()) semanticError(xr, sb, item, "could not read content after <content> start element");
 
             // Stream-copy and process inner custom cms- elements until we get back to the current depth:
-            streamContent(xr, sb, xtr => processCustomElementsAction(xtr, sb, item), xtr => (xtr.Depth == knownDepth));
+            streamContent(xr, sb, action: xtr => processCustomElementsAction(xtr, sb, item), exit: xtr => (xtr.Depth == knownDepth));
 
             if (xr.NodeType != XmlNodeType.EndElement) semanticError(xr, sb, item, String.Format("expected end </{0}> element", elementName));
             if (xr.LocalName != elementName) semanticError(xr, sb, item, String.Format("expected end <{0}/> element", elementName));
@@ -267,7 +225,7 @@ namespace IVO.CMS
                 case "list": throw new NotImplementedException();
                 default:
                     // Not a built-in 'cms-' element name, check the custom element provider:
-
+                    // TODO: toss this off to a provider model.
 
                     // Unrecognized 'cms-' element name, skip it entirely:
                     skipElementAndChildren(elementName, xr, sb, item);
@@ -281,8 +239,8 @@ namespace IVO.CMS
             // Relative path is always relative to the current blob's absolute path.
             // In the case of nested imports, relative paths are relative to the absolute path of the importee's parent blob.
 
-            // <import relative-path="../templates/main" />
-            // <import absolute-path="/templates/main" />
+            // <cms-import relative-path="../templates/main" />
+            // <cms-import absolute-path="/templates/main" />
 
             // Absolute paths are canonicalized. An exception will be thrown if the path contains too many '..' references that
             // bring the canonicalized path above the root of the tree (which is impossible).
@@ -302,20 +260,21 @@ namespace IVO.CMS
 
         private void processTargetedElement(XmlTextReader xr, StringBuilder sb, ContentItem item)
         {
+            // Order matters. Most specific targets come first; least specific targets go last.
+            // Target attributes are user-defined. They must be valid XML attributes.
+            // The custom attributes are collected into a Dictionary<string, string> and passed to
+            // the "target evaluation provider" to evaluate if the target attributes indicate that
+            // the content applies to the current user viewing the content.
             // <cms-targeted>
-            //   <!--
-            //     Order matters. Most specific targets come first; least specific targets go last.
-            //     Target attributes are user-defined. They must be valid XML attributes.
-            //     The custom attributes are collected into a Dictionary<string, string> and passed to
-            //     the "target evaluation provider" to evaluate if the target attributes indicate that
-            //     the content applies to the current user viewing the content.
-            //   -->
-            //   <target userType="Employee" department="Sales">
+            //   <if userType="Employee" department="Sales">
             //     ... employee-targeted content here, specifically for Sales department ...
-            //   </target>
-            //   <target userType="Manager" />
+            //   </if>
+            //   <if userType="Manager">
             //     ... manager-targeted content here, not specific to a department ...
-            //   <target userType="Employee" />
+            //   </if>
+            //   <if userType="Employee">
+            //     ... employee-targeted content here, not specific to a department ...
+            //   </if>
             //   <else>
             //     ... default content displayed if the above targets do not match ...
             //   </else>
@@ -395,6 +354,8 @@ namespace IVO.CMS
                     semanticError(xr, sb, item, "unexpected element");
                 }
             }
+
+            // TODO: check that the 'content' element was at least found, else semantic error.
 
             // Skip Whitespace and Comments etc. until we find the end element:
             while (xr.NodeType != XmlNodeType.EndElement && xr.Read()) { }

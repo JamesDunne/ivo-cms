@@ -49,6 +49,12 @@ namespace TestCMS
             var item = new ContentItem(new CanonicalizedAbsolutePath("test"), new TreeID(), bl);
             var frag = ce.RenderContentItem(item);
             output(frag);
+
+            foreach (var err in ce.GetErrors())
+            {
+                Console.Error.WriteLine("{0} ({1}:{2}): {3}", err.Item.Path, err.LineNumber, err.LinePosition, err.Message);
+            }
+
             Assert.AreEqual(expected, (string)frag);
         }
 
