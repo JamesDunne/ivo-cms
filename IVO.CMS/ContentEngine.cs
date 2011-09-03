@@ -346,6 +346,7 @@ namespace IVO.CMS
                     else
                     {
                         skipElementAndChildren("content", xr, sb, item);
+                        xr.ReadEndElement(/* "content" */);
                     }
                     break;
                 }

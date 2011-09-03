@@ -100,8 +100,8 @@ namespace TestCMS
             DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
             DateTimeOffset b = a.AddDays(15);
             DateTimeOffset c = a.AddDays(30);
-            // Use b + 5 days as the viewing date for scheduling:
-            var ce = getContentEngine(b.AddDays(5));
+            // Use a + 5 days as the viewing date for scheduling:
+            var ce = getContentEngine(a.AddDays(5));
 
             assertTranslated(
                 ce,
@@ -119,6 +119,35 @@ namespace TestCMS
                 ),
 @"<div>
   Schedule content here!
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestScheduledNot()
+        {
+            DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
+            DateTimeOffset b = a.AddDays(15);
+            DateTimeOffset c = a.AddDays(30);
+            // Use a + 5 days as the viewing date for scheduling:
+            var ce = getContentEngine(a.AddDays(-5));
+
+            assertTranslated(
+                ce,
+                String.Format(
+@"<div>
+  <cms-scheduled>
+    <range from=""{0}"" to=""{2}""/>
+    <range from=""{1}"" to=""{2}""/>
+    <content>Schedule content here!</content>
+  </cms-scheduled>
+</div>",
+                    a.ToString("u"),
+                    b.ToString("u"),
+                    c.ToString("u")
+                ),
+@"<div>
+  
 </div>"
             );
         }
