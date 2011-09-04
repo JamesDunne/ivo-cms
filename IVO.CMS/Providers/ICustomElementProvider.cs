@@ -15,6 +15,6 @@ namespace IVO.CMS.Providers
         /// </summary>
         ICustomElementProvider Next { get; }
 
-        bool ProcessCustomElement(string elementName, XmlTextReader xr, StringBuilder sb, BlobTreePath item);
+        bool ProcessCustomElement(string elementName, RenderState state);
     }
 }

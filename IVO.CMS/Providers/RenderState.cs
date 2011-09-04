@@ -154,7 +154,7 @@ namespace IVO.CMS.Providers
         {
             if (xr.NodeType == XmlNodeType.Element && xr.LocalName.StartsWith("cms-"))
             {
-                processCMSInstruction(xr.LocalName);
+                ProcessCMSInstruction(xr.LocalName, this);
 
                 // Skip normal copying behavior for this element:
                 return false;
@@ -214,25 +214,37 @@ namespace IVO.CMS.Providers
             //xr.ReadEndElement(/* elementName */);
         }
 
-        private void processCMSInstruction(string elementName)
+        public static bool ProcessCMSInstruction(string elementName, RenderState state)
         {
-            int knownDepth = xr.Depth;
+            int knownDepth = state.xr.Depth;
 
             // Skip the 'cms-' prefix and delegate to the instruction handlers:
             switch (elementName.Substring(4))
             {
-                case "import": processImportElement(); break;
-                case "targeted": processTargetedElement(); break;
-                case "scheduled": processScheduledElement(); break;
+                case "import": state.processImportElement(); break;
+                case "targeted": state.processTargetedElement(); break;
+                case "scheduled": state.processScheduledElement(); break;
                 case "list": throw new NotImplementedException();
                 default:
                     // Not a built-in 'cms-' element name, check the custom element provider:
-                    // TODO: toss this off to a provider model.
+                    ICustomElementProvider provider = null;
+                    bool processed = false;
+                    while (provider != null && !(processed = provider.ProcessCustomElement(elementName, state)))
+                    {
+                        provider = provider.Next;
+                    }
 
-                    // Unrecognized 'cms-' element name, skip it entirely:
-                    skipElementAndChildren(elementName);
-                    break;
+                    if (!processed)
+                    {
+                        // Unrecognized 'cms-' element name, skip it entirely:
+                        state.skipElementAndChildren(elementName);
+                        return false;
+                    }
+
+                    return true;
             }
+
+            return true;
         }
 
         #endregion
