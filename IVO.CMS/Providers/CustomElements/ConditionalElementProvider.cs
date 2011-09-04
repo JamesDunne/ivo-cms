@@ -7,9 +7,12 @@ namespace IVO.CMS.Providers.CustomElements
 {
     public sealed class ConditionalElementProvider : ICustomElementProvider
     {
-        public ConditionalElementProvider(ICustomElementProvider next)
+        private IConditionalEvaluator evaluator;
+
+        public ConditionalElementProvider(IConditionalEvaluator evaluator, ICustomElementProvider next = null)
         {
             this.Next = next;
+            this.evaluator = evaluator;
         }
 
         #region ICustomElementProvider Members
@@ -24,18 +27,6 @@ namespace IVO.CMS.Providers.CustomElements
             return false;
         }
 
-        private bool processIfElement(RenderState st)
-        {
-            // <cms-if department="Sales">
-            //     <then>Hello, Sales dept!</then>
-            //     <else>Whatever.</else>
-            // </cms-if>
-
-            st.SkipElementAndChildren("cms-if");
-
-            return true;
-        }
-
         #endregion
 
         private bool processConditionalElement(RenderState st)
@@ -48,6 +39,18 @@ namespace IVO.CMS.Providers.CustomElements
             // </cms-conditional>
 
             st.SkipElementAndChildren("cms-conditional");
+
+            return true;
+        }
+
+        private bool processIfElement(RenderState st)
+        {
+            // <cms-if department="Sales">
+            //     <then>Hello, Sales dept!</then>
+            //     <else>Whatever.</else>
+            // </cms-if>
+
+            st.SkipElementAndChildren("cms-if");
 
             return true;
         }

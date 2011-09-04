@@ -7,7 +7,7 @@ namespace IVO.CMS.Providers.CustomElements
 {
     public sealed class ListElementProvider : ICustomElementProvider
     {
-        public ListElementProvider(ICustomElementProvider next)
+        public ListElementProvider(ICustomElementProvider next = null)
         {
             this.Next = next;
         }

@@ -1,15 +1,11 @@
 ﻿using System;
-using System.IO;
-using System.Text;
-using System.Web;
-using System.Xml;
-using IVO.Definition.Models;
-using IVO.Definition.Repositories;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
+using System.Text;
 using IVO.CMS.Providers;
 using IVO.CMS.Providers.CustomElements;
+using IVO.Definition.Models;
+using IVO.Definition.Repositories;
 
 namespace IVO.CMS
 {
@@ -29,16 +25,19 @@ namespace IVO.CMS
 
         private List<SemanticError> errors;
 
-        public ContentEngine(ITreeRepository trrepo, IBlobRepository blrepo, DateTimeOffset viewDate, ICustomElementProvider providerRoot = null, bool throwOnError = false, bool injectErrorComments = true)
+        public ContentEngine(ITreeRepository trrepo, IBlobRepository blrepo, DateTimeOffset viewDate, IConditionalEvaluator evaluator = null, ICustomElementProvider provider = null, bool throwOnError = false, bool injectErrorComments = true)
         {
             this.trrepo = trrepo;
             this.blrepo = blrepo;
             this.viewDate = viewDate;
-            // Wrap the given provider in the default chain:
-            this.providerRoot = new ImportElementProvider(new ScheduledElementProvider(new ConditionalElementProvider(new ListElementProvider(providerRoot))));
             this.throwOnError = throwOnError;
             this.injectErrorComments = injectErrorComments;
             this.errors = new List<SemanticError>();
+
+            // If no evaluator given, use the default false-returning evaluator:
+            if (evaluator == null) evaluator = new DefaultFalseConditionalEvaluator(EitherAndOr.Or);
+            // Wrap the given provider in the default chain:
+            this.providerRoot = new ImportElementProvider(new ScheduledElementProvider(new ListElementProvider(new ConditionalElementProvider(evaluator, provider))));
         }
 
         public ITreeRepository Trees { get { return trrepo; } }

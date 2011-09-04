@@ -45,12 +45,14 @@
   <ItemGroup>
     <Compile Include="ContentEngine.cs" />
     <Compile Include="HTMLFragment.cs" />
+    <Compile Include="Providers\CustomElements\DefaultFalseConditionalEvaluator.cs" />
+    <Compile Include="Providers\CustomElements\IConditionalEvaluator.cs" />
     <Compile Include="Providers\CustomElements\ICustomElementProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Providers\CustomElements\ImportElementProvider.cs" />
     <Compile Include="Providers\CustomElements\ListElementProvider.cs" />
     <Compile Include="Providers\CustomElements\ScheduledElementProvider.cs" />
-    <Compile Include="Providers\CustomElements\TargetedElementProvider.cs" />
+    <Compile Include="Providers\CustomElements\ConditionalElementProvider.cs" />
     <Compile Include="Providers\RenderState.cs" />
     <Compile Include="SemanticError.cs" />
   </ItemGroup>
