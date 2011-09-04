@@ -16,13 +16,11 @@ Attempt to design a web content management system that is based on the concepts 
 
 Features
 --------
-This design enables per-user branches, versionable history, branch merging, content differencing across history and/or branchs, and a simple atomic publish operation that is as simple as updating a reference.
+This design enables per-user branches, versionable history, branch merging, content differencing across history and/or branches, and an  atomic publish operation that is as simple as updating a reference to point to the new state of the system.
 
-The system enforces that users of the system work independently of one another. There is no chance of colliding work or any locks to worry about. Data is not mutable so there is no need to lock. New objects are always created and their history is preserved in the system.
+The system enforces that users work independently of one another. There is no chance of colliding work or any locks to worry about. Data is not mutable so there is no need to lock. New objects are always created and their history is preserved in the system.
 
 There is always the possibility that the same work may be duplicated by two users independently but this situation will cause no ill-effects. It can be resolved by simply merging users' branches together and resolving the differences, if any.
-
-
 
 IVO
 ---
@@ -43,3 +41,12 @@ Normally, when a `commit` is made by a user to introduce new changes, the user's
 When a user completes a merge, a new `commit` is made with two parent `commitids` pointing to the two `commit`s that were merged.
 
 Every time a `commit` is made, the current user's HEAD `ref` is updated to point to the new `commitid`.
+
+CMS
+===
+
+IVO-CMS is built on top of the IVO library and is a very light-weight content management system based on processing and composing XML document fragments stored in the blob tree.
+
+A blob may be rendered as an entire HTML5 polyglot (meaning parseable as both valid XML and HTML5) document, constituting a whole rendered page, or it may be rendered as a simple <div> or <span> that can be injected into an existing page/request layout.
+
+The system implementation makes no assumptions about pages or URL mappings and allows the user of the system to make those types of decisions via the provider model.
