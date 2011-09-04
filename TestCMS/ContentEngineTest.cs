@@ -39,7 +39,7 @@ namespace TestCMS
             db = getDataContext();
             trrepo = new TreeRepository(db);
             blrepo = new BlobRepository(db);
-            return new ContentEngine(trrepo, blrepo, realDate, providerRoot: new ImportElementProvider(new ScheduledElementProvider()));
+            return new ContentEngine(trrepo, blrepo, realDate);
         }
 
         private void assertTranslated(string blob, string expected)

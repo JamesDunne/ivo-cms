@@ -82,6 +82,9 @@ namespace IVO.CMS.Providers
         /// <param name="exit"></param>
         public void StreamContent(Func<bool> processElements, Func<bool> earlyExit)
         {
+            if (xr == null) throw new InvalidOperationException();
+            if (sb == null) throw new InvalidOperationException();
+
             do
             {
                 if (earlyExit()) break;
@@ -150,6 +153,9 @@ namespace IVO.CMS.Providers
 
         public bool DefaultProcessElements()
         {
+            if (xr == null) throw new InvalidOperationException();
+            if (sb == null) throw new InvalidOperationException();
+
             if (xr.NodeType == XmlNodeType.Element && xr.LocalName.StartsWith("cms-"))
             {
                 ProcessCMSInstruction(xr.LocalName, this);
@@ -165,28 +171,20 @@ namespace IVO.CMS.Providers
         {
             int knownDepth = state.xr.Depth;
 
-            // Skip the 'cms-' prefix and delegate to the instruction handlers:
-            switch (elementName)
+            // Run the cms- element name through the custom-element provider chain:
+            ICustomElementProvider provider = state.engine.CustomElementProviderRoot;
+            
+            bool processed = false;
+            while (provider != null && !(processed = provider.ProcessCustomElement(elementName, state)))
             {
-                case "cms-targeted": state.processTargetedElement(); break;
-                case "cms-list": throw new NotImplementedException();
-                default:
-                    // Not a built-in 'cms-' element name, check the custom element provider:
-                    ICustomElementProvider provider = state.engine.CustomElementProviderRoot;
-                    bool processed = false;
-                    while (provider != null && !(processed = provider.ProcessCustomElement(elementName, state)))
-                    {
-                        provider = provider.Next;
-                    }
+                provider = provider.Next;
+            }
 
-                    if (!processed)
-                    {
-                        // Unrecognized 'cms-' element name, skip it entirely:
-                        state.SkipElementAndChildren(elementName);
-                        return false;
-                    }
-
-                    return true;
+            if (!processed)
+            {
+                // Unrecognized 'cms-' element name, skip its contents entirely:
+                state.SkipElementAndChildren(elementName);
+                return false;
             }
 
             return true;
@@ -206,6 +204,9 @@ namespace IVO.CMS.Providers
 
         public void SkipElementAndChildren(string elementName)
         {
+            if (xr == null) throw new InvalidOperationException();
+            if (sb == null) throw new InvalidOperationException();
+
             if (xr.NodeType != XmlNodeType.Element) Error(String.Format("expected start <{0}> element", elementName));
             if (xr.LocalName != elementName) Error(String.Format("expected start <{0}> element", elementName));
             if (xr.IsEmptyElement)
@@ -224,6 +225,9 @@ namespace IVO.CMS.Providers
 
         public void CopyElementChildren(string elementName)
         {
+            if (xr == null) throw new InvalidOperationException();
+            if (sb == null) throw new InvalidOperationException();
+
             if (xr.NodeType != XmlNodeType.Element) Error(String.Format("expected start <{0}> element", elementName));
             if (xr.LocalName != elementName) Error(String.Format("expected start <{0}> element", elementName));
             // Nothing to do:
@@ -241,35 +245,6 @@ namespace IVO.CMS.Providers
             if (xr.LocalName != elementName) Error(String.Format("expected end </{0}> element", elementName));
 
             //xr.ReadEndElement(/* elementName */);
-        }
-
-        #endregion
-
-        #region Default cms- element processing
-
-        private void processTargetedElement()
-        {
-            // Order matters. Most specific targets come first; least specific targets go last.
-            // Target attributes are user-defined. They must be valid XML attributes.
-            // The custom attributes are collected into a Dictionary<string, string> and passed to
-            // the "target evaluation provider" to evaluate if the target attributes indicate that
-            // the content applies to the current user viewing the content.
-            // <cms-targeted>
-            //   <if userType="Employee" department="Sales">
-            //     ... employee-targeted content here, specifically for Sales department ...
-            //   </if>
-            //   <if userType="Manager">
-            //     ... manager-targeted content here, not specific to a department ...
-            //   </if>
-            //   <if userType="Employee">
-            //     ... employee-targeted content here, not specific to a department ...
-            //   </if>
-            //   <else>
-            //     ... default content displayed if the above targets do not match ...
-            //   </else>
-            // </cms-targeted>
-
-            SkipElementAndChildren("cms-targeted");
         }
 
         #endregion

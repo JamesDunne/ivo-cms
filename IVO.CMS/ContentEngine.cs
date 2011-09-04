@@ -34,7 +34,8 @@ namespace IVO.CMS
             this.trrepo = trrepo;
             this.blrepo = blrepo;
             this.viewDate = viewDate;
-            this.providerRoot = providerRoot;
+            // Wrap the given provider in the default chain:
+            this.providerRoot = new ImportElementProvider(new ScheduledElementProvider(new TargetedElementProvider(new ListElementProvider(providerRoot))));
             this.throwOnError = throwOnError;
             this.injectErrorComments = injectErrorComments;
             this.errors = new List<SemanticError>();
