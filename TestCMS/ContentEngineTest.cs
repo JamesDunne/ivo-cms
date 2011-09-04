@@ -10,6 +10,8 @@ using IVO.Implementation.SQL;
 using Asynq;
 using IVO.Definition.Containers;
 using System.Threading.Tasks;
+using IVO.CMS.Providers;
+using IVO.CMS.Providers.CustomElements;
 
 namespace TestCMS
 {
@@ -37,7 +39,7 @@ namespace TestCMS
             db = getDataContext();
             trrepo = new TreeRepository(db);
             blrepo = new BlobRepository(db);
-            return new ContentEngine(trrepo, blrepo, realDate);
+            return new ContentEngine(trrepo, blrepo, realDate, providerRoot: new ImportElementProvider(new ScheduledElementProvider()));
         }
 
         private void assertTranslated(string blob, string expected)

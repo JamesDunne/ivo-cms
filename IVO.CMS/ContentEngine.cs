@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using IVO.CMS.Providers;
+using IVO.CMS.Providers.CustomElements;
 
 namespace IVO.CMS
 {
@@ -24,14 +25,16 @@ namespace IVO.CMS
         private DateTimeOffset viewDate;
         private bool throwOnError;
         private bool injectErrorComments;
+        private ICustomElementProvider providerRoot;
 
         private List<SemanticError> errors;
 
-        public ContentEngine(ITreeRepository trrepo, IBlobRepository blrepo, DateTimeOffset viewDate, bool throwOnError = false, bool injectErrorComments = true)
+        public ContentEngine(ITreeRepository trrepo, IBlobRepository blrepo, DateTimeOffset viewDate, ICustomElementProvider providerRoot = null, bool throwOnError = false, bool injectErrorComments = true)
         {
             this.trrepo = trrepo;
             this.blrepo = blrepo;
             this.viewDate = viewDate;
+            this.providerRoot = providerRoot;
             this.throwOnError = throwOnError;
             this.injectErrorComments = injectErrorComments;
             this.errors = new List<SemanticError>();
@@ -40,6 +43,7 @@ namespace IVO.CMS
         public ITreeRepository Trees { get { return trrepo; } }
         public IBlobRepository Blobs { get { return blrepo; } }
         public DateTimeOffset ViewDate { get { return viewDate; } }
+        public ICustomElementProvider CustomElementProviderRoot { get { return providerRoot; } }
 
         public bool ThrowOnError { get { return throwOnError; } }
         public bool InjectErrorComments { get { return injectErrorComments; } }

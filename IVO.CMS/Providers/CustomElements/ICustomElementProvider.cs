@@ -2,7 +2,7 @@
 using System.Xml;
 using IVO.Definition.Models;
 
-namespace IVO.CMS.Providers
+namespace IVO.CMS.Providers.CustomElements
 {
     /// <summary>
     /// An interface for consumers of IVOCMS to implement in order to process custom cms-
