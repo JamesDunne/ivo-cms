@@ -76,6 +76,41 @@ namespace TestCMS
             Assert.AreEqual(expected, (string)frag);
         }
 
+        private void assumeFail(string blob)
+        {
+            var ce = getContentEngine();
+            assumeFail(ce, blob);
+        }
+
+        private void assumeFail(ContentEngine ce, string blob)
+        {
+            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(blob));
+            assumeFail(ce, bl, new TreeID());
+        }
+
+        private void assumeFail(ContentEngine ce, Blob bl, TreeID rootid)
+        {
+            var item = new BlobTreePath(rootid, new CanonicalBlobPath(((AbsoluteTreePath)"").Canonicalize(), "test"), bl);
+            assumeFail(ce, item);
+        }
+
+        private void assumeFail(ContentEngine ce, BlobTreePath item)
+        {
+            output((HTMLFragment)Encoding.UTF8.GetString(item.Blob.Contents));
+            output((HTMLFragment)"-----------------------------------------");
+
+            var frag = ce.RenderContentItem(item);
+            output(frag);
+
+            var errors = ce.GetErrors();
+            foreach (var err in errors)
+            {
+                Console.Error.WriteLine("{0} ({1}:{2}): {3}", err.Item.Path, err.LineNumber, err.LinePosition, err.Message);
+            }
+
+            Assert.AreNotEqual(0, errors.Count);
+        }
+
         [TestMethod]
         public void TestRenderBlob()
         {
@@ -381,6 +416,120 @@ namespace TestCMS
 </div>",
 @"<div>
   else A is false!
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestConditionalIfMultipleElifElse_ElifWins()
+        {
+            var ce = getContentEngine(evaluator: new AEvaluator(false));
+
+            assertTranslated(
+                ce,
+@"<div>
+  <cms-conditional>
+    <if a=""true"">A is true!</if>
+    <elif a=""garbage"">elif A is garbage!</elif>
+    <elif a=""false"">elif A is false!</elif>
+    <else>else A is false!</else>
+  </cms-conditional>
+</div>",
+@"<div>
+  elif A is false!
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestConditionalFail1()
+        {
+            var ce = getContentEngine(evaluator: new AEvaluator(false));
+
+            // if must be first.
+            assumeFail(
+                ce,
+@"<div>
+  <cms-conditional>
+    <else>else A is false!</else>
+    <elif a=""garbage"">elif A is garbage!</elif>
+    <if a=""true"">A is true!</if>
+  </cms-conditional>
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestConditionalFail2()
+        {
+            var ce = getContentEngine(evaluator: new AEvaluator(false));
+
+            // An if with no attributes is an error.
+            assumeFail(
+                ce,
+@"<div>
+  <cms-conditional>
+    <if>Invalid if! Needs at least one conditional test attribute.</if>
+  </cms-conditional>
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestConditionalFail3()
+        {
+            var ce = getContentEngine(evaluator: new AEvaluator(true));
+
+            // An else with attributes is an error.
+            assumeFail(
+                ce,
+@"<div>
+  <cms-conditional>
+    <if a=""false"">A is false!</if>
+    <else a=""true"">Bad else condition! Must have no attributes.</else>
+  </cms-conditional>
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestConditionalOkay1()
+        {
+            var ce = getContentEngine(evaluator: new AEvaluator(true));
+
+            // An if without an else is okay.
+            assertTranslated(
+                ce,
+@"<div>
+  <cms-conditional>
+    <if a=""false"">A is false!</if>
+  </cms-conditional>
+</div>",
+@"<div>
+  
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestConditionalOkay2()
+        {
+            var ce = getContentEngine(evaluator: new AEvaluator(true));
+
+            // Text and comments are ignored around the 'if', 'elif', and 'else' elements.
+            assertTranslated(
+                ce,
+@"<div>
+  <cms-conditional>
+    <!-- documentation here. -->
+    <if a=""false"">A is false!</if>
+Well that was fun!
+
+    
+  </cms-conditional>
+</div>",
+@"<div>
+  
 </div>"
             );
         }
