@@ -50,18 +50,12 @@ namespace IVO.CMS.Providers
             this.injectErrorComments = copy.injectErrorComments;
         }
 
-        public RenderState(RenderState copy, BlobTreePath item)
-            : this(copy)
-        {
-            this.item = item;
-        }
-
-        public RenderState(ITreeRepository trrepo, IBlobRepository blrepo, DateTimeOffset viewDate, BlobTreePath item, bool throwOnError = false, bool injectErrorComments = true)
+        public RenderState(ITreeRepository trrepo, IBlobRepository blrepo, DateTimeOffset viewDate, bool throwOnError = false, bool injectErrorComments = true)
         {
             this.trrepo = trrepo;
             this.blrepo = blrepo;
             this.viewDate = viewDate;
-            this.item = item;
+            this.item = null;
 
             this.xr = null;
             this.sb = null;
@@ -72,7 +66,7 @@ namespace IVO.CMS.Providers
             this.injectErrorComments = injectErrorComments;
         }
 
-        public void Render()
+        public void Render(BlobTreePath item)
         {
             // NOTE: I would much prefer to load in a Stream from the persistence store rather than a `byte[]`.
             // It seems the only way to do this from a SqlDataReader is with its GetBytes() method. Furthermore,
@@ -86,6 +80,7 @@ namespace IVO.CMS.Providers
             // data copies, thus defeating the purpose of streaming from the persistence store.
 
             // Create a string builder used to build the output polyglot HTML5 document fragment:
+            this.item = item;
             sb = new StringBuilder(item.Blob.Contents.Length);
 
             // Start an XmlReader over the contents:
@@ -322,8 +317,8 @@ namespace IVO.CMS.Providers
                 }
                 
                 // Render the blob inline:
-                RenderState rsInner = new RenderState(this, tBlob.Result);
-                rsInner.Render();
+                RenderState rsInner = new RenderState(this);
+                rsInner.Render(tBlob.Result);
                 string innerResult = rsInner.Writer.ToString();
                 sb.Append(innerResult);
             }

@@ -44,8 +44,8 @@ namespace IVO.CMS
 
         public HTMLFragment RenderContentItem(BlobTreePath item)
         {
-            RenderState rs = new RenderState(trrepo, blrepo, viewDate, item, throwOnError, injectErrorComments);
-            rs.Render();
+            RenderState rs = new RenderState(trrepo, blrepo, viewDate, throwOnError, injectErrorComments);
+            rs.Render(item);
 
             string result = rs.Writer.ToString();
             return new HTMLFragment(result);
