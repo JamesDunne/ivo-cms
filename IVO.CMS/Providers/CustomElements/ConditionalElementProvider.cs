@@ -22,10 +22,11 @@ namespace IVO.CMS.Providers.CustomElements
 
         public bool ProcessCustomElement(string elementName, RenderState state)
         {
-            if (elementName == "cms-conditional") return processConditionalElement(state);
-            else if (elementName == "cms-if") return processIfElement(state);
+            if (elementName != "cms-conditional") return false;
+            
+            processConditionalElement(state);
 
-            return false;
+            return true;
         }
 
         #endregion
@@ -37,7 +38,7 @@ namespace IVO.CMS.Providers.CustomElements
             ExpectingEnd
         }
 
-        private bool processConditionalElement(RenderState st)
+        private void processConditionalElement(RenderState st)
         {
             // <cms-conditional>
             //     <if department="Sales">Hello, Sales dept!</if>
@@ -176,25 +177,12 @@ namespace IVO.CMS.Providers.CustomElements
                         break;
                 }
             }
-
-            return true;
+            return;
 
         errored:
             // Keep reading to the end cms-conditional element:
             while (st.Reader.Read() && st.Reader.Depth > knownDepth) { }
-            return true;
-        }
-
-        private bool processIfElement(RenderState st)
-        {
-            // <cms-if department="Sales">
-            //     <then>Hello, Sales dept!</then>
-            //     <else>Whatever.</else>
-            // </cms-if>
-
-            st.SkipElementAndChildren("cms-if");
-
-            return true;
+            return;
         }
     }
 }
