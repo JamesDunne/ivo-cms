@@ -96,6 +96,7 @@ namespace IVO.CMS.Providers
                         // Normal XHTML node, start adding contents:
                         sb.AppendFormat("<{0}", xr.LocalName);
 
+                        // Output attributes:
                         if (xr.HasAttributes && xr.MoveToFirstAttribute())
                             do
                             {
@@ -114,17 +115,18 @@ namespace IVO.CMS.Providers
                                 sb.Append(quoteChar);
                             } while (xr.MoveToNextAttribute());
 
+                        // Close the element:
                         if (xr.IsEmptyElement)
                             sb.Append(" />");
                         else
                             sb.Append(">");
                         break;
+
                     case XmlNodeType.EndElement:
                         sb.AppendFormat("</{0}>", xr.LocalName);
                         break;
 
                     case XmlNodeType.Whitespace:
-                        // NOTE: Whitespace node strips out '\r' chars apparently.
                         sb.Append(xr.Value);
                         break;
 
@@ -134,6 +136,7 @@ namespace IVO.CMS.Providers
                         break;
 
                     case XmlNodeType.EntityReference:
+                        // HTML-encode the entity reference:
                         sb.Append(HttpUtility.HtmlEncode(xr.Value));
                         break;
 
@@ -143,9 +146,11 @@ namespace IVO.CMS.Providers
                         break;
 
                     case XmlNodeType.CDATA:
+                        // No specific reason, just don't feel like dealing with it.
                         throw new NotSupportedException("CDATA is not supported by this CMS.");
 
                     default:
+                        // Whatever else is unnecessary:
                         throw new NotImplementedException();
                 }
             } while (xr.Read());
@@ -183,6 +188,7 @@ namespace IVO.CMS.Providers
             if (!processed)
             {
                 // Unrecognized 'cms-' element name, skip its contents entirely:
+                // TODO: issue a warning?
                 state.SkipElementAndChildren(elementName);
                 return false;
             }
@@ -222,15 +228,12 @@ namespace IVO.CMS.Providers
             if (xr.IsEmptyElement)
                 return;
 
-            int knownDepth = xr.Depth;
-
             // Read until we get back to the current depth:
+            int knownDepth = xr.Depth;
             while (xr.Read() && xr.Depth > knownDepth) { }
 
             if (xr.NodeType != XmlNodeType.EndElement) Error("expected end </{0}> element", elementName);
             if (xr.LocalName != elementName) Error("expected end </{0}> element", elementName);
-
-            //xr.ReadEndElement(/* elementName */);
         }
 
         public void CopyElementChildren(string elementName)
@@ -245,6 +248,7 @@ namespace IVO.CMS.Providers
                 return;
 
             int knownDepth = xr.Depth;
+
             // Shouldn't return false:
             if (!xr.Read()) Error("could not read content after <content> start element");
 
@@ -253,8 +257,6 @@ namespace IVO.CMS.Providers
 
             if (xr.NodeType != XmlNodeType.EndElement) Error("expected end </{0}> element", elementName);
             if (xr.LocalName != elementName) Error("expected end </{0}> element", elementName);
-
-            //xr.ReadEndElement(/* elementName */);
         }
 
         #endregion
