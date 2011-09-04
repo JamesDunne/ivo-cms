@@ -5,9 +5,9 @@ using System.Text;
 
 namespace IVO.CMS.Providers.CustomElements
 {
-    public sealed class TargetedElementProvider : ICustomElementProvider
+    public sealed class ConditionalElementProvider : ICustomElementProvider
     {
-        public TargetedElementProvider(ICustomElementProvider next)
+        public ConditionalElementProvider(ICustomElementProvider next)
         {
             this.Next = next;
         }
@@ -18,38 +18,38 @@ namespace IVO.CMS.Providers.CustomElements
 
         public bool ProcessCustomElement(string elementName, RenderState state)
         {
-            if (elementName != "cms-targeted") return false;
+            if (elementName == "cms-conditional") return processConditionalElement(state);
+            else if (elementName == "cms-if") return processIfElement(state);
 
-            processTargetedElement(state);
+            return false;
+        }
+
+        private bool processIfElement(RenderState st)
+        {
+            // <cms-if department="Sales">
+            //     <then>Hello, Sales dept!</then>
+            //     <else>Whatever.</else>
+            // </cms-if>
+
+            st.SkipElementAndChildren("cms-if");
 
             return true;
         }
 
         #endregion
 
-        private void processTargetedElement(RenderState st)
+        private bool processConditionalElement(RenderState st)
         {
-            // Order matters. Most specific targets come first; least specific targets go last.
-            // Target attributes are user-defined. They must be valid XML attributes.
-            // The custom attributes are collected into a Dictionary<string, string> and passed to
-            // the "target evaluation provider" to evaluate if the target attributes indicate that
-            // the content applies to the current user viewing the content.
-            // <cms-targeted>
-            //   <if userType="Employee" department="Sales">
-            //     ... employee-targeted content here, specifically for Sales department ...
-            //   </if>
-            //   <if userType="Manager">
-            //     ... manager-targeted content here, not specific to a department ...
-            //   </if>
-            //   <if userType="Employee">
-            //     ... employee-targeted content here, not specific to a department ...
-            //   </if>
-            //   <else>
-            //     ... default content displayed if the above targets do not match ...
-            //   </else>
-            // </cms-targeted>
+            // <cms-conditional>
+            //     <if department="Sales">Hello, Sales dept!</if>
+            //     <elif department="Accounting">Hello, Accounting dept!</elif>
+            //     <elif department="Management">Hello, Management dept!</elif>
+            //     <else>Hello, unknown dept!</else>
+            // </cms-conditional>
 
-            st.SkipElementAndChildren("cms-targeted");
+            st.SkipElementAndChildren("cms-conditional");
+
+            return true;
         }
     }
 }

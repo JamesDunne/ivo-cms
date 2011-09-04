@@ -18,6 +18,7 @@ namespace IVO.CMS.Providers.CustomElements
 
         public bool ProcessCustomElement(string elementName, RenderState state)
         {
+            // TODO: design and implement a 'cms-list' element handler.
             return false;
         }
 
