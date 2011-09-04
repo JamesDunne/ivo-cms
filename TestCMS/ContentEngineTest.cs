@@ -205,6 +205,7 @@ namespace TestCMS
     <range from=""{0}"" to=""{2}""/>
     <range from=""{1}"" to=""{2}""/>
     <content>Schedule content here!</content>
+    <else>Else here?</else>
   </cms-scheduled>
 </div>",
                     a.ToString("u"),
@@ -234,6 +235,7 @@ namespace TestCMS
     <range from=""{0}"" to=""{2}""/>
     <range from=""{1}"" to=""{2}""/>
     <content>Schedule content here!</content>
+    <else>Else here?</else>
   </cms-scheduled>
 </div>",
                     a.ToString("u"),
@@ -241,7 +243,7 @@ namespace TestCMS
                     c.ToString("u")
                 ),
 @"<div>
-  
+  Else here?
 </div>"
             );
         }

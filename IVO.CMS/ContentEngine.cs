@@ -20,10 +20,11 @@ namespace IVO.CMS
 
         private ITreeRepository trrepo;
         private IBlobRepository blrepo;
-        private bool throwOnError;
-        private List<SemanticError> errors;
-        private bool injectErrorComments;
         private DateTimeOffset viewDate;
+        private bool throwOnError;
+        private bool injectErrorComments;
+
+        private List<SemanticError> errors;
 
         public ContentEngine(ITreeRepository trrepo, IBlobRepository blrepo, DateTimeOffset viewDate, bool throwOnError = false, bool injectErrorComments = true)
         {
@@ -255,8 +256,6 @@ namespace IVO.CMS
 
             // Recursively call RenderBlob on the imported blob and include the rendered HTMLFragment into this rendering.
 
-            //skipElementAndChildren("cms-import", xr);
-
             // xr is pointing to "cms-import" Element.
             if (!xr.IsEmptyElement) semanticError(xr, sb, item, "cms-import element must be empty");
             
@@ -324,6 +323,7 @@ namespace IVO.CMS
             //     ... default content displayed if the above targets do not match ...
             //   </else>
             // </cms-targeted>
+
             skipElementAndChildren("cms-targeted", xr, sb, item);
         }
 
@@ -337,31 +337,47 @@ namespace IVO.CMS
             //   <range from="2011-08-01 00:00 -0500" to="2011-09-01 00:00 -0500" />
             //   <range from="2011-10-01 00:00 -0500" to="2011-11-01 00:00 -0500" />
             //   <content>
-            //     ...
+            //     content to show if scheduled (recursively including other cms- elements)
             //   </content>
+            // [optional:]
+            //   <else>
+            //     content to show if not scheduled (recursively including other cms- elements)
+            //   </else>
             // </cms-scheduled>
             
-            //skipElementAndChildren("cms-scheduled", xr);
-
             bool displayContent = false;
+            bool hasRanges = false;
+            bool hasContent = false;
+            bool hasElse = false;
 
-            while (xr.Read())
+            int knownDepth = xr.Depth;
+            while (xr.Read() && xr.Depth > knownDepth)
             {
                 if (xr.NodeType != XmlNodeType.Element) continue;
 
                 if (xr.LocalName == "range")
                 {
+                    hasRanges = true;
+
+                    if (!xr.IsEmptyElement)
+                    {
+                        semanticError(xr, sb, item, "range element must be empty");
+                        // TODO: skip to end of cms-scheduled element and exit.
+                        continue;
+                    }
+
                     // If we're already good to display, don't bother evaluating further schedule ranges:
-                    if (displayContent) continue;
+                    if (displayContent)
+                        // Safe to continue here because the element is empty; no more to parse.
+                        continue;
 
                     string fromAttr, toAttr;
 
                     // Validate the element's form:
-                    if (!xr.IsEmptyElement) semanticError(xr, sb, item, "range element must be empty");
                     if (!xr.HasAttributes) semanticError(xr, sb, item, "range element must have attributes");
                     if ((fromAttr = xr.GetAttribute("from")) == null) semanticError(xr, sb, item, "range element must have 'from' attribute");
-                    // TODO: is 'to' required if it can be empty?
-                    if ((toAttr = xr.GetAttribute("to")) == null) semanticError(xr, sb, item, "range element must have 'to' attribute");
+                    // 'to' attribute is optional:
+                    toAttr = xr.GetAttribute("to");
 
                     // Parse the dates:
                     DateTimeOffset fromDate, toDateTmp;
@@ -370,19 +386,25 @@ namespace IVO.CMS
                     if (!DateTimeOffset.TryParse(fromAttr, out fromDate)) semanticError(xr, sb, item, "could not parse 'from' attribute as a date/time");
                     if (!String.IsNullOrWhiteSpace(toAttr))
                     {
-                        if (!DateTimeOffset.TryParse(toAttr, out toDateTmp)) semanticError(xr, sb, item, "could not parse 'to' attribute as a date/time");
-                        toDate = toDateTmp;
+                        if (DateTimeOffset.TryParse(toAttr, out toDateTmp))
+                            toDate = toDateTmp;
+                        else
+                            semanticError(xr, sb, item, "could not parse 'to' attribute as a date/time");
                     }
 
-                    // Validate the range is ordered correctly:
+                    // Validate the range's dates are ordered correctly:
                     if (toDate <= fromDate) semanticError(xr, sb, item, "'to' date must be later than 'from' date or empty");
 
                     // Check the schedule range:
-                    if (viewDate >= fromDate && viewDate < toDate)
-                        displayContent = true;
+                    displayContent = (viewDate >= fromDate && viewDate < toDate);
                 }
                 else if (xr.LocalName == "content")
                 {
+                    if (hasContent) semanticError(xr, sb, item, "only one content element may exist in cms-scheduled");
+
+                    hasContent = true;
+                    if (!hasRanges) semanticError(xr, sb, item, "no range elements found before content element in cms-scheduled");
+
                     if (displayContent)
                     {
                         // Stream the inner content into the StringBuilder until we get back to the end </content> element.
@@ -391,18 +413,38 @@ namespace IVO.CMS
                     }
                     else
                     {
+                        // Skip the inner content entirely:
                         skipElementAndChildren("content", xr, sb, item);
                         xr.ReadEndElement(/* "content" */);
                     }
-                    break;
+                }
+                else if (xr.LocalName == "else")
+                {
+                    if (hasElse) semanticError(xr, sb, item, "only one else element may exist in cms-scheduled");
+                    hasElse = true;
+
+                    if (!displayContent)
+                    {
+                        // Stream the inner content into the StringBuilder until we get back to the end </content> element.
+                        streamElementChildren("else", xr, sb, item);
+                        xr.ReadEndElement(/* "else" */);
+                    }
+                    else
+                    {
+                        // Skip the inner content entirely:
+                        skipElementAndChildren("else", xr, sb, item);
+                        xr.ReadEndElement(/* "else" */);
+                    }
                 }
                 else
                 {
-                    semanticError(xr, sb, item, "unexpected element");
+                    semanticError(xr, sb, item, String.Format("unexpected element '{0}'", xr.LocalName));
                 }
             }
 
-            // TODO: check that the 'content' element was at least found, else semantic error.
+            // Report errors:
+            if (!hasRanges) semanticError(xr, sb, item, "no range elements found");
+            if (!hasContent) semanticError(xr, sb, item, "no content element found");
 
             // Skip Whitespace and Comments etc. until we find the end element:
             while (xr.NodeType != XmlNodeType.EndElement && xr.Read()) { }
