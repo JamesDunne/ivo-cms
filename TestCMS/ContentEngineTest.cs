@@ -522,10 +522,12 @@ namespace TestCMS
 @"<div>
   <cms-conditional>
     <!-- documentation here. -->
+
     <if a=""false"">A is false!</if>
+
 Well that was fun!
 
-    
+    This is unnecessary extra text that is ignored.
   </cms-conditional>
 </div>",
 @"<div>
