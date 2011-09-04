@@ -23,47 +23,28 @@ namespace IVO.CMS.Providers
         private BlobTreePath item;
         public BlobTreePath Item { get { return item; } }
 
-        private ITreeRepository trrepo;
-        private IBlobRepository blrepo;
-        private DateTimeOffset viewDate;
-        private bool injectErrorComments;
-        private bool throwOnError;
-        private List<SemanticError> errors;
-
-        public ReadOnlyCollection<SemanticError> Errors { get { return new ReadOnlyCollection<SemanticError>(errors); } }
+        private ContentEngine engine;
 
         public RenderState Previous { get; private set; }
 
         public RenderState(RenderState copy)
         {
-            this.trrepo = copy.trrepo;
-            this.blrepo = copy.blrepo;
-            this.viewDate = copy.viewDate;
-            this.item = copy.item;
+            this.engine = copy.engine;
 
+            this.item = copy.item;
             this.xr = copy.xr;
             this.sb = copy.sb;
             this.Previous = copy;
-            
-            this.errors = copy.errors;
-            this.throwOnError = copy.throwOnError;
-            this.injectErrorComments = copy.injectErrorComments;
         }
 
-        public RenderState(ITreeRepository trrepo, IBlobRepository blrepo, DateTimeOffset viewDate, bool throwOnError = false, bool injectErrorComments = true)
+        public RenderState(ContentEngine engine)
         {
-            this.trrepo = trrepo;
-            this.blrepo = blrepo;
-            this.viewDate = viewDate;
-            this.item = null;
+            this.engine = engine;
 
+            this.item = null;
             this.xr = null;
             this.sb = null;
             this.Previous = null;
-
-            this.errors = new List<SemanticError>();
-            this.throwOnError = throwOnError;
-            this.injectErrorComments = injectErrorComments;
         }
 
         public void Render(BlobTreePath item)
@@ -187,14 +168,10 @@ namespace IVO.CMS.Providers
         private void error(string message)
         {
             var err = new SemanticError(message, item, xr.LineNumber, xr.LinePosition);
-
-            if (throwOnError) throw err;
-
-            // Track the error:
-            errors.Add(err);
+            engine.ReportError(err);
 
             // Inject an HTML comment describing the error:
-            if (injectErrorComments)
+            if (engine.InjectErrorComments)
                 sb.AppendFormat("<!-- IVOCMS error in '{0}' ({1}:{2}): {3} -->", err.Item.Path, err.LineNumber, err.LinePosition, err.Message);
         }
 
@@ -302,7 +279,7 @@ namespace IVO.CMS.Providers
                 }
 
                 // Fetch the Blob given the absolute path constructed:
-                Task<BlobTreePath> tBlob = blrepo.GetBlobByAbsolutePath(Item.RootTreeID, path);
+                Task<BlobTreePath> tBlob = engine.Blobs.GetBlobByAbsolutePath(Item.RootTreeID, path);
                 
                 // TODO: we could probably asynchronously load blobs and render their contents
                 // then at a final sync point go in and inject their contents into the proper
@@ -418,7 +395,7 @@ namespace IVO.CMS.Providers
                     if (toDate <= fromDate) error("'to' date must be later than 'from' date or empty");
 
                     // Check the schedule range:
-                    displayContent = (viewDate >= fromDate && viewDate < toDate);
+                    displayContent = (engine.ViewDate >= fromDate && engine.ViewDate < toDate);
                 }
                 else if (xr.LocalName == "content")
                 {

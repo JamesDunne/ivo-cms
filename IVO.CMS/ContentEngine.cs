@@ -37,14 +37,29 @@ namespace IVO.CMS
             this.errors = new List<SemanticError>();
         }
 
+        public ITreeRepository Trees { get { return trrepo; } }
+        public IBlobRepository Blobs { get { return blrepo; } }
+        public DateTimeOffset ViewDate { get { return viewDate; } }
+
+        public bool ThrowOnError { get { return throwOnError; } }
+        public bool InjectErrorComments { get { return injectErrorComments; } }
+
         public ReadOnlyCollection<SemanticError> GetErrors()
         {
             return new ReadOnlyCollection<SemanticError>(errors);
         }
 
+        public void ReportError(SemanticError err)
+        {
+            if (throwOnError) throw err;
+
+            // Track the error:
+            errors.Add(err);
+        }
+
         public HTMLFragment RenderContentItem(BlobTreePath item)
         {
-            RenderState rs = new RenderState(trrepo, blrepo, viewDate, throwOnError, injectErrorComments);
+            RenderState rs = new RenderState(this);
             rs.Render(item);
 
             string result = rs.Writer.ToString();
