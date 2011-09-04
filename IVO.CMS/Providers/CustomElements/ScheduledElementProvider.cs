@@ -136,7 +136,7 @@ namespace IVO.CMS.Providers.CustomElements
                 }
                 else
                 {
-                    st.Error(String.Format("unexpected element '{0}'", st.Reader.LocalName));
+                    st.Error("unexpected element '{0}'", st.Reader.LocalName);
                 }
             }
 

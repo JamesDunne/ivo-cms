@@ -79,7 +79,7 @@ namespace IVO.CMS.Providers.CustomElements
                 // No blob? Put up an error:
                 if (tBlob.Result == null)
                 {
-                    st.Error(String.Format("path '{0}' not found", path));
+                    st.Error("path '{0}' not found", path);
                     return;
                 }
 

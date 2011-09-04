@@ -200,6 +200,16 @@ namespace IVO.CMS.Providers
                 sb.AppendFormat("<!-- IVOCMS error in '{0}' ({1}:{2}): {3} -->", err.Item.Path, err.LineNumber, err.LinePosition, err.Message);
         }
 
+        public void Error(string format, params object[] args)
+        {
+            var err = new SemanticError(String.Format(format, args), item, xr.LineNumber, xr.LinePosition);
+            engine.ReportError(err);
+
+            // Inject an HTML comment describing the error:
+            if (engine.InjectErrorComments)
+                sb.AppendFormat("<!-- IVOCMS error in '{0}' ({1}:{2}): {3} -->", err.Item.Path, err.LineNumber, err.LinePosition, err.Message);
+        }
+
         #region Public utility methods
 
         public void SkipElementAndChildren(string elementName)
@@ -207,8 +217,8 @@ namespace IVO.CMS.Providers
             if (xr == null) throw new InvalidOperationException();
             if (sb == null) throw new InvalidOperationException();
 
-            if (xr.NodeType != XmlNodeType.Element) Error(String.Format("expected start <{0}> element", elementName));
-            if (xr.LocalName != elementName) Error(String.Format("expected start <{0}> element", elementName));
+            if (xr.NodeType != XmlNodeType.Element) Error("expected start <{0}> element", elementName);
+            if (xr.LocalName != elementName) Error("expected start <{0}> element", elementName);
             if (xr.IsEmptyElement)
                 return;
 
@@ -217,8 +227,8 @@ namespace IVO.CMS.Providers
             // Read until we get back to the current depth:
             while (xr.Read() && xr.Depth > knownDepth) { }
 
-            if (xr.NodeType != XmlNodeType.EndElement) Error(String.Format("expected end </{0}> element", elementName));
-            if (xr.LocalName != elementName) Error(String.Format("expected end </{0}> element", elementName));
+            if (xr.NodeType != XmlNodeType.EndElement) Error("expected end </{0}> element", elementName);
+            if (xr.LocalName != elementName) Error("expected end </{0}> element", elementName);
 
             //xr.ReadEndElement(/* elementName */);
         }
@@ -228,8 +238,8 @@ namespace IVO.CMS.Providers
             if (xr == null) throw new InvalidOperationException();
             if (sb == null) throw new InvalidOperationException();
 
-            if (xr.NodeType != XmlNodeType.Element) Error(String.Format("expected start <{0}> element", elementName));
-            if (xr.LocalName != elementName) Error(String.Format("expected start <{0}> element", elementName));
+            if (xr.NodeType != XmlNodeType.Element) Error("expected start <{0}> element", elementName);
+            if (xr.LocalName != elementName) Error("expected start <{0}> element", elementName);
             // Nothing to do:
             if (xr.IsEmptyElement)
                 return;
@@ -241,8 +251,8 @@ namespace IVO.CMS.Providers
             // Stream-copy and process inner custom cms- elements until we get back to the current depth:
             new RenderState(this).StreamContent(DefaultProcessElements, () => xr.Depth == knownDepth);
 
-            if (xr.NodeType != XmlNodeType.EndElement) Error(String.Format("expected end </{0}> element", elementName));
-            if (xr.LocalName != elementName) Error(String.Format("expected end </{0}> element", elementName));
+            if (xr.NodeType != XmlNodeType.EndElement) Error("expected end </{0}> element", elementName);
+            if (xr.LocalName != elementName) Error("expected end </{0}> element", elementName);
 
             //xr.ReadEndElement(/* elementName */);
         }
