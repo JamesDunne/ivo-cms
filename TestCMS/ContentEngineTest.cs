@@ -32,14 +32,14 @@ namespace TestCMS
         private ITreeRepository trrepo;
         private IBlobRepository blrepo;
 
-        private ContentEngine getContentEngine(DateTimeOffset? viewDate = null)
+        private ContentEngine getContentEngine(DateTimeOffset? viewDate = null, IConditionalEvaluator evaluator = null, ICustomElementProvider provider = null)
         {
             DateTimeOffset realDate = viewDate ?? DateTimeOffset.Now;
 
             db = getDataContext();
             trrepo = new TreeRepository(db);
             blrepo = new BlobRepository(db);
-            return new ContentEngine(trrepo, blrepo, realDate);
+            return new ContentEngine(trrepo, blrepo, realDate, evaluator, provider);
         }
 
         private void assertTranslated(string blob, string expected)
@@ -246,6 +246,141 @@ namespace TestCMS
                 ),
 @"<div>
   Else here?
+</div>"
+            );
+        }
+
+        private class AEvaluator : IConditionalEvaluator
+        {
+            private bool setA;
+
+            public AEvaluator(bool a)
+            {
+                setA = a;
+            }
+
+            #region IConditionalEvaluator Members
+
+            public IConditionalEvaluator Next
+            {
+                get { return null; }
+            }
+
+            public EitherAndOr AndOr
+            {
+                get { return EitherAndOr.And; }
+            }
+
+            public bool EvaluateConditional(Dictionary<string, string> attributes)
+            {
+                string strA;
+                bool testA;
+
+                if (attributes.TryGetValue("a", out strA) && Boolean.TryParse(strA, out testA))
+                {
+                    return testA == setA;
+                }
+
+                return false;
+            }
+
+            #endregion
+        }
+
+        [TestMethod]
+        public void TestConditionalIfElse_IfWins()
+        {
+            var ce = getContentEngine(evaluator: new AEvaluator(true));
+
+            assertTranslated(
+                ce,
+@"<div>
+  <cms-conditional>
+    <if a=""true"">A is true!</if>
+    <else>else A is false!</else>
+  </cms-conditional>
+</div>",
+@"<div>
+  A is true!
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestConditionalIfElse_ElseWins()
+        {
+            var ce = getContentEngine(evaluator: new AEvaluator(false));
+
+            assertTranslated(
+                ce,
+@"<div>
+  <cms-conditional>
+    <if a=""true"">A is true!</if>
+    <else>else A is false!</else>
+  </cms-conditional>
+</div>",
+@"<div>
+  else A is false!
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestConditionalIfElifElse_IfWins()
+        {
+            var ce = getContentEngine(evaluator: new AEvaluator(true));
+
+            assertTranslated(
+                ce,
+@"<div>
+  <cms-conditional>
+    <if a=""true"">A is true!</if>
+    <elif a=""false"">elif A is false!</elif>
+    <else>else A is false!</else>
+  </cms-conditional>
+</div>",
+@"<div>
+  A is true!
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestConditionalIfElifElse_ElifWins()
+        {
+            var ce = getContentEngine(evaluator: new AEvaluator(false));
+
+            assertTranslated(
+                ce,
+@"<div>
+  <cms-conditional>
+    <if a=""true"">A is true!</if>
+    <elif a=""false"">elif A is false!</elif>
+    <else>else A is false!</else>
+  </cms-conditional>
+</div>",
+@"<div>
+  elif A is false!
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestConditionalIfElifElse_ElseWins()
+        {
+            var ce = getContentEngine(evaluator: new AEvaluator(false));
+
+            assertTranslated(
+                ce,
+@"<div>
+  <cms-conditional>
+    <if a=""true"">A is true!</if>
+    <elif a=""not a bool"">elif A is not a bool!</elif>
+    <else>else A is false!</else>
+  </cms-conditional>
+</div>",
+@"<div>
+  else A is false!
 </div>"
             );
         }

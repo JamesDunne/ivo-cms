@@ -51,12 +51,12 @@ namespace IVO.CMS.Providers.CustomElements
             ConditionalState c = ConditionalState.ExpectingIf;
             bool satisfied = false;
             bool condition = false;
-            bool doRender = false;
             Dictionary<string, string> conditionVariables;
 
             int knownDepth = st.Reader.Depth;
             while (st.Reader.Read() && st.Reader.Depth > knownDepth)
             {
+                // FIXME: should be non-whitespace check
                 if (st.Reader.NodeType != XmlNodeType.Element) continue;
 
                 switch (c)
@@ -144,10 +144,7 @@ namespace IVO.CMS.Providers.CustomElements
                         }
 
                         // Now either render the inner content or skip it based on the `condition` evaluated:
-                        if (st.Reader.LocalName == "elif") doRender = !condition;
-                        else doRender = condition;
-
-                        if (doRender)
+                        if (condition)
                         {
                             satisfied = true;
                             // Copy inner contents:
@@ -171,20 +168,11 @@ namespace IVO.CMS.Providers.CustomElements
                         {
                             // Skip inner contents:
                             st.SkipElementAndChildren(st.Reader.LocalName);
+                            break;
                         }
 
-                        // Determine whether or not to render the 'else' content:
-                        doRender = !condition;
-                        if (doRender)
-                        {
-                            // Copy inner contents:
-                            st.CopyElementChildren(st.Reader.LocalName);
-                        }
-                        else
-                        {
-                            // Skip inner contents:
-                            st.SkipElementAndChildren(st.Reader.LocalName);
-                        }
+                        // Copy inner contents:
+                        st.CopyElementChildren(st.Reader.LocalName);
                         break;
                 }
             }
