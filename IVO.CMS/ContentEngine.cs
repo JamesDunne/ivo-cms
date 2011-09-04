@@ -37,7 +37,16 @@ namespace IVO.CMS
             // If no evaluator given, use the default false-returning evaluator:
             if (evaluator == null) evaluator = new DefaultFalseConditionalEvaluator(EitherAndOr.Or);
             // Wrap the given provider in the default chain:
-            this.providerRoot = new ImportElementProvider(new ScheduledElementProvider(new ListElementProvider(new ConditionalElementProvider(evaluator, provider))));
+            this.providerRoot =
+                new ImportElementProvider(
+                    new ScheduledElementProvider(
+                        new ListElementProvider(
+                            new LinkElementProvider(
+                                new ConditionalElementProvider(evaluator, provider)
+                            )
+                        )
+                    )
+                );
         }
 
         public ITreeRepository Trees { get { return trrepo; } }

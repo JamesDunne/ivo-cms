@@ -537,6 +537,58 @@ Well that was fun!
         }
 
         [TestMethod]
+        public void TestCMSLinkAbsolute()
+        {
+            assertTranslated(
+@"<div>
+  <cms-link path=""/hello/world"">Link text.</cms-link>
+</div>",
+@"<div>
+  <a href=""/hello/world"">Link text.</a>
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestCMSLinkAttributes()
+        {
+            assertTranslated(
+@"<div>
+  <cms-link path=""/hello/world"" target=""_blank"">Link text.</cms-link>
+</div>",
+@"<div>
+  <a href=""/hello/world"" target=""_blank"">Link text.</a>
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestCMSLinkRelative()
+        {
+            assertTranslated(
+@"<div>
+  <cms-link path=""dumb/../hello/world"" target=""_blank"">Link text.</cms-link>
+</div>",
+@"<div>
+  <a href=""/hello/world"" target=""_blank"">Link text.</a>
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestCMSLinkEmpty()
+        {
+            assertTranslated(
+@"<div>
+  <cms-link path=""/hello/world"" target=""_blank"" />
+</div>",
+@"<div>
+  <a href=""/hello/world"" target=""_blank"" />
+</div>"
+            );
+        }
+
+        [TestMethod]
         public void TestUnknownSkipped()
         {
             assertTranslated(

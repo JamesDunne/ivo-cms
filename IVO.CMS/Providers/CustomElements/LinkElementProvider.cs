@@ -94,7 +94,7 @@ namespace IVO.CMS.Providers.CustomElements
             // Self-close the <a /> if the <cms-link /> is empty:
             if (st.Reader.IsEmptyElement)
             {
-                st.Writer.Append("/>");
+                st.Writer.Append(" />");
                 return;
             }
 
