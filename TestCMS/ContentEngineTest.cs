@@ -130,7 +130,7 @@ namespace TestCMS
         public void TestRenderBlobAttributes()
         {
             assertTranslated(
-                "<a style=\"color: &amp;too&quot;here&quot;\" href=\"http://www.google.com/?a=1&amp;b=2\" target=\"_blank\"><b/><c/></a>\r\n<b class=\"abc\"></b>",
+                "<a style=\"color: &amp;too&quot;here&quot;\" href=\"http://www.google.com/?a=1&amp;b=2\" target=\"_blank\"><b /><c /></a>\r\n<b class=\"abc\"></b>",
                 "<a style=\"color: &amp;too&quot;here&quot;\" href=\"http://www.google.com/?a=1&amp;b=2\" target=\"_blank\"><b /><c /></a>\r\n<b class=\"abc\"></b>"
             );
         }
@@ -141,6 +141,15 @@ namespace TestCMS
             assertTranslated(
                 "<div><p>Some content &amp; stuff here. Maybe some &lt; entities &gt; and such?</p>&#x00D;&#x00A;</div>",
                 "<div><p>Some content &amp; stuff here. Maybe some &lt; entities &gt; and such?</p>\r\n</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestRenderBlobWithEmptyElements()
+        {
+            assertTranslated(
+                "<x a=\"true\" />",
+                "<x a=\"true\" />"
             );
         }
 
