@@ -98,6 +98,7 @@ namespace IVO.CMS.Providers
 
                         // Output attributes:
                         if (xr.HasAttributes && xr.MoveToFirstAttribute())
+                        {
                             do
                             {
                                 string localName = xr.LocalName;
@@ -114,6 +115,9 @@ namespace IVO.CMS.Providers
 
                                 sb.Append(quoteChar);
                             } while (xr.MoveToNextAttribute());
+
+                            xr.MoveToElement();
+                        }
 
                         // Close the element:
                         if (xr.IsEmptyElement)
@@ -149,9 +153,12 @@ namespace IVO.CMS.Providers
                         // No specific reason, just don't feel like dealing with it.
                         throw new NotSupportedException("CDATA is not supported by this CMS.");
 
+                    case XmlNodeType.XmlDeclaration:
+                        break;
+
                     default:
                         // Whatever else is unnecessary:
-                        throw new NotImplementedException();
+                        throw new NotImplementedException(String.Format("Node type {0} not implemented!", xr.NodeType));
                 }
             } while (xr.Read());
         }
