@@ -35,8 +35,8 @@ namespace IVO.CMS.Providers.CustomElements
             // Relative path is always relative to the current blob's absolute path.
             // In the case of nested imports, relative paths are relative to the absolute path of the importee's parent blob.
 
-            // <cms-import relative-path="../templates/main" />
-            // <cms-import absolute-path="/templates/main" />
+            // <cms-import path="../templates/main" />
+            // <cms-import path="/templates/main" />
 
             // Absolute paths are canonicalized. An exception will be thrown if the path contains too many '..' references that
             // bring the canonicalized path above the root of the tree (which is impossible).
@@ -48,25 +48,11 @@ namespace IVO.CMS.Providers.CustomElements
 
             if (st.Reader.HasAttributes && st.Reader.MoveToFirstAttribute())
             {
-                string relPath = st.Reader.GetAttribute("relative-path");
-                string absPath = st.Reader.GetAttribute("absolute-path");
+                string ncpath = st.Reader.GetAttribute("path");
 
-                // Check mutual exclusion of attributes:
-                if ((absPath == null) == (relPath == null)) st.Error("cms-import must have either 'relative-path' or 'absolute-path' attribute but not both");
-
-                // Canonicalize the path:
-                CanonicalBlobPath path;
-                if (absPath != null)
-                {
-                    path = ((AbsoluteBlobPath)absPath).Canonicalize();
-                }
-                else
-                {
-                    // Apply the relative path to the current item's absolute path:
-                    RelativeBlobPath rbp = (RelativeBlobPath)relPath;
-                    CanonicalTreePath ctp = (st.Item.Path.Tree + rbp.Tree).Canonicalize();
-                    path = new CanonicalBlobPath(ctp, rbp.Name);
-                }
+                // Canonicalize the absolute or relative path relative to the current item's path:
+                var abspath = Path.ParseBlobPath(ncpath);
+                CanonicalBlobPath path = abspath.Collapse(abs => abs.Canonicalize(), rel => (st.Item.Path.Tree + rel).Canonicalize());
 
                 // Fetch the Blob given the absolute path constructed:
                 Task<BlobTreePath> tBlob = st.Engine.Blobs.GetBlobByAbsolutePath(st.Item.RootTreeID, path);

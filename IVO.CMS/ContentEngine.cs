@@ -11,11 +11,6 @@ namespace IVO.CMS
 {
     public sealed class ContentEngine
     {
-        private const string rootElementName = "_root_";
-
-        private static readonly byte[] rootOpen = Encoding.UTF8.GetBytes("<" + rootElementName + ">");
-        private static readonly byte[] rootClose = Encoding.UTF8.GetBytes("</" + rootElementName +">");
-
         private ITreeRepository trrepo;
         private IBlobRepository blrepo;
         private DateTimeOffset viewDate;

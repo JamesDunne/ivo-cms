@@ -61,25 +61,13 @@ namespace IVO.CMS.Providers.CustomElements
 
                 if (st.Reader.LocalName == "path")
                 {
-                    // Get the non-canonicalized blob path (either absolute or relative):
-                    var ncpath = Path.ParseBlobPath(value);
+                    // Get the canonicalized blob path (from either absolute or relative):
+                    var abspath = Path.ParseBlobPath(value);
+                    CanonicalBlobPath path = abspath.Collapse(abs => abs.Canonicalize(), rel => (st.Item.Path.Tree + rel).Canonicalize());
                     
-                    AbsoluteBlobPath abspath;
-                    if (ncpath.Which == Either<AbsoluteBlobPath, RelativeBlobPath>.Selected.Right)
-                    {
-                        // For relative path, take it relative from this current blob's tree:
-                        abspath = st.Item.Path.Tree + ncpath.Right;
-                    }
-                    else
-                    {
-                        // Just take the absolute path:
-                        abspath = ncpath.Left;
-                    }
-
                     // TODO: apply the reverse-mount prefix path from the system configuration,
                     // or just toss the CanonicalBlobPath over to a provider implementation and
                     // it can give us the final absolute URL path.
-                    CanonicalBlobPath path = abspath.Canonicalize();
                     st.Writer.AppendFormat(" href=\"{0}\"", path);
                     continue;
                 }

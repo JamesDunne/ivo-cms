@@ -23,6 +23,14 @@ namespace TestCMS
             Console.WriteLine(((string)fragment).Replace("\n", Environment.NewLine));
         }
 
+        private void output(BlobTreePath item)
+        {
+            output((HTMLFragment)"-----------------------------------------");
+            output((HTMLFragment)(item.Path.ToString() + ":"));
+            output((HTMLFragment)Encoding.UTF8.GetString(item.Blob.Contents));
+            output((HTMLFragment)"-----------------------------------------");
+        }
+
         private DataContext getDataContext()
         {
             return new DataContext(@"Data Source=.\SQLEXPRESS;Initial Catalog=IVO;Integrated Security=SSPI");
@@ -62,8 +70,7 @@ namespace TestCMS
 
         private void assertTranslated(ContentEngine ce, BlobTreePath item, string expected)
         {
-            output((HTMLFragment)Encoding.UTF8.GetString(item.Blob.Contents));
-            output((HTMLFragment)"-----------------------------------------");
+            output(item);
 
             var frag = ce.RenderContentItem(item);
             output(frag);
@@ -96,8 +103,7 @@ namespace TestCMS
 
         private void assumeFail(ContentEngine ce, BlobTreePath item)
         {
-            output((HTMLFragment)Encoding.UTF8.GetString(item.Blob.Contents));
-            output((HTMLFragment)"-----------------------------------------");
+            output(item);
 
             var frag = ce.RenderContentItem(item);
             output(frag);
@@ -145,7 +151,7 @@ namespace TestCMS
 
             Blob blHeader = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Header</div>"));
             Blob blFooter = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Footer</div>"));
-            Blob blTest = new Blob.Builder(Encoding.UTF8.GetBytes("<div><cms-import absolute-path=\"/template/header\" /><cms-import absolute-path=\"/template/footer\" /></div>"));
+            Blob blTest = new Blob.Builder(Encoding.UTF8.GetBytes("<div><cms-import path=\"/template/header\" /><cms-import path=\"/template/footer\" /></div>"));
             Tree trTemplate = new Tree.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
@@ -189,7 +195,7 @@ namespace TestCMS
 
             Blob blHeader = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Header</div>"));
             Blob blFooter = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Footer</div>"));
-            Blob blTest = new Blob.Builder(Encoding.UTF8.GetBytes("<div><cms-import relative-path=\"../template/header\" /><cms-import relative-path=\"../template/footer\" /></div>"));
+            Blob blTest = new Blob.Builder(Encoding.UTF8.GetBytes("<div><cms-import path=\"../template/header\" /><cms-import path=\"../template/footer\" /></div>"));
             Tree trTemplate = new Tree.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
@@ -218,9 +224,11 @@ namespace TestCMS
             var trTask = trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
             trTask.Wait();
 
+            output(new BlobTreePath(trRoot.ID, (CanonicalBlobPath)"/template/header", blHeader));
+            output(new BlobTreePath(trRoot.ID, (CanonicalBlobPath)"/template/footer", blFooter));
             assertTranslated(
                 ce,
-                new BlobTreePath(trRoot.ID, ((AbsoluteBlobPath)"/pages/test").Canonicalize(), blTest),
+                new BlobTreePath(trRoot.ID, (CanonicalBlobPath)"/pages/test", blTest),
                 "<div><div>Header</div><div>Footer</div></div>"
             );
         }
@@ -584,6 +592,136 @@ Well that was fun!
 </div>",
 @"<div>
   <a href=""/hello/world"" target=""_blank"" />
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestNestedElements()
+        {
+            DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
+            DateTimeOffset b = a.AddDays(15);
+            DateTimeOffset c = a.AddDays(30);
+            // Use a + 5 days as the viewing date for scheduling:
+            var ce = getContentEngine(a.AddDays(5));
+
+            Blob blHeader = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Header</div>"));
+            Blob blFooter = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Footer</div>"));
+            Blob blTest = new Blob.Builder(Encoding.UTF8.GetBytes(String.Format(
+@"<div>
+  <cms-scheduled>
+    <range from=""{0}"" to=""{2}""/>
+    <range from=""{1}"" to=""{2}""/>
+    <content><cms-import path=""/template/header"" />In between content.<cms-import path=""/template/footer"" /></content>
+    <else>Else here?</else>
+  </cms-scheduled>
+</div>",
+                a.ToString("u"),
+                b.ToString("u"),
+                c.ToString("u")
+            )));
+
+            Tree trTemplate = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
+                    new TreeBlobReference.Builder("header", blHeader.ID),
+                    new TreeBlobReference.Builder("footer", blFooter.ID)
+                }
+            );
+            Tree trPages = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
+                    new TreeBlobReference.Builder("test", blTest.ID)
+                }
+            );
+            Tree trRoot = new Tree.Builder(
+                new List<TreeTreeReference> {
+                    new TreeTreeReference.Builder("template", trTemplate.ID),
+                    new TreeTreeReference.Builder("pages", trPages.ID)
+                },
+                new List<TreeBlobReference>(0)
+            );
+
+            // Persist the blob contents:
+            var blTask = blrepo.PersistBlobs(new ImmutableContainer<BlobID, Blob>(bl => bl.ID, blHeader, blFooter, blTest));
+            blTask.Wait();
+            // Persist the trees:
+            var trTask = trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
+            trTask.Wait();
+
+            output(new BlobTreePath(trRoot.ID, (CanonicalBlobPath)"/template/header", blHeader));
+            output(new BlobTreePath(trRoot.ID, (CanonicalBlobPath)"/template/footer", blFooter));
+            assertTranslated(
+                ce,
+                blTest,
+                trRoot.ID,
+@"<div>
+  <div>Header</div>In between content.<div>Footer</div>
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestNestedElementsSkip()
+        {
+            DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
+            DateTimeOffset b = a.AddDays(15);
+            DateTimeOffset c = a.AddDays(30);
+            // Use a - 5 days as the viewing date for scheduling:
+            var ce = getContentEngine(a.AddDays(-5));
+
+            Blob blHeader = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Header</div>"));
+            Blob blFooter = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Footer</div>"));
+            Blob blTest = new Blob.Builder(Encoding.UTF8.GetBytes(String.Format(
+@"<div>
+  <cms-scheduled>
+    <range from=""{0}"" to=""{2}""/>
+    <range from=""{1}"" to=""{2}""/>
+    <content><cms-import path=""/template/header"" />In between content.<cms-import path=""/template/footer"" /></content>
+    <else>Else here?</else>
+  </cms-scheduled>
+</div>",
+                a.ToString("u"),
+                b.ToString("u"),
+                c.ToString("u")
+            )));
+
+            Tree trTemplate = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
+                    new TreeBlobReference.Builder("header", blHeader.ID),
+                    new TreeBlobReference.Builder("footer", blFooter.ID)
+                }
+            );
+            Tree trPages = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
+                    new TreeBlobReference.Builder("test", blTest.ID)
+                }
+            );
+            Tree trRoot = new Tree.Builder(
+                new List<TreeTreeReference> {
+                    new TreeTreeReference.Builder("template", trTemplate.ID),
+                    new TreeTreeReference.Builder("pages", trPages.ID)
+                },
+                new List<TreeBlobReference>(0)
+            );
+
+            // Persist the blob contents:
+            var blTask = blrepo.PersistBlobs(new ImmutableContainer<BlobID, Blob>(bl => bl.ID, blHeader, blFooter, blTest));
+            blTask.Wait();
+            // Persist the trees:
+            var trTask = trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
+            trTask.Wait();
+
+            output(new BlobTreePath(trRoot.ID, (CanonicalBlobPath)"/template/header", blHeader));
+            output(new BlobTreePath(trRoot.ID, (CanonicalBlobPath)"/template/footer", blFooter));
+            assertTranslated(
+                ce,
+                blTest,
+                trRoot.ID,
+@"<div>
+  Else here?
 </div>"
             );
         }
