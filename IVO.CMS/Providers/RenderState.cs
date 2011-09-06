@@ -267,7 +267,8 @@ namespace IVO.CMS.Providers
                 if (state.xr.Depth != openingDepth)
                     state.Error("custom element provider left XML parser at an unexpected depth level");
 
-                // TODO: issue a warning?
+                // Issue a warning:
+                state.WarningSuppressComment("No custom element providers processed unknown element, '{0}'; skipping its contents entirely.", openingElement);
                 state.SkipElementAndChildren(elementName);
                 
                 return false;
@@ -284,6 +285,31 @@ namespace IVO.CMS.Providers
                 state.Error("custom element provider left XML parser at an unexpected depth level");
 
             return true;
+        }
+
+        public void Warning(string message)
+        {
+            var warn = new SemanticWarning(message, item, xr.LineNumber, xr.LinePosition);
+            engine.ReportWarning(warn);
+
+            if (engine.InjectWarningComments)
+                sb.AppendFormat("<!-- IVOCMS warning in '{0}' ({1}:{2}): {3} -->", warn.Item.Path, warn.LineNumber, warn.LinePosition, warn.Message);
+        }
+
+        public void Warning(string format, params object[] args)
+        {
+            Warning(String.Format(format, args));
+        }
+
+        public void WarningSuppressComment(string message)
+        {
+            var warn = new SemanticWarning(message, item, xr.LineNumber, xr.LinePosition);
+            engine.ReportWarning(warn);
+        }
+
+        public void WarningSuppressComment(string format, params object[] args)
+        {
+            WarningSuppressComment(String.Format(format, args));
         }
 
         public void Error(string message)

@@ -83,25 +83,25 @@ namespace TestCMS
             Assert.AreEqual(expected, (string)frag);
         }
 
-        private void assumeFail(string blob, params SemanticError[] expectedErrors)
+        private void assumeFail(string blob, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
         {
             var ce = getContentEngine();
-            assumeFail(ce, blob, expectedErrors);
+            assumeFail(ce, blob, expectedErrors, expectedWarnings);
         }
 
-        private void assumeFail(ContentEngine ce, string blob, params SemanticError[] expectedErrors)
+        private void assumeFail(ContentEngine ce, string blob, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
         {
             Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(blob));
-            assumeFail(ce, bl, new TreeID(), expectedErrors);
+            assumeFail(ce, bl, new TreeID(), expectedErrors, expectedWarnings);
         }
 
-        private void assumeFail(ContentEngine ce, Blob bl, TreeID rootid, params SemanticError[] expectedErrors)
+        private void assumeFail(ContentEngine ce, Blob bl, TreeID rootid, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
         {
             var item = new BlobTreePath(rootid, (CanonicalBlobPath)"/test", bl);
-            assumeFail(ce, item, expectedErrors);
+            assumeFail(ce, item, expectedErrors, expectedWarnings);
         }
 
-        private void assumeFail(ContentEngine ce, BlobTreePath item, params SemanticError[] expectedErrors)
+        private void assumeFail(ContentEngine ce, BlobTreePath item, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
         {
             output(item);
 
@@ -109,13 +109,29 @@ namespace TestCMS
             output(frag);
 
             var errors = ce.GetErrors();
-            foreach (var err in errors)
+            if (errors.Count > 0)
             {
-                Console.Error.WriteLine("{0} ({1}:{2}): {3}", err.Item.Path, err.LineNumber, err.LinePosition, err.Message);
+                Console.Error.WriteLine("Error(s):");
+                foreach (var err in errors)
+                {
+                    Console.Error.WriteLine("  {0} ({1}:{2}): {3}", err.Item.Path, err.LineNumber, err.LinePosition, err.Message);
+                }
+            }
+
+            var warns = ce.GetWarnings();
+            if (warns.Count > 0)
+            {
+                Console.Error.WriteLine("Warning(s):");
+                foreach (var warn in warns)
+                {
+                    Console.Error.WriteLine("  {0} ({1}:{2}): {3}", warn.Item.Path, warn.LineNumber, warn.LinePosition, warn.Message);
+                }
             }
 
             Assert.AreEqual(expectedErrors.Length, errors.Count);
             CollectionAssert.AreEqual(expectedErrors, errors, new SemanticErrorMessageComparer());
+            Assert.AreEqual(expectedWarnings.Length, warns.Count);
+            CollectionAssert.AreEqual(expectedWarnings, warns, new SemanticWarningMessageComparer());
         }
 
         [TestMethod]
@@ -474,7 +490,8 @@ namespace TestCMS
     <if a=""true"">A is true!</if>
   </cms-conditional>
 </div>",
-                new SemanticError("expected 'if' element", null, 0, 0)
+                new SemanticError[] { new SemanticError("expected 'if' element", null, 0, 0) },
+                new SemanticWarning[0]
             );
         }
 
@@ -491,7 +508,8 @@ namespace TestCMS
     <if>Invalid if! Needs at least one conditional test attribute.</if>
   </cms-conditional>
 </div>",
-                new SemanticError("expected at least one attribute for 'if' element", null, 0, 0)
+                new SemanticError[] { new SemanticError("expected at least one attribute for 'if' element", null, 0, 0) },
+                new SemanticWarning[0]
             );
         }
 
@@ -509,7 +527,8 @@ namespace TestCMS
     <else a=""true"">Bad else condition! Must have no attributes.</else>
   </cms-conditional>
 </div>",
-                new SemanticError("unexpected attributes on 'else' element", null, 0, 0)
+                new SemanticError[] { new SemanticError("unexpected attributes on 'else' element", null, 0, 0) },
+                new SemanticWarning[0]
             );
         }
 
@@ -616,7 +635,8 @@ Well that was fun!
 @"<div>
   <cms-link />
 </div>",
-                new SemanticError("cms-link has no attributes", null, 0, 0)
+                new SemanticError[] { new SemanticError("cms-link has no attributes", null, 0, 0) },
+                new SemanticWarning[0]
             );
         }
 
@@ -627,7 +647,8 @@ Well that was fun!
 @"<div>
   <cms-link>Hello world.</cms-link>
 </div>",
-                new SemanticError("cms-link has no attributes", null, 0, 0)
+                new SemanticError[] { new SemanticError("cms-link has no attributes", null, 0, 0) },
+                new SemanticWarning[0]
             );
         }
 
@@ -638,7 +659,8 @@ Well that was fun!
 @"<div>
   <cms-link target=""_blank"" />
 </div>",
-                new SemanticError("expected 'path' attribute on 'cms-link' element was not found", null, 0, 0)
+                new SemanticError[0],
+                new SemanticWarning[] { new SemanticWarning("expected 'path' attribute on 'cms-link' element was not found", null, 0, 0) }
             );
         }
 
@@ -649,7 +671,8 @@ Well that was fun!
 @"<div>
   <cms-link target=""_blank"">Hello world.</cms-link>
 </div>",
-                new SemanticError("expected 'path' attribute on 'cms-link' element was not found", null, 0, 0)
+                new SemanticError[0],
+                new SemanticWarning[] { new SemanticWarning("expected 'path' attribute on 'cms-link' element was not found", null, 0, 0) }
             );
         }
 

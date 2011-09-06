@@ -87,9 +87,9 @@ namespace IVO.CMS.Providers.CustomElements
 
             if (!foundPath)
             {
-                // TODO: switch this to a Warning and append an "href='#'" attribute instead.
-                st.ErrorSuppressComment("expected 'path' attribute on 'cms-link' element was not found");
-                // Don't early out here as that would leave the Writer in an invalid state.
+                // Issue a warning and append an "href='#'" attribute:
+                st.Warning("expected 'path' attribute on 'cms-link' element was not found");
+                st.Writer.Append(" href=\"#\"");
             }
 
             // Self-close the <a /> if the <cms-link /> is empty:
