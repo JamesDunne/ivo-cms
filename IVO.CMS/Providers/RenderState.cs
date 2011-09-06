@@ -5,6 +5,7 @@ using System.Web;
 using System.Xml;
 using IVO.CMS.Providers.CustomElements;
 using IVO.Definition.Models;
+using System.Collections.Generic;
 
 namespace IVO.CMS.Providers
 {
@@ -21,6 +22,36 @@ namespace IVO.CMS.Providers
         /// Gets the current `StringBuilder` used to output HTML5 polyglot document fragment code.
         /// </summary>
         public StringBuilder Writer { get { return sb; } }
+
+        private Stack<StringBuilder> _writerStack = new Stack<StringBuilder>();
+
+        /// <summary>
+        /// Pushes off the current Writer to the stack and creates a new Writer based on the current Writer.
+        /// </summary>
+        public void PushWriter()
+        {
+            _writerStack.Push(sb);
+
+            // Create a new StringBuilder from the current one so we can roll-back on error later:
+            StringBuilder newSb = new StringBuilder(sb.ToString());
+            sb = newSb;
+        }
+
+        /// <summary>
+        /// Rolls back the current Writer to the last saved one.
+        /// </summary>
+        public void RollbackWriter()
+        {
+            sb = _writerStack.Pop();
+        }
+
+        /// <summary>
+        /// Pops the last Writer off the stack and uses the current Writer.
+        /// </summary>
+        public void CommitWriter()
+        {
+            _writerStack.Pop();
+        }
 
         private BlobTreePath item;
         /// <summary>
@@ -273,6 +304,18 @@ namespace IVO.CMS.Providers
             // Inject an HTML comment describing the error:
             if (engine.InjectErrorComments)
                 sb.AppendFormat("<!-- IVOCMS error in '{0}' ({1}:{2}): {3} -->", err.Item.Path, err.LineNumber, err.LinePosition, err.Message);
+        }
+
+        public void ErrorSuppressComment(string message)
+        {
+            var err = new SemanticError(message, item, xr.LineNumber, xr.LinePosition);
+            engine.ReportError(err);
+        }
+
+        public void ErrorSuppressComment(string format, params object[] args)
+        {
+            var err = new SemanticError(String.Format(format, args), item, xr.LineNumber, xr.LinePosition);
+            engine.ReportError(err);
         }
 
         #region Public utility methods

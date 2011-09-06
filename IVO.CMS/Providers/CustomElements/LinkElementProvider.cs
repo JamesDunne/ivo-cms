@@ -44,6 +44,7 @@ namespace IVO.CMS.Providers.CustomElements
             //   <cms-link path="../../hello/world" target="_blank">Link text.</cms-link>
             //   <cms-link path="/hello/world" target="_blank">Link text.</cms-link>
 
+            // Set the current element depth so we know where to read up to on error:
             int knownDepth = st.Reader.Depth;
 
             if (!st.Reader.HasAttributes)
@@ -51,6 +52,8 @@ namespace IVO.CMS.Providers.CustomElements
                 st.Error("cms-link has no attributes");
                 goto errored;
             }
+
+            bool foundPath = false;
 
             st.Writer.Append("<a");
 
@@ -61,6 +64,8 @@ namespace IVO.CMS.Providers.CustomElements
 
                 if (st.Reader.LocalName == "path")
                 {
+                    foundPath = true;
+
                     // Get the canonicalized blob path (from either absolute or relative):
                     var abspath = Path.ParseBlobPath(value);
                     CanonicalBlobPath path = abspath.Collapse(abs => abs.Canonicalize(), rel => (st.Item.Path.Tree + rel).Canonicalize());
@@ -78,6 +83,13 @@ namespace IVO.CMS.Providers.CustomElements
 
             // Jump back to the element node from the attributes:
             st.Reader.MoveToElement();
+
+            if (!foundPath)
+            {
+                // TODO: switch this to a Warning and append an "href='#'" attribute instead.
+                st.ErrorSuppressComment("expected 'path' attribute on 'cms-link' element was not found");
+                // Don't early out here as that would leave the Writer in an invalid state.
+            }
 
             // Self-close the <a /> if the <cms-link /> is empty:
             if (st.Reader.IsEmptyElement)

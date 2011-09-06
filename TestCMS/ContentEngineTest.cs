@@ -606,6 +606,46 @@ Well that was fun!
         }
 
         [TestMethod]
+        public void TestCMSLinkFail1()
+        {
+            assumeFail(
+@"<div>
+  <cms-link />
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestCMSLinkFail1a()
+        {
+            assumeFail(
+@"<div>
+  <cms-link>Hello world.</cms-link>
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestCMSLinkFail2()
+        {
+            assumeFail(
+@"<div>
+  <cms-link target=""_blank"" />
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestCMSLinkFail2a()
+        {
+            assumeFail(
+@"<div>
+  <cms-link target=""_blank"">Hello world.</cms-link>
+</div>"
+            );
+        }
+
+        [TestMethod]
         public void TestNestedElements()
         {
             DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
