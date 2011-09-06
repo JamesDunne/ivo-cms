@@ -64,7 +64,7 @@ namespace TestCMS
 
         private void assertTranslated(ContentEngine ce, Blob bl, TreeID rootid, string expected)
         {
-            var item = new BlobTreePath(rootid, new CanonicalBlobPath(((AbsoluteTreePath)"").Canonicalize(), "test"), bl);
+            var item = new BlobTreePath(rootid, (CanonicalBlobPath)"/test", bl);
             assertTranslated(ce, item, expected);
         }
 
@@ -97,7 +97,7 @@ namespace TestCMS
 
         private void assumeFail(ContentEngine ce, Blob bl, TreeID rootid)
         {
-            var item = new BlobTreePath(rootid, new CanonicalBlobPath(((AbsoluteTreePath)"").Canonicalize(), "test"), bl);
+            var item = new BlobTreePath(rootid, (CanonicalBlobPath)"/test", bl);
             assumeFail(ce, item);
         }
 
