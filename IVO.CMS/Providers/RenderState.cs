@@ -11,18 +11,34 @@ namespace IVO.CMS.Providers
     public sealed class RenderState
     {
         private XmlTextReader xr;
+        /// <summary>
+        /// Gets the current `XmlTextReader` used to parse the incoming XML blob.
+        /// </summary>
         public XmlTextReader Reader { get { return xr; } }
 
         private StringBuilder sb;
+        /// <summary>
+        /// Gets the current `StringBuilder` used to output HTML5 polyglot document fragment code.
+        /// </summary>
         public StringBuilder Writer { get { return sb; } }
 
         private BlobTreePath item;
+        /// <summary>
+        /// Gets the current processed blob and its canonical absolute path from its root TreeID.
+        /// </summary>
         public BlobTreePath Item { get { return item; } }
 
         private ContentEngine engine;
+        /// <summary>
+        /// Gets the current `ContentEngine` context.
+        /// </summary>
         public ContentEngine Engine { get { return engine; } }
 
         private RenderState previous;
+        /// <summary>
+        /// Gets the previous `RenderState`, i.e. the parser/writer state of the parent blob, if this
+        /// blob is being rendered as an import.
+        /// </summary>
         public RenderState Previous { get { return previous; } }
 
         public RenderState(RenderState copy)
@@ -60,16 +76,17 @@ namespace IVO.CMS.Providers
 
             // Create a string builder used to build the output polyglot HTML5 document fragment:
             this.item = item;
-            sb = new StringBuilder(item.Blob.Contents.Length);
+            this.sb = new StringBuilder(item.Blob.Contents.Length);
 
             // Start an XmlReader over the contents:
-            using (MemoryStream ms = new MemoryStream(item.Blob.Contents))
-            using (xr = new XmlTextReader(ms, XmlNodeType.Element, new XmlParserContext(null, null, null, XmlSpace.Default)))
+            using (MemoryStream ms = new MemoryStream(this.item.Blob.Contents))
+            using (this.xr = new XmlTextReader(ms, XmlNodeType.Element, new XmlParserContext(null, null, null, XmlSpace.Default)))
             {
                 // Start reading the document:
-                xr.Read();
+                this.xr.Read();
 
-                StreamContent(DefaultProcessElements, () => false);
+                // Stream in the content and output it to the StringBuilder:
+                this.StreamContent(this.DefaultProcessElements, this.DefaultEarlyExit);
             }
         }
 
@@ -170,6 +187,7 @@ namespace IVO.CMS.Providers
 
             if (xr.NodeType == XmlNodeType.Element && xr.LocalName.StartsWith("cms-"))
             {
+                // Call out to the custom element handlers:
                 ProcessCMSInstruction(xr.LocalName, this);
 
                 // Skip normal copying behavior for this element:
@@ -179,13 +197,21 @@ namespace IVO.CMS.Providers
             return true;
         }
 
+        public bool DefaultEarlyExit()
+        {
+            return false;
+        }
+
         public static bool ProcessCMSInstruction(string elementName, RenderState state)
         {
-            int knownDepth = state.xr.Depth;
+            string openingElement = state.xr.LocalName;
+            int openingDepth = state.xr.Depth;
+            bool openingEmpty = state.xr.IsEmptyElement;
 
             // Run the cms- element name through the custom-element provider chain:
             ICustomElementProvider provider = state.engine.CustomElementProviderRoot;
             
+            // Run down the chain until a provider picks up the element and processes its contents:
             bool processed = false;
             while (provider != null && !(processed = provider.ProcessCustomElement(elementName, state)))
             {
@@ -194,11 +220,37 @@ namespace IVO.CMS.Providers
 
             if (!processed)
             {
-                // Unrecognized 'cms-' element name, skip its contents entirely:
+                // Unrecognized 'cms-' element name, skip its contents entirely.
+
+                // Validate that the XmlTextReader is at the same state before the processor chain was invoked:
+                // This is to detect bad custom element processors that attempt to affect state when they report
+                // they have not.
+
+                // We must be at the same element of the custom instruction:
+                if (state.xr.NodeType != XmlNodeType.Element)
+                    state.Error("custom element provider left XML parser on an unexpected node type");
+                // The element name must be the same:
+                if (state.xr.LocalName != openingElement)
+                    state.Error("custom element provider left XML parser on an unexpected end element");
+                // The depth level must be the same:
+                if (state.xr.Depth != openingDepth)
+                    state.Error("custom element provider left XML parser at an unexpected depth level");
+
                 // TODO: issue a warning?
                 state.SkipElementAndChildren(elementName);
+                
                 return false;
             }
+
+            // We must be at the end (or same, if empty) element of the custom instruction:
+            if (state.xr.NodeType != (openingEmpty ? XmlNodeType.Element : XmlNodeType.EndElement))
+                state.Error("custom element provider left XML parser on an unexpected node type");
+            // The element name must be the same:
+            if (state.xr.LocalName != openingElement)
+                state.Error("custom element provider left XML parser on an unexpected end element");
+            // The depth level must be the same:
+            if (state.xr.Depth != openingDepth)
+                state.Error("custom element provider left XML parser at an unexpected depth level");
 
             return true;
         }

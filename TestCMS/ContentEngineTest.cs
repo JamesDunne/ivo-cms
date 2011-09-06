@@ -72,7 +72,7 @@ namespace TestCMS
         {
             output(item);
 
-            var frag = ce.RenderContentItem(item);
+            var frag = ce.RenderBlob(item);
             output(frag);
 
             foreach (var err in ce.GetErrors())
@@ -105,7 +105,7 @@ namespace TestCMS
         {
             output(item);
 
-            var frag = ce.RenderContentItem(item);
+            var frag = ce.RenderBlob(item);
             output(frag);
 
             var errors = ce.GetErrors();

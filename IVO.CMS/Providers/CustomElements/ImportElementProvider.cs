@@ -74,6 +74,9 @@ namespace IVO.CMS.Providers.CustomElements
                 rsInner.Render(tBlob.Result);
                 string innerResult = rsInner.Writer.ToString();
                 st.Writer.Append(innerResult);
+
+                // Move the reader back to the element node:
+                st.Reader.MoveToElement();
             }
         }
     }
