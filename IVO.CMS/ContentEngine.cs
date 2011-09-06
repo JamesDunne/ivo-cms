@@ -19,9 +19,11 @@ namespace IVO.CMS
         private DateTimeOffset viewDate;
         private bool throwOnError;
         private bool injectErrorComments;
+        private bool injectWarningComments;
         private ICustomElementProvider providerRoot;
 
         private List<SemanticError> errors;
+        private List<SemanticWarning> warnings;
 
         /// <summary>
         /// Create a new content rendering engine with the provided customizations.
@@ -33,14 +35,17 @@ namespace IVO.CMS
         /// <param name="provider"></param>
         /// <param name="throwOnError"></param>
         /// <param name="injectErrorComments"></param>
-        public ContentEngine(ITreeRepository trrepo, IBlobRepository blrepo, DateTimeOffset viewDate, IConditionalEvaluator evaluator = null, ICustomElementProvider provider = null, bool throwOnError = false, bool injectErrorComments = true)
+        /// <param name="injectWarningComments"></param>
+        public ContentEngine(ITreeRepository trrepo, IBlobRepository blrepo, DateTimeOffset viewDate, IConditionalEvaluator evaluator = null, ICustomElementProvider provider = null, bool throwOnError = false, bool injectErrorComments = true, bool injectWarningComments = true)
         {
             this.trrepo = trrepo;
             this.blrepo = blrepo;
             this.viewDate = viewDate;
             this.throwOnError = throwOnError;
             this.injectErrorComments = injectErrorComments;
+            this.injectWarningComments = injectWarningComments;
             this.errors = new List<SemanticError>();
+            this.warnings = new List<SemanticWarning>();
 
             // If no evaluator given, use the default false-returning evaluator:
             if (evaluator == null) evaluator = new DefaultFalseConditionalEvaluator(EitherAndOr.Or);
@@ -80,9 +85,13 @@ namespace IVO.CMS
         /// </summary>
         public bool ThrowOnError { get { return throwOnError; } }
         /// <summary>
-        /// Gets a value that indicates whether or not the rendering engine injects HTML &lt;!-- comments --&gt; with error messages.
+        /// Gets a value that indicates whether or not the rendering engine injects HTML &lt;!-- comments --&gt; for error messages.
         /// </summary>
         public bool InjectErrorComments { get { return injectErrorComments; } }
+        /// <summary>
+        /// Gets a value that indicates whether or not the rendering engine injects HTML &lt;!-- comments --&gt; for warning messages.
+        /// </summary>
+        public bool InjectWarningComments { get { return injectWarningComments; } }
 
         /// <summary>
         /// Gets the current collection of errors found while parsing the last content blob.
@@ -91,6 +100,15 @@ namespace IVO.CMS
         public ReadOnlyCollection<SemanticError> GetErrors()
         {
             return new ReadOnlyCollection<SemanticError>(errors);
+        }
+
+        /// <summary>
+        /// Gets the current collection of warnings found while parsing the last content blob.
+        /// </summary>
+        /// <returns></returns>
+        public ReadOnlyCollection<SemanticWarning> GetWarnings()
+        {
+            return new ReadOnlyCollection<SemanticWarning>(warnings);
         }
 
         /// <summary>
@@ -106,14 +124,25 @@ namespace IVO.CMS
         }
 
         /// <summary>
+        /// Used by custom element providers to report a warning at the current parsing location.
+        /// </summary>
+        /// <param name="warn"></param>
+        public void ReportWarning(SemanticWarning warn)
+        {
+            // Track the warning:
+            warnings.Add(warn);
+        }
+
+        /// <summary>
         /// Main method to render the given blob as an HTML5 polyglot document fragment.
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
         public HTMLFragment RenderBlob(BlobTreePath item)
         {
-            // Refresh the error list:
+            // Refresh the error and warning lists:
             errors = new List<SemanticError>();
+            warnings = new List<SemanticWarning>();
 
             RenderState rs = new RenderState(this);
             rs.Render(item);
