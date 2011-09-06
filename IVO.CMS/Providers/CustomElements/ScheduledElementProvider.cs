@@ -59,8 +59,9 @@ namespace IVO.CMS.Providers.CustomElements
 
                     if (!st.Reader.IsEmptyElement)
                     {
-                        st.Error("range element must be empty");
-                        // TODO: skip to end of cms-scheduled element and exit.
+                        st.Error("'range' element must be empty");
+                        // Skip to end of cms-scheduled element and exit.
+                        st.SkipElementAndChildren("range");
                         continue;
                     }
 
@@ -73,7 +74,7 @@ namespace IVO.CMS.Providers.CustomElements
 
                     // Validate the element's form:
                     if (!st.Reader.HasAttributes) st.Error("range element must have attributes");
-                    if ((fromAttr = st.Reader.GetAttribute("from")) == null) st.Error("range element must have 'from' attribute");
+                    if ((fromAttr = st.Reader.GetAttribute("from")) == null) st.Error("'range' element must have 'from' attribute");
                     // 'to' attribute is optional:
                     toAttr = st.Reader.GetAttribute("to");
 
@@ -81,13 +82,20 @@ namespace IVO.CMS.Providers.CustomElements
                     DateTimeOffset fromDate, toDateTmp;
                     DateTimeOffset toDate = DateTimeOffset.Now;
 
-                    if (!DateTimeOffset.TryParse(fromAttr, out fromDate)) st.Error("could not parse 'from' attribute as a date/time");
+                    if (!DateTimeOffset.TryParse(fromAttr, out fromDate))
+                    {
+                        st.Error("could not parse 'from' attribute as a date/time");
+                        continue;
+                    }
                     if (!String.IsNullOrWhiteSpace(toAttr))
                     {
                         if (DateTimeOffset.TryParse(toAttr, out toDateTmp))
                             toDate = toDateTmp;
                         else
+                        {
                             st.Error("could not parse 'to' attribute as a date/time");
+                            continue;
+                        }
                     }
 
                     // Validate the range's dates are ordered correctly:
@@ -98,40 +106,73 @@ namespace IVO.CMS.Providers.CustomElements
                 }
                 else if (st.Reader.LocalName == "content")
                 {
-                    if (hasContent) st.Error("only one content element may exist in cms-scheduled");
+                    if (hasElse)
+                    {
+                        st.Error("'content' element must come before 'else' element");
+                        continue;
+                    }
+
+                    if (hasContent)
+                    {
+                        st.Error("only one 'content' element may exist in cms-scheduled");
+                        continue;
+                    }
 
                     hasContent = true;
-                    if (!hasRanges) st.Error("no range elements found before content element in cms-scheduled");
+                    if (!hasRanges)
+                    {
+                        st.Error("no 'range' elements found before 'content' element in cms-scheduled");
+                        displayContent = false;
+                    }
 
                     if (displayContent)
                     {
                         // Stream the inner content into the StringBuilder until we get back to the end </content> element.
                         st.CopyElementChildren("content");
-                        st.Reader.ReadEndElement(/* "content" */);
+                        if (!st.Reader.IsEmptyElement)
+                            st.Reader.ReadEndElement(/* "content" */);
                     }
                     else
                     {
                         // Skip the inner content entirely:
                         st.SkipElementAndChildren("content");
-                        st.Reader.ReadEndElement(/* "content" */);
+                        if (!st.Reader.IsEmptyElement)
+                            st.Reader.ReadEndElement(/* "content" */);
                     }
                 }
                 else if (st.Reader.LocalName == "else")
                 {
-                    if (hasElse) st.Error("only one else element may exist in cms-scheduled");
+                    if (!hasContent)
+                    {
+                        st.Error("'content' element must come before 'else' element");
+                        continue;
+                    }
+                    if (hasElse)
+                    {
+                        st.Error("only one 'else' element may exist in cms-scheduled");
+                        continue;
+                    }
+
                     hasElse = true;
+                    if (!hasRanges)
+                    {
+                        st.Error("no 'range' elements found before 'else' element in cms-scheduled");
+                        continue;
+                    }
 
                     if (!displayContent)
                     {
                         // Stream the inner content into the StringBuilder until we get back to the end </content> element.
                         st.CopyElementChildren("else");
-                        st.Reader.ReadEndElement(/* "else" */);
+                        if (!st.Reader.IsEmptyElement)
+                            st.Reader.ReadEndElement(/* "else" */);
                     }
                     else
                     {
                         // Skip the inner content entirely:
                         st.SkipElementAndChildren("else");
-                        st.Reader.ReadEndElement(/* "else" */);
+                        if (!st.Reader.IsEmptyElement)
+                            st.Reader.ReadEndElement(/* "else" */);
                     }
                 }
                 else
@@ -141,8 +182,8 @@ namespace IVO.CMS.Providers.CustomElements
             }
 
             // Report errors:
-            if (!hasRanges) st.Error("no range elements found");
-            if (!hasContent) st.Error("no content element found");
+            if (!hasContent && !hasRanges) st.Error("no 'range' elements found");
+            if (!hasContent) st.Error("no 'content' element found");
 
             // Skip Whitespace and Comments etc. until we find the end element:
             while (st.Reader.NodeType != XmlNodeType.EndElement && st.Reader.Read()) { }

@@ -290,6 +290,66 @@ namespace TestCMS
         }
 
         [TestMethod]
+        public void TestScheduled2()
+        {
+            DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
+            DateTimeOffset b = a.AddDays(15);
+            DateTimeOffset c = a.AddDays(30);
+            // Use a + 5 days as the viewing date for scheduling:
+            var ce = getContentEngine(a.AddDays(5));
+
+            assertTranslated(
+                ce,
+                String.Format(
+@"<div>
+  <cms-scheduled>
+    <range from=""{0}"" to=""{2}""/>
+    <range from=""{1}"" to=""{2}""/>
+    <content>Schedule content here!</content>
+    <else />
+  </cms-scheduled>
+</div>",
+                    a.ToString("u"),
+                    b.ToString("u"),
+                    c.ToString("u")
+                ),
+@"<div>
+  Schedule content here!
+</div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestScheduled3()
+        {
+            DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
+            DateTimeOffset b = a.AddDays(15);
+            DateTimeOffset c = a.AddDays(30);
+            // Use a + 5 days as the viewing date for scheduling:
+            var ce = getContentEngine(a.AddDays(5));
+
+            assertTranslated(
+                ce,
+                String.Format(
+@"<div>
+  <cms-scheduled>
+    <range from=""{0}"" to=""{2}""/>
+    <range from=""{1}"" to=""{2}""/>
+    <content />
+    <else>Not empty</else>
+  </cms-scheduled>
+</div>",
+                    a.ToString("u"),
+                    b.ToString("u"),
+                    c.ToString("u")
+                ),
+@"<div>
+  
+</div>"
+            );
+        }
+
+        [TestMethod]
         public void TestScheduledNot()
         {
             DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
@@ -316,6 +376,147 @@ namespace TestCMS
 @"<div>
   Else here?
 </div>"
+            );
+        }
+
+        [TestMethod]
+        public void TestScheduleFail1()
+        {
+            assumeFail(
+@"<div>
+  <cms-scheduled>
+    <range from=""Hello World.""/>
+    <range from=""Fail""/>
+    <else>Else here?</else>
+    <content>Schedule content here!</content>
+  </cms-scheduled>
+</div>",
+                new SemanticError[] {
+                    new SemanticError("could not parse 'from' attribute as a date/time", null, 0, 0),
+                    new SemanticError("could not parse 'from' attribute as a date/time", null, 0, 0),
+                    new SemanticError("'content' element must come before 'else' element", null, 0, 0),
+                },
+                new SemanticWarning[0]
+            );
+        }
+
+        [TestMethod]
+        public void TestScheduleFail2()
+        {
+            assumeFail(
+@"<div>
+  <cms-scheduled>
+    <range from=""2009-01-01"" to=""2008-01-01""/>
+    <content />
+  </cms-scheduled>
+</div>",
+                new SemanticError[] {
+                    new SemanticError("'to' date must be later than 'from' date or empty", null, 0, 0),
+                },
+                new SemanticWarning[0]
+            );
+        }
+
+        [TestMethod]
+        public void TestScheduleFail3()
+        {
+            assumeFail(
+@"<div>
+  <cms-scheduled>
+    <content />
+  </cms-scheduled>
+</div>",
+                new SemanticError[] {
+                    new SemanticError("no 'range' elements found before 'content' element in cms-scheduled", null, 0, 0),
+                },
+                new SemanticWarning[0]
+            );
+        }
+
+        [TestMethod]
+        public void TestScheduleFail4()
+        {
+            assumeFail(
+@"<div>
+  <cms-scheduled>
+    <range from=""2009-01-01"" />
+    <content />
+    <content />
+  </cms-scheduled>
+</div>",
+                new SemanticError[] {
+                    new SemanticError("only one 'content' element may exist in cms-scheduled", null, 0, 0),
+                },
+                new SemanticWarning[0]
+            );
+        }
+
+        [TestMethod]
+        public void TestScheduleFail5()
+        {
+            assumeFail(
+@"<div>
+  <cms-scheduled>
+    <range from=""2009-01-01"">Should not contain content.</range>
+    <content />
+  </cms-scheduled>
+</div>",
+                new SemanticError[] {
+                    new SemanticError("'range' element must be empty", null, 0, 0),
+                },
+                new SemanticWarning[0]
+            );
+        }
+
+        [TestMethod]
+        public void TestScheduleFail6()
+        {
+            // A <content /> node inside a non-empty <range> element should not count.
+            assumeFail(
+@"<div>
+  <cms-scheduled>
+    <range from=""2009-01-01"">Should not contain content.<content /></range>
+  </cms-scheduled>
+</div>",
+                new SemanticError[] {
+                    new SemanticError("'range' element must be empty", null, 0, 0),
+                    new SemanticError("no 'content' element found", null, 0, 0)
+                },
+                new SemanticWarning[0]
+            );
+        }
+
+        [TestMethod]
+        public void TestScheduleFail7()
+        {
+            assumeFail(
+@"<div>
+  <cms-scheduled>
+    <range from=""2009-01-01"" />
+  </cms-scheduled>
+</div>",
+                new SemanticError[] {
+                    new SemanticError("no 'content' element found", null, 0, 0)
+                },
+                new SemanticWarning[0]
+            );
+        }
+
+        [TestMethod]
+        public void TestScheduleFail8()
+        {
+            assumeFail(
+@"<div>
+  <cms-scheduled>
+    <range from=""2009-01-01"" />
+    <else>Need a content element</else>
+  </cms-scheduled>
+</div>",
+                new SemanticError[] {
+                    new SemanticError("'content' element must come before 'else' element", null, 0, 0),
+                    new SemanticError("no 'content' element found", null, 0, 0)
+                },
+                new SemanticWarning[0]
             );
         }
 
