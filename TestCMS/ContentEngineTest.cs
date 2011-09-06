@@ -83,25 +83,25 @@ namespace TestCMS
             Assert.AreEqual(expected, (string)frag);
         }
 
-        private void assumeFail(string blob)
+        private void assumeFail(string blob, params SemanticError[] expectedErrors)
         {
             var ce = getContentEngine();
-            assumeFail(ce, blob);
+            assumeFail(ce, blob, expectedErrors);
         }
 
-        private void assumeFail(ContentEngine ce, string blob)
+        private void assumeFail(ContentEngine ce, string blob, params SemanticError[] expectedErrors)
         {
             Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(blob));
-            assumeFail(ce, bl, new TreeID());
+            assumeFail(ce, bl, new TreeID(), expectedErrors);
         }
 
-        private void assumeFail(ContentEngine ce, Blob bl, TreeID rootid)
+        private void assumeFail(ContentEngine ce, Blob bl, TreeID rootid, params SemanticError[] expectedErrors)
         {
             var item = new BlobTreePath(rootid, (CanonicalBlobPath)"/test", bl);
-            assumeFail(ce, item);
+            assumeFail(ce, item, expectedErrors);
         }
 
-        private void assumeFail(ContentEngine ce, BlobTreePath item)
+        private void assumeFail(ContentEngine ce, BlobTreePath item, params SemanticError[] expectedErrors)
         {
             output(item);
 
@@ -114,7 +114,8 @@ namespace TestCMS
                 Console.Error.WriteLine("{0} ({1}:{2}): {3}", err.Item.Path, err.LineNumber, err.LinePosition, err.Message);
             }
 
-            Assert.AreNotEqual(0, errors.Count);
+            Assert.AreEqual(expectedErrors.Length, errors.Count);
+            CollectionAssert.AreEqual(expectedErrors, errors, new SemanticErrorMessageComparer());
         }
 
         [TestMethod]
@@ -472,7 +473,8 @@ namespace TestCMS
     <elif a=""garbage"">elif A is garbage!</elif>
     <if a=""true"">A is true!</if>
   </cms-conditional>
-</div>"
+</div>",
+                new SemanticError("expected 'if' element", null, 0, 0)
             );
         }
 
@@ -488,7 +490,8 @@ namespace TestCMS
   <cms-conditional>
     <if>Invalid if! Needs at least one conditional test attribute.</if>
   </cms-conditional>
-</div>"
+</div>",
+                new SemanticError("expected at least one attribute for 'if' element", null, 0, 0)
             );
         }
 
@@ -505,7 +508,8 @@ namespace TestCMS
     <if a=""false"">A is false!</if>
     <else a=""true"">Bad else condition! Must have no attributes.</else>
   </cms-conditional>
-</div>"
+</div>",
+                new SemanticError("unexpected attributes on 'else' element", null, 0, 0)
             );
         }
 
@@ -611,7 +615,8 @@ Well that was fun!
             assumeFail(
 @"<div>
   <cms-link />
-</div>"
+</div>",
+                new SemanticError("cms-link has no attributes", null, 0, 0)
             );
         }
 
@@ -621,7 +626,8 @@ Well that was fun!
             assumeFail(
 @"<div>
   <cms-link>Hello world.</cms-link>
-</div>"
+</div>",
+                new SemanticError("cms-link has no attributes", null, 0, 0)
             );
         }
 
@@ -631,7 +637,8 @@ Well that was fun!
             assumeFail(
 @"<div>
   <cms-link target=""_blank"" />
-</div>"
+</div>",
+                new SemanticError("expected 'path' attribute on 'cms-link' element was not found", null, 0, 0)
             );
         }
 
@@ -641,7 +648,8 @@ Well that was fun!
             assumeFail(
 @"<div>
   <cms-link target=""_blank"">Hello world.</cms-link>
-</div>"
+</div>",
+                new SemanticError("expected 'path' attribute on 'cms-link' element was not found", null, 0, 0)
             );
         }
 

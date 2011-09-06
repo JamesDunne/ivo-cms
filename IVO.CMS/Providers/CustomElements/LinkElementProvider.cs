@@ -46,6 +46,7 @@ namespace IVO.CMS.Providers.CustomElements
 
             // Set the current element depth so we know where to read up to on error:
             int knownDepth = st.Reader.Depth;
+            bool isEmpty = st.Reader.IsEmptyElement;
 
             if (!st.Reader.HasAttributes)
             {
@@ -92,7 +93,7 @@ namespace IVO.CMS.Providers.CustomElements
             }
 
             // Self-close the <a /> if the <cms-link /> is empty:
-            if (st.Reader.IsEmptyElement)
+            if (isEmpty)
             {
                 st.Writer.Append(" />");
                 return;
@@ -106,7 +107,8 @@ namespace IVO.CMS.Providers.CustomElements
 
         errored:
             // Skip to the end of the cms-link element:
-            while (st.Reader.Read() && st.Reader.Depth > knownDepth) { }
+            if (!isEmpty)
+                while (st.Reader.Read() && st.Reader.Depth > knownDepth) { }
             return;
         }
     }
