@@ -88,7 +88,7 @@ namespace IVO.CMS.Providers.CustomElements
             if (!foundPath)
             {
                 // Issue a warning and append an "href='#'" attribute:
-                st.Warning("expected 'path' attribute on 'cms-link' element was not found");
+                st.WarningSuppressComment("expected 'path' attribute on 'cms-link' element was not found");
                 st.Writer.Append(" href=\"#\"");
             }
 
