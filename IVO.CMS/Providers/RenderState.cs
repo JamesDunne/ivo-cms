@@ -53,11 +53,11 @@ namespace IVO.CMS.Providers
             _writerStack.Pop();
         }
 
-        private TreePathBlob item;
+        private TreePathStreamedBlob item;
         /// <summary>
         /// Gets the current processed blob and its canonical absolute path from its root TreeID.
         /// </summary>
-        public TreePathBlob Item { get { return item; } }
+        public TreePathStreamedBlob Item { get { return item; } }
 
         private ContentEngine engine;
         /// <summary>
@@ -92,33 +92,25 @@ namespace IVO.CMS.Providers
             this.previous = null;
         }
 
-        public void Render(TreePathBlob item)
+        public void Render(TreePathStreamedBlob item)
         {
-            // NOTE: I would much prefer to load in a Stream from the persistence store rather than a `byte[]`.
-            // It seems the only way to do this from a SqlDataReader is with its GetBytes() method. Furthermore,
-            // this would require the blob query to be executed with the CommandBehavior.SequentialAccess and
-            // the data would have to be streamed in while the SqlDataReader is open and passed to this method,
-            // which would be quite a tightly-integrated model. Perhaps the query class could be passed a lambda
-            // which then gets invoked during SqlDataReader parsing. That would call into this method so we could
-            // operate over blobs streamed directly from the database. Creating a new StreamedBlob type would be
-            // a good fit here too.
-            // Side note: The SqlDataReader's Stream abstractions are broken and only operate over in-memory
-            // data copies, thus defeating the purpose of streaming from the persistence store.
-
-            // Create a string builder used to build the output polyglot HTML5 document fragment:
-            this.item = item;
-            this.sb = new StringBuilder(item.Blob.Contents.Length);
-
-            // Start an XmlReader over the contents:
-            using (MemoryStream ms = new MemoryStream(this.item.Blob.Contents))
-            using (this.xr = new XmlTextReader(ms, XmlNodeType.Element, new XmlParserContext(null, null, null, XmlSpace.Default)))
+            // Begin to stream contents from the blob:
+            item.StreamedBlob.ReadStream(sr =>
             {
-                // Start reading the document:
-                this.xr.Read();
+                // Create a string builder used to build the output polyglot HTML5 document fragment:
+                this.item = item;
+                this.sb = new StringBuilder((int)sr.Length);
 
-                // Stream in the content and output it to the StringBuilder:
-                this.StreamContent(this.DefaultProcessElements, this.DefaultEarlyExit);
-            }
+                // Start an XmlReader over the contents:
+                using (this.xr = new XmlTextReader(sr, XmlNodeType.Element, new XmlParserContext(null, null, null, XmlSpace.Default)))
+                {
+                    // Start reading the document:
+                    this.xr.Read();
+
+                    // Stream in the content and output it to the StringBuilder:
+                    this.StreamContent(this.DefaultProcessElements, this.DefaultEarlyExit);
+                }
+            });
         }
 
         /// <summary>
@@ -293,7 +285,7 @@ namespace IVO.CMS.Providers
             engine.ReportWarning(warn);
 
             if (engine.InjectWarningComments)
-                sb.AppendFormat("<!-- IVOCMS warning in '{0}' ({1}:{2}): {3} -->", warn.Item.Path, warn.LineNumber, warn.LinePosition, warn.Message);
+                sb.AppendFormat("<!-- IVOCMS warning in '{0}' ({1}:{2}): {3} -->", warn.Item.TreePath.Path, warn.LineNumber, warn.LinePosition, warn.Message);
         }
 
         public void Warning(string format, params object[] args)
@@ -319,7 +311,7 @@ namespace IVO.CMS.Providers
 
             // Inject an HTML comment describing the error:
             if (engine.InjectErrorComments)
-                sb.AppendFormat("<!-- IVOCMS error in '{0}' ({1}:{2}): {3} -->", err.Item.Path, err.LineNumber, err.LinePosition, err.Message);
+                sb.AppendFormat("<!-- IVOCMS error in '{0}' ({1}:{2}): {3} -->", err.Item.TreePath.Path, err.LineNumber, err.LinePosition, err.Message);
         }
 
         public void Error(string format, params object[] args)
@@ -329,7 +321,7 @@ namespace IVO.CMS.Providers
 
             // Inject an HTML comment describing the error:
             if (engine.InjectErrorComments)
-                sb.AppendFormat("<!-- IVOCMS error in '{0}' ({1}:{2}): {3} -->", err.Item.Path, err.LineNumber, err.LinePosition, err.Message);
+                sb.AppendFormat("<!-- IVOCMS error in '{0}' ({1}:{2}): {3} -->", err.Item.TreePath.Path, err.LineNumber, err.LinePosition, err.Message);
         }
 
         public void ErrorSuppressComment(string message)

@@ -138,7 +138,7 @@ namespace IVO.CMS
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        public HTMLFragment RenderBlob(TreePathBlob item)
+        public HTMLFragment RenderBlob(TreePathStreamedBlob item)
         {
             // Refresh the error and warning lists:
             errors = new List<SemanticError>();

@@ -69,7 +69,7 @@ namespace IVO.CMS.Providers.CustomElements
 
                     // Get the canonicalized blob path (from either absolute or relative):
                     var abspath = Path.ParseBlobPath(value);
-                    CanonicalBlobPath path = abspath.Collapse(abs => abs.Canonicalize(), rel => (st.Item.Path.Tree + rel).Canonicalize());
+                    CanonicalBlobPath path = abspath.Collapse(abs => abs.Canonicalize(), rel => (st.Item.TreePath.Path.Tree + rel).Canonicalize());
                     
                     // TODO: apply the reverse-mount prefix path from the system configuration,
                     // or just toss the CanonicalBlobPath over to a provider implementation and
