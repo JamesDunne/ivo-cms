@@ -59,13 +59,13 @@ namespace TestCMS
 
         private sealed class MemoryStreamedBlob : IStreamedBlob
         {
-            private string contents;
+            private byte[] buf;
 
             public MemoryStreamedBlob(string contents)
             {
-                this.contents = contents;
+                this.buf = Encoding.UTF8.GetBytes(contents);
 
-                using (var ms = new System.IO.MemoryStream(Encoding.UTF8.GetBytes(contents)))
+                using (var ms = new System.IO.MemoryStream(buf))
                     this.ID = BlobMethods.ComputeID(ms);
             }
 
@@ -75,7 +75,7 @@ namespace TestCMS
             {
                 return TaskEx.Run(() =>
                 {
-                    using (var ms = new System.IO.MemoryStream(Encoding.UTF8.GetBytes(contents)))
+                    using (var ms = new System.IO.MemoryStream(buf))
                         return read(ms);
                 });
             }
@@ -84,10 +84,12 @@ namespace TestCMS
             {
                 return TaskEx.Run(() =>
                 {
-                    using (var ms = new System.IO.MemoryStream(Encoding.UTF8.GetBytes(contents)))
+                    using (var ms = new System.IO.MemoryStream(buf))
                         read(ms);
                 });
             }
+
+            public long? Length { get { return buf.LongLength; } }
         }
 
         private static System.IO.Stream MemoryStreamOverString(string contents)
@@ -247,16 +249,14 @@ namespace TestCMS
                 );
 
                 // Persist the blob contents:
-                var blTask = blrepo.PersistBlobs(blHeader, blFooter, blTest);
-                blTask.Wait();
+                var blTask = await blrepo.PersistBlobs(blHeader, blFooter, blTest);
                 
                 // Persist the trees:
-                var trTask = trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
-                trTask.Wait();
+                var trTask = await trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
 
                 assertTranslated(
                     ce,
-                    blTask.Result[2],   // aka blTest
+                    blTask[2],   // aka blTest
                     trRoot.ID,
                     "<div><div>Header</div><div>Footer</div></div>"
                 );
