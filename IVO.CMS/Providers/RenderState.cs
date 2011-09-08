@@ -110,7 +110,7 @@ namespace IVO.CMS.Providers
                     // Stream in the content and output it to the StringBuilder:
                     this.StreamContent(this.DefaultProcessElements, this.DefaultEarlyExit);
                 }
-            });
+            }).Wait();
         }
 
         /// <summary>

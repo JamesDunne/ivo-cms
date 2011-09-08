@@ -29,7 +29,11 @@ namespace TestCMS
             {
                 output((HTMLFragment)"-----------------------------------------");
                 output((HTMLFragment)(item.TreePath.Path.ToString() + ":"));
-                output((HTMLFragment)Encoding.UTF8.GetString(await item.StreamedBlob.ReadStream(sr => { byte[] tmp = new byte[sr.Length]; sr.Read(tmp, 0, (int)sr.Length); return tmp; })));
+                output((HTMLFragment)Encoding.UTF8.GetString(await item.StreamedBlob.ReadStream(sr => {
+                    byte[] tmp = new byte[sr.Length];
+                    sr.Read(tmp, 0, (int)sr.Length);
+                    return tmp;
+                })));
                 output((HTMLFragment)"-----------------------------------------");
             }).Wait();
         }
@@ -55,24 +59,34 @@ namespace TestCMS
 
         private sealed class MemoryStreamedBlob : IStreamedBlob
         {
-            private System.IO.Stream m;
+            private string contents;
 
             public MemoryStreamedBlob(string contents)
             {
-                this.m = new System.IO.MemoryStream(Encoding.UTF8.GetBytes(contents));
-                this.ID = BlobMethods.ComputeID(m);
+                this.contents = contents;
+
+                using (var ms = new System.IO.MemoryStream(Encoding.UTF8.GetBytes(contents)))
+                    this.ID = BlobMethods.ComputeID(ms);
             }
 
             public BlobID ID { get; private set; }
 
             public Task<TResult> ReadStream<TResult>(Func<System.IO.Stream, TResult> read)
             {
-                return TaskEx.Run(() => read(this.m));
+                return TaskEx.Run(() =>
+                {
+                    using (var ms = new System.IO.MemoryStream(Encoding.UTF8.GetBytes(contents)))
+                        return read(ms);
+                });
             }
 
             public Task ReadStream(Action<System.IO.Stream> read)
             {
-                return TaskEx.Run(() => read(this.m));
+                return TaskEx.Run(() =>
+                {
+                    using (var ms = new System.IO.MemoryStream(Encoding.UTF8.GetBytes(contents)))
+                        read(ms);
+                });
             }
         }
 
