@@ -53,11 +53,11 @@ namespace IVO.CMS.Providers
             _writerStack.Pop();
         }
 
-        private BlobTreePath item;
+        private TreePathBlob item;
         /// <summary>
         /// Gets the current processed blob and its canonical absolute path from its root TreeID.
         /// </summary>
-        public BlobTreePath Item { get { return item; } }
+        public TreePathBlob Item { get { return item; } }
 
         private ContentEngine engine;
         /// <summary>
@@ -92,7 +92,7 @@ namespace IVO.CMS.Providers
             this.previous = null;
         }
 
-        public void Render(BlobTreePath item)
+        public void Render(TreePathBlob item)
         {
             // NOTE: I would much prefer to load in a Stream from the persistence store rather than a `byte[]`.
             // It seems the only way to do this from a SqlDataReader is with its GetBytes() method. Furthermore,

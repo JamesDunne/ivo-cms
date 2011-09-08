@@ -8,14 +8,14 @@ namespace IVO.CMS
 {
     public sealed class SemanticError : Exception
     {
-        public SemanticError(string message, BlobTreePath item, int lineNumber, int linePosition) : base(message)
+        public SemanticError(string message, TreePathBlob item, int lineNumber, int linePosition) : base(message)
         {
             this.Item = item;
             this.LineNumber = lineNumber;
             this.LinePosition = linePosition;
         }
 
-        public BlobTreePath Item { get; private set; }
+        public TreePathBlob Item { get; private set; }
         public int LineNumber { get; private set; }
         public int LinePosition { get; private set; }
     }

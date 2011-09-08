@@ -55,7 +55,7 @@ namespace IVO.CMS.Providers.CustomElements
                 CanonicalBlobPath path = abspath.Collapse(abs => abs.Canonicalize(), rel => (st.Item.Path.Tree + rel).Canonicalize());
 
                 // Fetch the Blob given the absolute path constructed:
-                Task<BlobTreePath> tBlob = st.Engine.Blobs.GetBlobByAbsolutePath(st.Item.RootTreeID, path);
+                Task<TreePathBlob> tBlob = st.Engine.Blobs.GetBlobByAbsolutePath(st.Item.RootTreeID, path);
 
                 // TODO: we could probably asynchronously load blobs and render their contents
                 // then at a final sync point go in and inject their contents into the proper

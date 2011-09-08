@@ -23,7 +23,7 @@ namespace TestCMS
             Console.WriteLine(((string)fragment).Replace("\n", Environment.NewLine));
         }
 
-        private void output(BlobTreePath item)
+        private void output(TreePathBlob item)
         {
             output((HTMLFragment)"-----------------------------------------");
             output((HTMLFragment)(item.Path.ToString() + ":"));
@@ -64,11 +64,11 @@ namespace TestCMS
 
         private void assertTranslated(ContentEngine ce, Blob bl, TreeID rootid, string expected)
         {
-            var item = new BlobTreePath(rootid, (CanonicalBlobPath)"/test", bl);
+            var item = new TreePathBlob(rootid, (CanonicalBlobPath)"/test", bl);
             assertTranslated(ce, item, expected);
         }
 
-        private void assertTranslated(ContentEngine ce, BlobTreePath item, string expected)
+        private void assertTranslated(ContentEngine ce, TreePathBlob item, string expected)
         {
             output(item);
 
@@ -97,11 +97,11 @@ namespace TestCMS
 
         private void assumeFail(ContentEngine ce, Blob bl, TreeID rootid, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
         {
-            var item = new BlobTreePath(rootid, (CanonicalBlobPath)"/test", bl);
+            var item = new TreePathBlob(rootid, (CanonicalBlobPath)"/test", bl);
             assumeFail(ce, item, expectedErrors, expectedWarnings);
         }
 
-        private void assumeFail(ContentEngine ce, BlobTreePath item, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
+        private void assumeFail(ContentEngine ce, TreePathBlob item, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
         {
             output(item);
 
@@ -250,11 +250,11 @@ namespace TestCMS
             var trTask = trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
             trTask.Wait();
 
-            output(new BlobTreePath(trRoot.ID, (CanonicalBlobPath)"/template/header", blHeader));
-            output(new BlobTreePath(trRoot.ID, (CanonicalBlobPath)"/template/footer", blFooter));
+            output(new TreePathBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", blHeader));
+            output(new TreePathBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", blFooter));
             assertTranslated(
                 ce,
-                new BlobTreePath(trRoot.ID, (CanonicalBlobPath)"/pages/test", blTest),
+                new TreePathBlob(trRoot.ID, (CanonicalBlobPath)"/pages/test", blTest),
                 "<div><div>Header</div><div>Footer</div></div>"
             );
         }
@@ -930,8 +930,8 @@ Well that was fun!
             var trTask = trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
             trTask.Wait();
 
-            output(new BlobTreePath(trRoot.ID, (CanonicalBlobPath)"/template/header", blHeader));
-            output(new BlobTreePath(trRoot.ID, (CanonicalBlobPath)"/template/footer", blFooter));
+            output(new TreePathBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", blHeader));
+            output(new TreePathBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", blFooter));
             assertTranslated(
                 ce,
                 blTest,
@@ -995,8 +995,8 @@ Well that was fun!
             var trTask = trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
             trTask.Wait();
 
-            output(new BlobTreePath(trRoot.ID, (CanonicalBlobPath)"/template/header", blHeader));
-            output(new BlobTreePath(trRoot.ID, (CanonicalBlobPath)"/template/footer", blFooter));
+            output(new TreePathBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", blHeader));
+            output(new TreePathBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", blFooter));
             assertTranslated(
                 ce,
                 blTest,

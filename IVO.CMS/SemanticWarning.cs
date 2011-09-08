@@ -8,7 +8,7 @@ namespace IVO.CMS
 {
     public sealed class SemanticWarning
     {
-        public SemanticWarning(string message, BlobTreePath item, int lineNumber, int linePosition)
+        public SemanticWarning(string message, TreePathBlob item, int lineNumber, int linePosition)
         {
             this.Message = message;
             this.Item = item;
@@ -17,7 +17,7 @@ namespace IVO.CMS
         }
 
         public string Message { get; private set; }
-        public BlobTreePath Item { get; private set; }
+        public TreePathBlob Item { get; private set; }
         public int LineNumber { get; private set; }
         public int LinePosition { get; private set; }
     }
