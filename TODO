@@ -1,0 +1,6 @@
+Doing custom elements with TinyMCE:
+http://www.tinymce.com/wiki.php/Configuration:valid_elements
+Probably take the given XHTML ruleset and extend for custom cms- elements.
+
+Alternatively develop a plugin to reinterpret custom elements like this post:
+http://alexzag.blogspot.com/2009/12/custom-tags-in-tinymce.html

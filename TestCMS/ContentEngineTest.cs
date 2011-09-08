@@ -25,10 +25,13 @@ namespace TestCMS
 
         private void output(TreePathStreamedBlob item)
         {
-            output((HTMLFragment)"-----------------------------------------");
-            output((HTMLFragment)(item.Path.ToString() + ":"));
-            output((HTMLFragment)Encoding.UTF8.GetString(item.Blob.Contents));
-            output((HTMLFragment)"-----------------------------------------");
+            TaskEx.RunEx(async () =>
+            {
+                output((HTMLFragment)"-----------------------------------------");
+                output((HTMLFragment)(item.TreePath.Path.ToString() + ":"));
+                output((HTMLFragment)Encoding.UTF8.GetString(await item.StreamedBlob.ReadStream(sr => { byte[] tmp = new byte[sr.Length]; sr.Read(tmp, 0, (int)sr.Length); return tmp; })));
+                output((HTMLFragment)"-----------------------------------------");
+            }).Wait();
         }
 
         private DataContext getDataContext()
@@ -50,6 +53,34 @@ namespace TestCMS
             return new ContentEngine(trrepo, blrepo, realDate, evaluator, provider);
         }
 
+        private sealed class MemoryStreamedBlob : IStreamedBlob
+        {
+            private System.IO.Stream m;
+
+            public MemoryStreamedBlob(string contents)
+            {
+                this.m = new System.IO.MemoryStream(Encoding.UTF8.GetBytes(contents));
+                this.ID = BlobMethods.ComputeID(m);
+            }
+
+            public BlobID ID { get; private set; }
+
+            public Task<TResult> ReadStream<TResult>(Func<System.IO.Stream, TResult> read)
+            {
+                return TaskEx.Run(() => read(this.m));
+            }
+
+            public Task ReadStream(Action<System.IO.Stream> read)
+            {
+                return TaskEx.Run(() => read(this.m));
+            }
+        }
+
+        private static System.IO.Stream MemoryStreamOverString(string contents)
+        {
+            return new System.IO.MemoryStream(Encoding.UTF8.GetBytes(contents));
+        }
+
         private void assertTranslated(string blob, string expected)
         {
             var ce = getContentEngine();
@@ -58,11 +89,11 @@ namespace TestCMS
 
         private void assertTranslated(ContentEngine ce, string blob, string expected)
         {
-            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(blob));
+            var bl = new MemoryStreamedBlob(blob);
             assertTranslated(ce, bl, new TreeID(), expected);
         }
 
-        private void assertTranslated(ContentEngine ce, Blob bl, TreeID rootid, string expected)
+        private void assertTranslated(ContentEngine ce, IStreamedBlob bl, TreeID rootid, string expected)
         {
             var item = new TreePathStreamedBlob(rootid, (CanonicalBlobPath)"/test", bl);
             assertTranslated(ce, item, expected);
@@ -77,7 +108,7 @@ namespace TestCMS
 
             foreach (var err in ce.GetErrors())
             {
-                Console.Error.WriteLine("{0} ({1}:{2}): {3}", err.Item.Path, err.LineNumber, err.LinePosition, err.Message);
+                Console.Error.WriteLine("{0} ({1}:{2}): {3}", err.Item.TreePath.Path, err.LineNumber, err.LinePosition, err.Message);
             }
 
             Assert.AreEqual(expected, (string)frag);
@@ -91,11 +122,11 @@ namespace TestCMS
 
         private void assumeFail(ContentEngine ce, string blob, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
         {
-            Blob bl = new Blob.Builder(Encoding.UTF8.GetBytes(blob));
+            var bl = new MemoryStreamedBlob(blob);
             assumeFail(ce, bl, new TreeID(), expectedErrors, expectedWarnings);
         }
 
-        private void assumeFail(ContentEngine ce, Blob bl, TreeID rootid, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
+        private void assumeFail(ContentEngine ce, IStreamedBlob bl, TreeID rootid, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
         {
             var item = new TreePathStreamedBlob(rootid, (CanonicalBlobPath)"/test", bl);
             assumeFail(ce, item, expectedErrors, expectedWarnings);
@@ -114,7 +145,7 @@ namespace TestCMS
                 Console.Error.WriteLine("Error(s):");
                 foreach (var err in errors)
                 {
-                    Console.Error.WriteLine("  {0} ({1}:{2}): {3}", err.Item.Path, err.LineNumber, err.LinePosition, err.Message);
+                    Console.Error.WriteLine("  {0} ({1}:{2}): {3}", err.Item.TreePath.Path, err.LineNumber, err.LinePosition, err.Message);
                 }
             }
 
@@ -124,7 +155,7 @@ namespace TestCMS
                 Console.Error.WriteLine("Warning(s):");
                 foreach (var warn in warns)
                 {
-                    Console.Error.WriteLine("  {0} ({1}:{2}): {3}", warn.Item.Path, warn.LineNumber, warn.LinePosition, warn.Message);
+                    Console.Error.WriteLine("  {0} ({1}:{2}): {3}", warn.Item.TreePath.Path, warn.LineNumber, warn.LinePosition, warn.Message);
                 }
             }
 
@@ -173,45 +204,48 @@ namespace TestCMS
         [TestMethod]
         public void TestImportAbsolute()
         {
-            var ce = getContentEngine();
+            TaskEx.RunEx(async () =>
+            {
+                var ce = getContentEngine();
 
-            Blob blHeader = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Header</div>"));
-            Blob blFooter = new Blob.Builder(Encoding.UTF8.GetBytes("<div>Footer</div>"));
-            Blob blTest = new Blob.Builder(Encoding.UTF8.GetBytes("<div><cms-import path=\"/template/header\" /><cms-import path=\"/template/footer\" /></div>"));
-            Tree trTemplate = new Tree.Builder(
-                new List<TreeTreeReference>(0),
-                new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("header", blHeader.ID),
-                    new TreeBlobReference.Builder("footer", blFooter.ID)
-                }
-            );
-            Tree trPages = new Tree.Builder(
-                new List<TreeTreeReference>(0),
-                new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("test", blTest.ID)
-                }
-            );
-            Tree trRoot = new Tree.Builder(
-                new List<TreeTreeReference> {
-                    new TreeTreeReference.Builder("template", trTemplate.ID),
-                    new TreeTreeReference.Builder("pages", trPages.ID)
-                },
-                new List<TreeBlobReference>(0)
-            );
+                PersistingBlob blHeader = new PersistingBlob(new MemoryStreamedBlob("<div>Header</div>");
+                PersistingBlob blFooter = new MemoryStreamedBlob("<div>Footer</div>");
+                PersistingBlob blTest = new MemoryStreamedBlob("<div><cms-import path=\"/template/header\" /><cms-import path=\"/template/footer\" /></div>");
+                Tree trTemplate = new Tree.Builder(
+                    new List<TreeTreeReference>(0),
+                    new List<TreeBlobReference> {
+                        new TreeBlobReference.Builder("header", blHeader.ID),
+                        new TreeBlobReference.Builder("footer", blFooter.ID)
+                    }
+                );
+                Tree trPages = new Tree.Builder(
+                    new List<TreeTreeReference>(0),
+                    new List<TreeBlobReference> {
+                        new TreeBlobReference.Builder("test", blTest.ID)
+                    }
+                );
+                Tree trRoot = new Tree.Builder(
+                    new List<TreeTreeReference> {
+                        new TreeTreeReference.Builder("template", trTemplate.ID),
+                        new TreeTreeReference.Builder("pages", trPages.ID)
+                    },
+                    new List<TreeBlobReference>(0)
+                );
 
-            // Persist the blob contents:
-            var blTask = blrepo.PersistBlobs(new ImmutableContainer<BlobID, Blob>(bl => bl.ID, blHeader, blFooter, blTest));
-            blTask.Wait();
-            // Persist the trees:
-            var trTask = trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
-            trTask.Wait();
+                // Persist the blob contents:
+                var blTask = blrepo.PersistBlobs(blHeader, blFooter, blTest);
+                blTask.Wait();
+                // Persist the trees:
+                var trTask = trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
+                trTask.Wait();
 
-            assertTranslated(
-                ce,
-                blTest,
-                trRoot.ID,
-                "<div><div>Header</div><div>Footer</div></div>"
-            );
+                assertTranslated(
+                    ce,
+                    blTest,
+                    trRoot.ID,
+                    "<div><div>Header</div><div>Footer</div></div>"
+                );
+            });
         }
 
         [TestMethod]
