@@ -28,7 +28,7 @@ namespace TestCMS
             TaskEx.RunEx(async () =>
             {
                 output((HTMLFragment)"-----------------------------------------");
-                output((HTMLFragment)(item.TreePath.Path.ToString() + ":"));
+                output((HTMLFragment)(item.TreeBlobPath.Path.ToString() + ":"));
                 output((HTMLFragment)Encoding.UTF8.GetString(await item.StreamedBlob.ReadStream(sr => {
                     byte[] tmp = new byte[sr.Length];
                     sr.Read(tmp, 0, (int)sr.Length);
@@ -87,7 +87,7 @@ namespace TestCMS
 
             foreach (var err in ce.GetErrors())
             {
-                Console.Error.WriteLine("{0} ({1}:{2}): {3}", err.Item.TreePath.Path, err.LineNumber, err.LinePosition, err.Message);
+                Console.Error.WriteLine("{0} ({1}:{2}): {3}", err.Item.TreeBlobPath.Path, err.LineNumber, err.LinePosition, err.Message);
             }
 
             Assert.AreEqual(expected, (string)frag);
@@ -124,7 +124,7 @@ namespace TestCMS
                 Console.Error.WriteLine("Error(s):");
                 foreach (var err in errors)
                 {
-                    Console.Error.WriteLine("  {0} ({1}:{2}): {3}", err.Item.TreePath.Path, err.LineNumber, err.LinePosition, err.Message);
+                    Console.Error.WriteLine("  {0} ({1}:{2}): {3}", err.Item.TreeBlobPath.Path, err.LineNumber, err.LinePosition, err.Message);
                 }
             }
 
@@ -134,7 +134,7 @@ namespace TestCMS
                 Console.Error.WriteLine("Warning(s):");
                 foreach (var warn in warns)
                 {
-                    Console.Error.WriteLine("  {0} ({1}:{2}): {3}", warn.Item.TreePath.Path, warn.LineNumber, warn.LinePosition, warn.Message);
+                    Console.Error.WriteLine("  {0} ({1}:{2}): {3}", warn.Item.TreeBlobPath.Path, warn.LineNumber, warn.LinePosition, warn.Message);
                 }
             }
 

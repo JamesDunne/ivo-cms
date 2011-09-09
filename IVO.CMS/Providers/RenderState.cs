@@ -285,7 +285,7 @@ namespace IVO.CMS.Providers
             engine.ReportWarning(warn);
 
             if (engine.InjectWarningComments)
-                sb.AppendFormat("<!-- IVOCMS warning in '{0}' ({1}:{2}): {3} -->", warn.Item.TreePath.Path, warn.LineNumber, warn.LinePosition, warn.Message);
+                sb.AppendFormat("<!-- IVOCMS warning in '{0}' ({1}:{2}): {3} -->", warn.Item.TreeBlobPath.Path, warn.LineNumber, warn.LinePosition, warn.Message);
         }
 
         public void Warning(string format, params object[] args)
@@ -311,7 +311,7 @@ namespace IVO.CMS.Providers
 
             // Inject an HTML comment describing the error:
             if (engine.InjectErrorComments)
-                sb.AppendFormat("<!-- IVOCMS error in '{0}' ({1}:{2}): {3} -->", err.Item.TreePath.Path, err.LineNumber, err.LinePosition, err.Message);
+                sb.AppendFormat("<!-- IVOCMS error in '{0}' ({1}:{2}): {3} -->", err.Item.TreeBlobPath.Path, err.LineNumber, err.LinePosition, err.Message);
         }
 
         public void Error(string format, params object[] args)
@@ -321,7 +321,7 @@ namespace IVO.CMS.Providers
 
             // Inject an HTML comment describing the error:
             if (engine.InjectErrorComments)
-                sb.AppendFormat("<!-- IVOCMS error in '{0}' ({1}:{2}): {3} -->", err.Item.TreePath.Path, err.LineNumber, err.LinePosition, err.Message);
+                sb.AppendFormat("<!-- IVOCMS error in '{0}' ({1}:{2}): {3} -->", err.Item.TreeBlobPath.Path, err.LineNumber, err.LinePosition, err.Message);
         }
 
         public void ErrorSuppressComment(string message)
