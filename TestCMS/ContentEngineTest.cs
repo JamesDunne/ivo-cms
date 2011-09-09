@@ -1,17 +1,15 @@
 ﻿using System;
-using System.Text;
 using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using IVO.Definition.Models;
+using System.Text;
+using System.Threading.Tasks;
+using Asynq;
 using IVO.CMS;
+using IVO.CMS.Providers.CustomElements;
+using IVO.Definition.Containers;
+using IVO.Definition.Models;
 using IVO.Definition.Repositories;
 using IVO.Implementation.SQL;
-using Asynq;
-using IVO.Definition.Containers;
-using System.Threading.Tasks;
-using IVO.CMS.Providers;
-using IVO.CMS.Providers.CustomElements;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace TestCMS
 {
