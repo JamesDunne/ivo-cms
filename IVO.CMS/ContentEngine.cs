@@ -15,7 +15,9 @@ namespace IVO.CMS
     public sealed class ContentEngine
     {
         private ITreeRepository trrepo;
-        private IBlobRepository blrepo;
+        private IStreamedBlobRepository blrepo;
+        private ITreePathStreamedBlobRepository tpsbrepo;
+
         private DateTimeOffset viewDate;
         private bool throwOnError;
         private bool injectErrorComments;
@@ -36,10 +38,11 @@ namespace IVO.CMS
         /// <param name="throwOnError"></param>
         /// <param name="injectErrorComments"></param>
         /// <param name="injectWarningComments"></param>
-        public ContentEngine(ITreeRepository trrepo, IBlobRepository blrepo, DateTimeOffset viewDate, IConditionalEvaluator evaluator = null, ICustomElementProvider provider = null, bool throwOnError = false, bool injectErrorComments = true, bool injectWarningComments = true)
+        public ContentEngine(ITreeRepository trrepo, IStreamedBlobRepository blrepo, ITreePathStreamedBlobRepository tpsbrepo, DateTimeOffset viewDate, IConditionalEvaluator evaluator = null, ICustomElementProvider provider = null, bool throwOnError = false, bool injectErrorComments = true, bool injectWarningComments = true)
         {
             this.trrepo = trrepo;
             this.blrepo = blrepo;
+            this.tpsbrepo = tpsbrepo;
             this.viewDate = viewDate;
             this.throwOnError = throwOnError;
             this.injectErrorComments = injectErrorComments;
@@ -70,7 +73,11 @@ namespace IVO.CMS
         /// <summary>
         /// Gets the passed-in `IBlobRepository` used to fetch blobs.
         /// </summary>
-        public IBlobRepository Blobs { get { return blrepo; } }
+        public IStreamedBlobRepository StreamedBlobs { get { return blrepo; } }
+        /// <summary>
+        /// Gets the passed-in `ITreePathStreamedBlobRepository` used to fetch blobs by `TreePath`s.
+        /// </summary>
+        public ITreePathStreamedBlobRepository TreePathStreamedBlobs { get { return tpsbrepo; } }
         /// <summary>
         /// Gets the date/time value used for scheduled content.
         /// </summary>

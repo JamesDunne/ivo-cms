@@ -45,16 +45,19 @@ namespace TestCMS
 
         private DataContext db;
         private ITreeRepository trrepo;
-        private IBlobRepository blrepo;
+        private IStreamedBlobRepository blrepo;
+        private ITreePathStreamedBlobRepository tpsbrepo;
 
         private ContentEngine getContentEngine(DateTimeOffset? viewDate = null, IConditionalEvaluator evaluator = null, ICustomElementProvider provider = null)
         {
             DateTimeOffset realDate = viewDate ?? DateTimeOffset.Now;
 
             db = getDataContext();
+            StreamedBlobRepository rblrepo;
             trrepo = new TreeRepository(db);
-            blrepo = new BlobRepository(db);
-            return new ContentEngine(trrepo, blrepo, realDate, evaluator, provider);
+            blrepo = rblrepo = new StreamedBlobRepository(db);
+            tpsbrepo = new TreePathStreamedBlobRepository(db, rblrepo);
+            return new ContentEngine(trrepo, blrepo, tpsbrepo, realDate, evaluator, provider);
         }
 
         private sealed class MemoryStreamedBlob : IStreamedBlob
