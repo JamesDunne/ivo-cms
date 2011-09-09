@@ -67,7 +67,7 @@ namespace TestCMS
                 this.buf = Encoding.UTF8.GetBytes(contents);
 
                 using (var ms = new System.IO.MemoryStream(buf))
-                    this.ID = BlobMethods.ComputeID(ms);
+                    this.ID = StreamedBlobMethods.ComputeID(ms);
             }
 
             public BlobID ID { get; private set; }
