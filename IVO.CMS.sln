@@ -24,6 +24,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestIVO", "IVO\TestIVO\Test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IVO.Implementation.FileSystem", "IVO\IVO\IVO.Implementation.FileSystem\IVO.Implementation.FileSystem.csproj", "{8FE335EC-1E14-489F-A00D-1C56E2058DC9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IVO.TestSupport", "IVO\IVO\IVO.TestSupport\IVO.TestSupport.csproj", "{C2E7FC6B-14F8-4F24-A536-2CAEEBCDFFF1}"
+EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = IVO.CMS.vsmdi
@@ -107,6 +109,16 @@ Global
 		{8FE335EC-1E14-489F-A00D-1C56E2058DC9}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{8FE335EC-1E14-489F-A00D-1C56E2058DC9}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{8FE335EC-1E14-489F-A00D-1C56E2058DC9}.Release|x86.ActiveCfg = Release|Any CPU
+		{C2E7FC6B-14F8-4F24-A536-2CAEEBCDFFF1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2E7FC6B-14F8-4F24-A536-2CAEEBCDFFF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2E7FC6B-14F8-4F24-A536-2CAEEBCDFFF1}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{C2E7FC6B-14F8-4F24-A536-2CAEEBCDFFF1}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{C2E7FC6B-14F8-4F24-A536-2CAEEBCDFFF1}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C2E7FC6B-14F8-4F24-A536-2CAEEBCDFFF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2E7FC6B-14F8-4F24-A536-2CAEEBCDFFF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2E7FC6B-14F8-4F24-A536-2CAEEBCDFFF1}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{C2E7FC6B-14F8-4F24-A536-2CAEEBCDFFF1}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{C2E7FC6B-14F8-4F24-A536-2CAEEBCDFFF1}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -117,5 +129,6 @@ Global
 		{42EFAFD3-5939-492C-8B93-DFD1969BA925} = {3C0891C9-889E-4794-B237-D668BE106BC6}
 		{F80A82CF-D894-41FD-BA0C-DE170023B2BB} = {3C0891C9-889E-4794-B237-D668BE106BC6}
 		{8FE335EC-1E14-489F-A00D-1C56E2058DC9} = {3C0891C9-889E-4794-B237-D668BE106BC6}
+		{C2E7FC6B-14F8-4F24-A536-2CAEEBCDFFF1} = {3C0891C9-889E-4794-B237-D668BE106BC6}
 	EndGlobalSection
 EndGlobal

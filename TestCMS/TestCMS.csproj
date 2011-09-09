@@ -70,6 +70,10 @@
       <Project>{BCD16F4B-3915-43B7-B1C8-5A9132D97615}</Project>
       <Name>IVO.Implementation.SQL</Name>
     </ProjectReference>
+    <ProjectReference Include="..\IVO\IVO\IVO.TestSupport\IVO.TestSupport.csproj">
+      <Project>{C2E7FC6B-14F8-4F24-A536-2CAEEBCDFFF1}</Project>
+      <Name>IVO.TestSupport</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

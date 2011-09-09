@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Asynq;
@@ -10,6 +11,7 @@ using IVO.Definition.Models;
 using IVO.Definition.Repositories;
 using IVO.Implementation.SQL;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using IVO.TestSupport;
 
 namespace TestCMS
 {
@@ -56,46 +58,6 @@ namespace TestCMS
             blrepo = rblrepo = new StreamedBlobRepository(db);
             tpsbrepo = new TreePathStreamedBlobRepository(db, rblrepo);
             return new ContentEngine(trrepo, blrepo, tpsbrepo, realDate, evaluator, provider);
-        }
-
-        private sealed class MemoryStreamedBlob : IStreamedBlob
-        {
-            private byte[] buf;
-
-            public MemoryStreamedBlob(string contents)
-            {
-                this.buf = Encoding.UTF8.GetBytes(contents);
-
-                using (var ms = new System.IO.MemoryStream(buf))
-                    this.ID = StreamedBlobMethods.ComputeID(ms);
-            }
-
-            public BlobID ID { get; private set; }
-
-            public Task<TResult> ReadStream<TResult>(Func<System.IO.Stream, TResult> read)
-            {
-                return TaskEx.Run(() =>
-                {
-                    using (var ms = new System.IO.MemoryStream(buf))
-                        return read(ms);
-                });
-            }
-
-            public Task ReadStream(Action<System.IO.Stream> read)
-            {
-                return TaskEx.Run(() =>
-                {
-                    using (var ms = new System.IO.MemoryStream(buf))
-                        read(ms);
-                });
-            }
-
-            public long? Length { get { return buf.LongLength; } }
-        }
-
-        private static System.IO.Stream MemoryStreamOverString(string contents)
-        {
-            return new System.IO.MemoryStream(Encoding.UTF8.GetBytes(contents));
         }
 
         private void assertTranslated(string blob, string expected)
@@ -225,9 +187,9 @@ namespace TestCMS
             {
                 var ce = getContentEngine();
 
-                PersistingBlob blHeader = new PersistingBlob(() => MemoryStreamOverString("<div>Header</div>"));
-                PersistingBlob blFooter = new PersistingBlob(() => MemoryStreamOverString("<div>Footer</div>"));
-                PersistingBlob blTest = new PersistingBlob(() => MemoryStreamOverString("<div><cms-import path=\"/template/header\" /><cms-import path=\"/template/footer\" /></div>"));
+                PersistingBlob blHeader = new PersistingBlob(() => "<div>Header</div>".ToStream());
+                PersistingBlob blFooter = new PersistingBlob(() => "<div>Footer</div>".ToStream());
+                PersistingBlob blTest = new PersistingBlob(() => "<div><cms-import path=\"/template/header\" /><cms-import path=\"/template/footer\" /></div>".ToStream());
                 Tree trTemplate = new Tree.Builder(
                     new List<TreeTreeReference>(0),
                     new List<TreeBlobReference> {
@@ -271,9 +233,9 @@ namespace TestCMS
             {
                 var ce = getContentEngine();
 
-                PersistingBlob blHeader = new PersistingBlob(() => MemoryStreamOverString("<div>Header</div>"));
-                PersistingBlob blFooter = new PersistingBlob(() => MemoryStreamOverString("<div>Footer</div>"));
-                PersistingBlob blTest = new PersistingBlob(() => MemoryStreamOverString("<div><cms-import path=\"../template/header\" /><cms-import path=\"../template/footer\" /></div>"));
+                PersistingBlob blHeader = new PersistingBlob(() => "<div>Header</div>".ToStream());
+                PersistingBlob blFooter = new PersistingBlob(() => "<div>Footer</div>".ToStream());
+                PersistingBlob blTest = new PersistingBlob(() => "<div><cms-import path=\"../template/header\" /><cms-import path=\"../template/footer\" /></div>".ToStream());
                 Tree trTemplate = new Tree.Builder(
                     new List<TreeTreeReference>(0),
                     new List<TreeBlobReference> {
@@ -940,9 +902,9 @@ Well that was fun!
                 // Use a + 5 days as the viewing date for scheduling:
                 var ce = getContentEngine(a.AddDays(5));
 
-                PersistingBlob blHeader = new PersistingBlob(() => MemoryStreamOverString("<div>Header</div>"));
-                PersistingBlob blFooter = new PersistingBlob(() => MemoryStreamOverString("<div>Footer</div>"));
-                PersistingBlob blTest = new PersistingBlob(() => MemoryStreamOverString(String.Format(
+                PersistingBlob blHeader = new PersistingBlob(() => "<div>Header</div>".ToStream());
+                PersistingBlob blFooter = new PersistingBlob(() => "<div>Footer</div>".ToStream());
+                PersistingBlob blTest = new PersistingBlob(() => String.Format(
 @"<div>
   <cms-scheduled>
     <range from=""{0}"" to=""{2}""/>
@@ -954,7 +916,7 @@ Well that was fun!
                     a.ToString("u"),
                     b.ToString("u"),
                     c.ToString("u")
-                )));
+                ).ToStream());
 
                 Tree trTemplate = new Tree.Builder(
                     new List<TreeTreeReference>(0),
@@ -1004,9 +966,9 @@ Well that was fun!
             // Use a - 5 days as the viewing date for scheduling:
             var ce = getContentEngine(a.AddDays(-5));
 
-            PersistingBlob blHeader = new PersistingBlob(() => MemoryStreamOverString("<div>Header</div>"));
-            PersistingBlob blFooter = new PersistingBlob(() => MemoryStreamOverString("<div>Footer</div>"));
-            PersistingBlob blTest = new PersistingBlob(() => MemoryStreamOverString(String.Format(
+            PersistingBlob blHeader = new PersistingBlob(() => "<div>Header</div>".ToStream());
+            PersistingBlob blFooter = new PersistingBlob(() => "<div>Footer</div>".ToStream());
+            PersistingBlob blTest = new PersistingBlob(() => String.Format(
 @"<div>
   <cms-scheduled>
     <range from=""{0}"" to=""{2}""/>
@@ -1018,7 +980,7 @@ Well that was fun!
                 a.ToString("u"),
                 b.ToString("u"),
                 c.ToString("u")
-            )));
+            ).ToStream());
 
             Tree trTemplate = new Tree.Builder(
                 new List<TreeTreeReference>(0),
