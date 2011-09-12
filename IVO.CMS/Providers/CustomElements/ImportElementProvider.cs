@@ -51,7 +51,7 @@ namespace IVO.CMS.Providers.CustomElements
                 string ncpath = st.Reader.GetAttribute("path");
 
                 // Canonicalize the absolute or relative path relative to the current item's path:
-                var abspath = Path.ParseBlobPath(ncpath);
+                var abspath = PathObjectModel.ParseBlobPath(ncpath);
                 CanonicalBlobPath path = abspath.Collapse(abs => abs.Canonicalize(), rel => (st.Item.TreeBlobPath.Path.Tree + rel).Canonicalize());
 
                 // Fetch the Blob given the absolute path constructed:
