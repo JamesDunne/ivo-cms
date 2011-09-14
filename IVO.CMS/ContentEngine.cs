@@ -6,6 +6,7 @@ using IVO.CMS.Providers;
 using IVO.CMS.Providers.CustomElements;
 using IVO.Definition.Models;
 using IVO.Definition.Repositories;
+using System.Threading.Tasks;
 
 namespace IVO.CMS
 {
@@ -145,16 +146,16 @@ namespace IVO.CMS
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        public HTMLFragment RenderBlob(TreePathStreamedBlob item)
+        public async Task<HTMLFragment> RenderBlob(TreePathStreamedBlob item)
         {
             // Refresh the error and warning lists:
             errors = new List<SemanticError>();
             warnings = new List<SemanticWarning>();
 
             RenderState rs = new RenderState(this);
-            rs.Render(item);
+            var writer = await rs.Render(item);
 
-            string result = rs.Writer.ToString();
+            string result = writer.ToString();
             return new HTMLFragment(result);
         }
     }

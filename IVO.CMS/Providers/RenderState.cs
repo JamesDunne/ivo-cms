@@ -6,6 +6,7 @@ using System.Xml;
 using IVO.CMS.Providers.CustomElements;
 using IVO.Definition.Models;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace IVO.CMS.Providers
 {
@@ -92,10 +93,10 @@ namespace IVO.CMS.Providers
             this.previous = null;
         }
 
-        public void Render(TreePathStreamedBlob item)
+        public async Task<StringBuilder> Render(TreePathStreamedBlob item)
         {
             // Begin to stream contents from the blob:
-            item.StreamedBlob.ReadStream(sr =>
+            await item.StreamedBlob.ReadStream(sr =>
             {
                 // Create a string builder used to build the output polyglot HTML5 document fragment:
                 this.item = item;
@@ -110,7 +111,9 @@ namespace IVO.CMS.Providers
                     // Stream in the content and output it to the StringBuilder:
                     this.StreamContent(this.DefaultProcessElements, this.DefaultEarlyExit);
                 }
-            }).Wait();
+            });
+
+            return this.sb;
         }
 
         /// <summary>

@@ -77,7 +77,9 @@ namespace TestCMS
         {
             output(item);
 
-            var frag = tc.ce.RenderBlob(item);
+            var fragTask = tc.ce.RenderBlob(item);
+            fragTask.Wait();
+            var frag = fragTask.Result;
             output(frag);
 
             foreach (var err in tc.ce.GetErrors())
@@ -110,7 +112,9 @@ namespace TestCMS
         {
             output(item);
 
-            var frag = tc.ce.RenderBlob(item);
+            var fragTask = tc.ce.RenderBlob(item);
+            fragTask.Wait();
+            var frag = fragTask.Result;
             output(frag);
 
             var errors = tc.ce.GetErrors();

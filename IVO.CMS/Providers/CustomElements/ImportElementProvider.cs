@@ -71,8 +71,10 @@ namespace IVO.CMS.Providers.CustomElements
 
                 // Render the blob inline:
                 RenderState rsInner = new RenderState(st);
-                rsInner.Render(tBlob.Result[0]);
-                string innerResult = rsInner.Writer.ToString();
+                var innerSbTask = rsInner.Render(tBlob.Result[0]);
+                innerSbTask.Wait();
+
+                string innerResult = innerSbTask.Result.ToString();
                 st.Writer.Append(innerResult);
 
                 // Move the reader back to the element node:
