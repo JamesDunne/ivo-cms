@@ -12,13 +12,27 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace TestCMS
 {
+    public sealed class TestContext
+    {
+        public ITreeRepository trrepo { get; private set; }
+        public IStreamedBlobRepository blrepo { get; private set; }
+        public ITreePathStreamedBlobRepository tpsbrepo { get; private set; }
+        public ContentEngine ce { get; private set; }
+
+        public TestContext(ContentEngine ce, ITreeRepository trrepo, IStreamedBlobRepository blrepo, ITreePathStreamedBlobRepository tpsbrepo)
+        {
+            this.ce = ce;
+            this.trrepo = trrepo;
+            this.blrepo = blrepo;
+            this.tpsbrepo = tpsbrepo;
+        }
+    }
+
     public abstract class CommonTestBase
     {
-        protected abstract ContentEngine getContentEngine(DateTimeOffset? viewDate = null, IConditionalEvaluator evaluator = null, ICustomElementProvider provider = null);
-
-        protected ITreeRepository trrepo;
-        protected IStreamedBlobRepository blrepo;
-        protected ITreePathStreamedBlobRepository tpsbrepo;
+        public delegate TestContext GetTestContextDelegate(DateTimeOffset? viewDate = null, IConditionalEvaluator evaluator = null, ICustomElementProvider provider = null);
+        
+        protected GetTestContextDelegate getTestContext;
 
         protected void output(HTMLFragment fragment)
         {
@@ -43,30 +57,30 @@ namespace TestCMS
 
         protected void assertTranslated(string blob, string expected)
         {
-            var ce = getContentEngine();
-            assertTranslated(ce, blob, expected);
+            var tc = getTestContext();
+            assertTranslated(tc, blob, expected);
         }
 
-        protected void assertTranslated(ContentEngine ce, string blob, string expected)
+        protected void assertTranslated(TestContext tc, string blob, string expected)
         {
             var bl = new MemoryStreamedBlob(blob);
-            assertTranslated(ce, bl, new TreeID(), expected);
+            assertTranslated(tc, bl, new TreeID(), expected);
         }
 
-        protected void assertTranslated(ContentEngine ce, IStreamedBlob bl, TreeID rootid, string expected)
+        protected void assertTranslated(TestContext tc, IStreamedBlob bl, TreeID rootid, string expected)
         {
             var item = new TreePathStreamedBlob(rootid, (CanonicalBlobPath)"/test", bl);
-            assertTranslated(ce, item, expected);
+            assertTranslated(tc, item, expected);
         }
 
-        protected void assertTranslated(ContentEngine ce, TreePathStreamedBlob item, string expected)
+        protected void assertTranslated(TestContext tc, TreePathStreamedBlob item, string expected)
         {
             output(item);
 
-            var frag = ce.RenderBlob(item);
+            var frag = tc.ce.RenderBlob(item);
             output(frag);
 
-            foreach (var err in ce.GetErrors())
+            foreach (var err in tc.ce.GetErrors())
             {
                 Console.Error.WriteLine("{0} ({1}:{2}): {3}", err.Item.TreeBlobPath.Path, err.LineNumber, err.LinePosition, err.Message);
             }
@@ -76,30 +90,30 @@ namespace TestCMS
 
         protected void assumeFail(string blob, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
         {
-            var ce = getContentEngine();
-            assumeFail(ce, blob, expectedErrors, expectedWarnings);
+            var tc = getTestContext();
+            assumeFail(tc, blob, expectedErrors, expectedWarnings);
         }
 
-        protected void assumeFail(ContentEngine ce, string blob, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
+        protected void assumeFail(TestContext tc, string blob, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
         {
             var bl = new MemoryStreamedBlob(blob);
-            assumeFail(ce, bl, new TreeID(), expectedErrors, expectedWarnings);
+            assumeFail(tc, bl, new TreeID(), expectedErrors, expectedWarnings);
         }
 
-        protected void assumeFail(ContentEngine ce, IStreamedBlob bl, TreeID rootid, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
+        protected void assumeFail(TestContext tc, IStreamedBlob bl, TreeID rootid, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
         {
             var item = new TreePathStreamedBlob(rootid, (CanonicalBlobPath)"/test", bl);
-            assumeFail(ce, item, expectedErrors, expectedWarnings);
+            assumeFail(tc, item, expectedErrors, expectedWarnings);
         }
 
-        protected void assumeFail(ContentEngine ce, TreePathStreamedBlob item, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
+        protected void assumeFail(TestContext tc, TreePathStreamedBlob item, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
         {
             output(item);
 
-            var frag = ce.RenderBlob(item);
+            var frag = tc.ce.RenderBlob(item);
             output(frag);
 
-            var errors = ce.GetErrors();
+            var errors = tc.ce.GetErrors();
             if (errors.Count > 0)
             {
                 Console.Error.WriteLine("Error(s):");
@@ -109,7 +123,7 @@ namespace TestCMS
                 }
             }
 
-            var warns = ce.GetWarnings();
+            var warns = tc.ce.GetWarnings();
             if (warns.Count > 0)
             {
                 Console.Error.WriteLine("Warning(s):");

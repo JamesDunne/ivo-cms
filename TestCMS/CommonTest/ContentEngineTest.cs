@@ -15,9 +15,13 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace TestCMS.CommonTest
 {
-    public abstract class ContentEngineTestMethods : CommonTestBase
+    public class ContentEngineTestMethods : CommonTestBase
     {
-        [TestMethod]
+        public ContentEngineTestMethods(GetTestContextDelegate getTestContext)
+        {
+            this.getTestContext = getTestContext;
+        }
+
         public void TestRenderBlob()
         {
             assertTranslated(
@@ -26,7 +30,6 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestRenderBlobAttributes()
         {
             assertTranslated(
@@ -35,7 +38,6 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestRenderBlobWithContent()
         {
             assertTranslated(
@@ -44,7 +46,6 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestRenderBlobWithEmptyElements()
         {
             assertTranslated(
@@ -53,110 +54,101 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
-        public void TestImportAbsolute()
+        public async Task TestImportAbsolute()
         {
-            TaskEx.RunEx(async () =>
-            {
-                var ce = getContentEngine();
+            var tc = getTestContext();
 
-                PersistingBlob blHeader = new PersistingBlob(() => "<div>Header</div>".ToStream());
-                PersistingBlob blFooter = new PersistingBlob(() => "<div>Footer</div>".ToStream());
-                PersistingBlob blTest = new PersistingBlob(() => "<div><cms-import path=\"/template/header\" /><cms-import path=\"/template/footer\" /></div>".ToStream());
-                Tree trTemplate = new Tree.Builder(
-                    new List<TreeTreeReference>(0),
-                    new List<TreeBlobReference> {
+            PersistingBlob blHeader = new PersistingBlob(() => "<div>Header</div>".ToStream());
+            PersistingBlob blFooter = new PersistingBlob(() => "<div>Footer</div>".ToStream());
+            PersistingBlob blTest = new PersistingBlob(() => "<div><cms-import path=\"/template/header\" /><cms-import path=\"/template/footer\" /></div>".ToStream());
+            Tree trTemplate = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
                         new TreeBlobReference.Builder("header", blHeader.ComputedID),
                         new TreeBlobReference.Builder("footer", blFooter.ComputedID)
                     }
-                );
-                Tree trPages = new Tree.Builder(
-                    new List<TreeTreeReference>(0),
-                    new List<TreeBlobReference> {
+            );
+            Tree trPages = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
                         new TreeBlobReference.Builder("test", blTest.ComputedID)
                     }
-                );
-                Tree trRoot = new Tree.Builder(
-                    new List<TreeTreeReference> {
+            );
+            Tree trRoot = new Tree.Builder(
+                new List<TreeTreeReference> {
                         new TreeTreeReference.Builder("template", trTemplate.ID),
                         new TreeTreeReference.Builder("pages", trPages.ID)
                     },
-                    new List<TreeBlobReference>(0)
-                );
+                new List<TreeBlobReference>(0)
+            );
 
-                // Persist the blob contents:
-                var blTask = await blrepo.PersistBlobs(blHeader, blFooter, blTest);
-                
-                // Persist the trees:
-                var trTask = await trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
+            // Persist the blob contents:
+            var blTask = await tc.blrepo.PersistBlobs(blHeader, blFooter, blTest);
 
-                assertTranslated(
-                    ce,
-                    blTask[2],   // aka blTest
-                    trRoot.ID,
-                    "<div><div>Header</div><div>Footer</div></div>"
-                );
-            }).Wait();
+            // Persist the trees:
+            var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
+
+            assertTranslated(
+                tc,
+                blTask[2],   // aka blTest
+                trRoot.ID,
+                "<div><div>Header</div><div>Footer</div></div>"
+            );
         }
 
-        [TestMethod]
-        public void TestImportRelative()
+        public async Task TestImportRelative()
         {
-            TaskEx.RunEx(async () =>
-            {
-                var ce = getContentEngine();
+            var tc = getTestContext();
 
-                PersistingBlob blHeader = new PersistingBlob(() => "<div>Header</div>".ToStream());
-                PersistingBlob blFooter = new PersistingBlob(() => "<div>Footer</div>".ToStream());
-                PersistingBlob blTest = new PersistingBlob(() => "<div><cms-import path=\"../template/header\" /><cms-import path=\"../template/footer\" /></div>".ToStream());
-                Tree trTemplate = new Tree.Builder(
-                    new List<TreeTreeReference>(0),
-                    new List<TreeBlobReference> {
+            PersistingBlob blHeader = new PersistingBlob(() => "<div>Header</div>".ToStream());
+            PersistingBlob blFooter = new PersistingBlob(() => "<div>Footer</div>".ToStream());
+            PersistingBlob blTest = new PersistingBlob(() => "<div><cms-import path=\"../template/header\" /><cms-import path=\"../template/footer\" /></div>".ToStream());
+            Tree trTemplate = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
                     new TreeBlobReference.Builder("header", blHeader.ComputedID),
                     new TreeBlobReference.Builder("footer", blFooter.ComputedID)
                 }
-                );
-                Tree trPages = new Tree.Builder(
-                    new List<TreeTreeReference>(0),
-                    new List<TreeBlobReference> {
+            );
+            Tree trPages = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
                     new TreeBlobReference.Builder("test", blTest.ComputedID)
                 }
-                );
-                Tree trRoot = new Tree.Builder(
-                    new List<TreeTreeReference> {
+            );
+            Tree trRoot = new Tree.Builder(
+                new List<TreeTreeReference> {
                     new TreeTreeReference.Builder("template", trTemplate.ID),
                     new TreeTreeReference.Builder("pages", trPages.ID)
                 },
-                    new List<TreeBlobReference>(0)
-                );
+                new List<TreeBlobReference>(0)
+            );
 
-                // Persist the blob contents:
-                var blTask = await blrepo.PersistBlobs(blHeader, blFooter, blTest);
+            // Persist the blob contents:
+            var blTask = await tc.blrepo.PersistBlobs(blHeader, blFooter, blTest);
 
-                // Persist the trees:
-                var trTask = await trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
+            // Persist the trees:
+            var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
 
-                output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", blTask[0]));
-                output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", blTask[1]));
-                assertTranslated(
-                    ce,
-                    new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/pages/test", blTask[2]),
-                    "<div><div>Header</div><div>Footer</div></div>"
-                );
-            }).Wait();
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", blTask[0]));
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", blTask[1]));
+            assertTranslated(
+                tc,
+                new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/pages/test", blTask[2]),
+                "<div><div>Header</div><div>Footer</div></div>"
+            );
         }
 
-        [TestMethod]
         public void TestScheduled()
         {
             DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
             DateTimeOffset b = a.AddDays(15);
             DateTimeOffset c = a.AddDays(30);
             // Use a + 5 days as the viewing date for scheduling:
-            var ce = getContentEngine(a.AddDays(5));
+            var tc = getTestContext(a.AddDays(5));
 
             assertTranslated(
-                ce,
+                tc,
                 String.Format(
 @"<div>
   <cms-scheduled>
@@ -176,17 +168,16 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestScheduled2()
         {
             DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
             DateTimeOffset b = a.AddDays(15);
             DateTimeOffset c = a.AddDays(30);
             // Use a + 5 days as the viewing date for scheduling:
-            var ce = getContentEngine(a.AddDays(5));
+            var tc = getTestContext(a.AddDays(5));
 
             assertTranslated(
-                ce,
+                tc,
                 String.Format(
 @"<div>
   <cms-scheduled>
@@ -206,17 +197,16 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestScheduled3()
         {
             DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
             DateTimeOffset b = a.AddDays(15);
             DateTimeOffset c = a.AddDays(30);
             // Use a + 5 days as the viewing date for scheduling:
-            var ce = getContentEngine(a.AddDays(5));
+            var tc = getTestContext(a.AddDays(5));
 
             assertTranslated(
-                ce,
+                tc,
                 String.Format(
 @"<div>
   <cms-scheduled>
@@ -236,17 +226,16 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestScheduledNot()
         {
             DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
             DateTimeOffset b = a.AddDays(15);
             DateTimeOffset c = a.AddDays(30);
             // Use a + 5 days as the viewing date for scheduling:
-            var ce = getContentEngine(a.AddDays(-5));
+            var tc = getTestContext(a.AddDays(-5));
 
             assertTranslated(
-                ce,
+                tc,
                 String.Format(
 @"<div>
   <cms-scheduled>
@@ -266,7 +255,6 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestScheduleFail1()
         {
             assumeFail(
@@ -287,7 +275,6 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestScheduleFail2()
         {
             assumeFail(
@@ -304,7 +291,6 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestScheduleFail3()
         {
             assumeFail(
@@ -320,7 +306,6 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestScheduleFail4()
         {
             assumeFail(
@@ -338,7 +323,6 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestScheduleFail5()
         {
             assumeFail(
@@ -355,7 +339,6 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestScheduleFail6()
         {
             // A <content /> node inside a non-empty <range> element should not count.
@@ -373,7 +356,6 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestScheduleFail7()
         {
             assumeFail(
@@ -389,7 +371,6 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestScheduleFail8()
         {
             assumeFail(
@@ -444,13 +425,12 @@ namespace TestCMS.CommonTest
             #endregion
         }
 
-        [TestMethod]
         public void TestConditionalIfElse_IfWins()
         {
-            var ce = getContentEngine(evaluator: new AEvaluator(true));
+            var tc = getTestContext(evaluator: new AEvaluator(true));
 
             assertTranslated(
-                ce,
+                tc,
 @"<div>
   <cms-conditional>
     <if a=""true"">A is true!</if>
@@ -463,13 +443,12 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestConditionalIfElse_ElseWins()
         {
-            var ce = getContentEngine(evaluator: new AEvaluator(false));
+            var tc = getTestContext(evaluator: new AEvaluator(false));
 
             assertTranslated(
-                ce,
+                tc,
 @"<div>
   <cms-conditional>
     <if a=""true"">A is true!</if>
@@ -482,13 +461,12 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestConditionalIfElifElse_IfWins()
         {
-            var ce = getContentEngine(evaluator: new AEvaluator(true));
+            var tc = getTestContext(evaluator: new AEvaluator(true));
 
             assertTranslated(
-                ce,
+                tc,
 @"<div>
   <cms-conditional>
     <if a=""true"">A is true!</if>
@@ -502,13 +480,12 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestConditionalIfElifElse_ElifWins()
         {
-            var ce = getContentEngine(evaluator: new AEvaluator(false));
+            var tc = getTestContext(evaluator: new AEvaluator(false));
 
             assertTranslated(
-                ce,
+                tc,
 @"<div>
   <cms-conditional>
     <if a=""true"">A is true!</if>
@@ -522,13 +499,12 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestConditionalIfElifElse_ElseWins()
         {
-            var ce = getContentEngine(evaluator: new AEvaluator(false));
+            var tc = getTestContext(evaluator: new AEvaluator(false));
 
             assertTranslated(
-                ce,
+                tc,
 @"<div>
   <cms-conditional>
     <if a=""true"">A is true!</if>
@@ -542,13 +518,12 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestConditionalIfMultipleElifElse_ElifWins()
         {
-            var ce = getContentEngine(evaluator: new AEvaluator(false));
+            var tc = getTestContext(evaluator: new AEvaluator(false));
 
             assertTranslated(
-                ce,
+                tc,
 @"<div>
   <cms-conditional>
     <if a=""true"">A is true!</if>
@@ -563,14 +538,13 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestConditionalFail1()
         {
-            var ce = getContentEngine(evaluator: new AEvaluator(false));
+            var tc = getTestContext(evaluator: new AEvaluator(false));
 
             // if must be first.
             assumeFail(
-                ce,
+                tc,
 @"<div>
   <cms-conditional>
     <else>else A is false!</else>
@@ -583,14 +557,13 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestConditionalFail2()
         {
-            var ce = getContentEngine(evaluator: new AEvaluator(false));
+            var tc = getTestContext(evaluator: new AEvaluator(false));
 
             // An if with no attributes is an error.
             assumeFail(
-                ce,
+                tc,
 @"<div>
   <cms-conditional>
     <if>Invalid if! Needs at least one conditional test attribute.</if>
@@ -601,14 +574,13 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestConditionalFail3()
         {
-            var ce = getContentEngine(evaluator: new AEvaluator(true));
+            var tc = getTestContext(evaluator: new AEvaluator(true));
 
             // An else with attributes is an error.
             assumeFail(
-                ce,
+                tc,
 @"<div>
   <cms-conditional>
     <if a=""false"">A is false!</if>
@@ -620,14 +592,13 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestConditionalOkay1()
         {
-            var ce = getContentEngine(evaluator: new AEvaluator(true));
+            var tc = getTestContext(evaluator: new AEvaluator(true));
 
             // An if without an else is okay.
             assertTranslated(
-                ce,
+                tc,
 @"<div>
   <cms-conditional>
     <if a=""false"">A is false!</if>
@@ -639,14 +610,13 @@ namespace TestCMS.CommonTest
             );
         }
 
-        [TestMethod]
         public void TestConditionalOkay2()
         {
-            var ce = getContentEngine(evaluator: new AEvaluator(true));
+            var tc = getTestContext(evaluator: new AEvaluator(true));
 
             // Text and comments are ignored around the 'if', 'elif', and 'else' elements.
             assertTranslated(
-                ce,
+                tc,
 @"<div>
   <cms-conditional>
     <!-- documentation here. -->
@@ -664,7 +634,6 @@ Well that was fun!
             );
         }
 
-        [TestMethod]
         public void TestCMSLinkAbsolute()
         {
             assertTranslated(
@@ -677,7 +646,6 @@ Well that was fun!
             );
         }
 
-        [TestMethod]
         public void TestCMSLinkAttributes()
         {
             assertTranslated(
@@ -690,7 +658,6 @@ Well that was fun!
             );
         }
 
-        [TestMethod]
         public void TestCMSLinkRelative()
         {
             assertTranslated(
@@ -703,7 +670,6 @@ Well that was fun!
             );
         }
 
-        [TestMethod]
         public void TestCMSLinkEmpty()
         {
             assertTranslated(
@@ -716,7 +682,6 @@ Well that was fun!
             );
         }
 
-        [TestMethod]
         public void TestCMSLinkFail1()
         {
             assumeFail(
@@ -728,8 +693,7 @@ Well that was fun!
             );
         }
 
-        [TestMethod]
-        public void TestCMSLinkFail1a()
+        public void TestCMSLinkFail2()
         {
             assumeFail(
 @"<div>
@@ -740,8 +704,7 @@ Well that was fun!
             );
         }
 
-        [TestMethod]
-        public void TestCMSLinkFail2()
+        public void TestCMSLinkFail3()
         {
             assumeFail(
 @"<div>
@@ -752,8 +715,7 @@ Well that was fun!
             );
         }
 
-        [TestMethod]
-        public void TestCMSLinkFail2a()
+        public void TestCMSLinkFail4()
         {
             assumeFail(
 @"<div>
@@ -764,16 +726,13 @@ Well that was fun!
             );
         }
 
-        [TestMethod]
-        public void TestNestedElements()
+        public async Task TestNestedElements()
         {
-            TaskEx.RunEx(async () =>
-            {
                 DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
                 DateTimeOffset b = a.AddDays(15);
                 DateTimeOffset c = a.AddDays(30);
                 // Use a + 5 days as the viewing date for scheduling:
-                var ce = getContentEngine(a.AddDays(5));
+                var tc = getTestContext(a.AddDays(5));
 
                 PersistingBlob blHeader = new PersistingBlob(() => "<div>Header</div>".ToStream());
                 PersistingBlob blFooter = new PersistingBlob(() => "<div>Footer</div>".ToStream());
@@ -813,31 +772,29 @@ Well that was fun!
                 );
 
                 // Persist the blob contents:
-                var blTask = await blrepo.PersistBlobs(blHeader, blFooter, blTest);
+                var blTask = await tc.blrepo.PersistBlobs(blHeader, blFooter, blTest);
                 // Persist the trees:
-                var trTask = await trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
+                var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
 
                 output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", blTask[0]));
                 output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", blTask[1]));
                 assertTranslated(
-                    ce,
+                    tc,
                     blTask[2],
                     trRoot.ID,
 @"<div>
   <div>Header</div>In between content.<div>Footer</div>
 </div>"
                 );
-            }).Wait();
         }
 
-        [TestMethod]
-        public void TestNestedElementsSkip()
+        public async Task TestNestedElementsSkip()
         {
             DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
             DateTimeOffset b = a.AddDays(15);
             DateTimeOffset c = a.AddDays(30);
             // Use a - 5 days as the viewing date for scheduling:
-            var ce = getContentEngine(a.AddDays(-5));
+            var tc = getTestContext(a.AddDays(-5));
 
             PersistingBlob blHeader = new PersistingBlob(() => "<div>Header</div>".ToStream());
             PersistingBlob blFooter = new PersistingBlob(() => "<div>Footer</div>".ToStream());
@@ -877,17 +834,15 @@ Well that was fun!
             );
 
             // Persist the blob contents:
-            var blTask = blrepo.PersistBlobs(blHeader, blFooter, blTest);
-            blTask.Wait();
+            var blTask = await tc.blrepo.PersistBlobs(blHeader, blFooter, blTest);
             // Persist the trees:
-            var trTask = trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
-            trTask.Wait();
+            var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
 
-            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", blTask.Result[0]));
-            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", blTask.Result[1]));
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", blTask[0]));
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", blTask[1]));
             assertTranslated(
-                ce,
-                blTask.Result[2],
+                tc,
+                blTask[2],
                 trRoot.ID,
 @"<div>
   Else here?
@@ -895,7 +850,6 @@ Well that was fun!
             );
         }
 
-        [TestMethod]
         public void TestUnknownSkipped()
         {
             assertTranslated(
