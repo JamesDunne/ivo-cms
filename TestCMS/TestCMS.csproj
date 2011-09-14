@@ -50,8 +50,11 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ContentEngineTest.cs" />
+    <Compile Include="CommonTestBase.cs" />
+    <Compile Include="CommonTest\ContentEngineTest.cs" />
+    <Compile Include="FileSystemTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SQLTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\IVO.CMS\IVO.CMS.csproj">
@@ -66,6 +69,10 @@
       <Project>{29D4825B-A343-45AA-99FB-CE6671E78178}</Project>
       <Name>IVO.Definition</Name>
     </ProjectReference>
+    <ProjectReference Include="..\IVO\IVO\IVO.Implementation.FileSystem\IVO.Implementation.FileSystem.csproj">
+      <Project>{8FE335EC-1E14-489F-A00D-1C56E2058DC9}</Project>
+      <Name>IVO.Implementation.FileSystem</Name>
+    </ProjectReference>
     <ProjectReference Include="..\IVO\IVO\IVO.Implementation.SQL\IVO.Implementation.SQL.csproj">
       <Project>{BCD16F4B-3915-43B7-B1C8-5A9132D97615}</Project>
       <Name>IVO.Implementation.SQL</Name>
@@ -75,6 +82,7 @@
       <Name>IVO.TestSupport</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
