@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Xml;
 using IVO.Definition.Models;
+using System.Threading.Tasks;
 
 namespace IVO.CMS.Providers.CustomElements
 {
@@ -23,6 +24,6 @@ namespace IVO.CMS.Providers.CustomElements
         /// <returns>true to mark element as processed; false to continue to next provider in the chain.
         /// If the last provider in the chain returns false, the custom element is skipped entirely and
         /// ignored.</returns>
-        bool ProcessCustomElement(string elementName, RenderState state);
+        Task<bool> ProcessCustomElement(string elementName, RenderState state);
     }
 }

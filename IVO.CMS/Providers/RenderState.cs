@@ -96,7 +96,7 @@ namespace IVO.CMS.Providers
         public async Task<StringBuilder> Render(TreePathStreamedBlob item)
         {
             // Begin to stream contents from the blob:
-            await item.StreamedBlob.ReadStream(sr =>
+            await item.StreamedBlob.ReadStream(async sr =>
             {
                 // Create a string builder used to build the output polyglot HTML5 document fragment:
                 this.item = item;
@@ -109,7 +109,7 @@ namespace IVO.CMS.Providers
                     this.xr.Read();
 
                     // Stream in the content and output it to the StringBuilder:
-                    this.StreamContent(this.DefaultProcessElements, this.DefaultEarlyExit);
+                    await this.StreamContent(this.DefaultProcessElements, this.DefaultEarlyExit);
                 }
             });
 
@@ -123,7 +123,7 @@ namespace IVO.CMS.Providers
         /// <param name="sb"></param>
         /// <param name="action"></param>
         /// <param name="exit"></param>
-        public void StreamContent(Func<bool> processElements, Func<bool> earlyExit)
+        public async Task StreamContent(Func<Task<bool>> processElements, Func<bool> earlyExit)
         {
             if (xr == null) throw new InvalidOperationException();
             if (sb == null) throw new InvalidOperationException();
@@ -131,7 +131,7 @@ namespace IVO.CMS.Providers
             do
             {
                 if (earlyExit()) break;
-                if (!processElements()) continue;
+                if (!await processElements()) continue;
 
                 switch (xr.NodeType)
                 {
@@ -206,7 +206,7 @@ namespace IVO.CMS.Providers
             } while (xr.Read());
         }
 
-        public bool DefaultProcessElements()
+        public async Task<bool> DefaultProcessElements()
         {
             if (xr == null) throw new InvalidOperationException();
             if (sb == null) throw new InvalidOperationException();
@@ -214,7 +214,7 @@ namespace IVO.CMS.Providers
             if (xr.NodeType == XmlNodeType.Element && xr.LocalName.StartsWith("cms-"))
             {
                 // Call out to the custom element handlers:
-                ProcessCMSInstruction(xr.LocalName, this);
+                await ProcessCMSInstruction(xr.LocalName, this);
 
                 // Skip normal copying behavior for this element:
                 return false;
@@ -228,7 +228,7 @@ namespace IVO.CMS.Providers
             return false;
         }
 
-        public static bool ProcessCMSInstruction(string elementName, RenderState state)
+        public static async Task<bool> ProcessCMSInstruction(string elementName, RenderState state)
         {
             string openingElement = state.xr.LocalName;
             int openingDepth = state.xr.Depth;
@@ -239,8 +239,11 @@ namespace IVO.CMS.Providers
             
             // Run down the chain until a provider picks up the element and processes its contents:
             bool processed = false;
-            while (provider != null && !(processed = provider.ProcessCustomElement(elementName, state)))
+            while (provider != null)
             {
+                if (true == (processed = await provider.ProcessCustomElement(elementName, state)))
+                    break;
+
                 provider = provider.Next;
             }
 
@@ -359,7 +362,7 @@ namespace IVO.CMS.Providers
             if (xr.LocalName != elementName) Error("expected end </{0}> element", elementName);
         }
 
-        public void CopyElementChildren(string elementName)
+        public async Task CopyElementChildren(string elementName)
         {
             if (xr == null) throw new InvalidOperationException();
             if (sb == null) throw new InvalidOperationException();
@@ -376,7 +379,7 @@ namespace IVO.CMS.Providers
             if (!xr.Read()) Error("could not read content after <content> start element");
 
             // Stream-copy and process inner custom cms- elements until we get back to the current depth:
-            new RenderState(this).StreamContent(DefaultProcessElements, () => xr.Depth == knownDepth);
+            await new RenderState(this).StreamContent(DefaultProcessElements, () => xr.Depth == knownDepth);
 
             if (xr.NodeType != XmlNodeType.EndElement) Error("expected end </{0}> element", elementName);
             if (xr.LocalName != elementName) Error("expected end </{0}> element", elementName);

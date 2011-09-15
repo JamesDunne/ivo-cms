@@ -18,18 +18,20 @@ namespace IVO.CMS.Providers.CustomElements
 
         public ICustomElementProvider Next { get; private set; }
 
-        public bool ProcessCustomElement(string elementName, RenderState state)
+        public async Task<bool> ProcessCustomElement(string elementName, RenderState state)
         {
             if (elementName != "cms-import") return false;
 
-            processImportElement(state);
+            await processImportElement(state);
 
             return true;
         }
 
         #endregion
 
-        private void processImportElement(RenderState st)
+        private readonly Dictionary<string, string> blobByPath = new Dictionary<string, string>(8);
+
+        private async Task processImportElement(RenderState st)
         {
             // Imports content directly from another blob, addressable by a relative path or an absolute path.
             // Relative path is always relative to the current blob's absolute path.
@@ -49,33 +51,46 @@ namespace IVO.CMS.Providers.CustomElements
             if (st.Reader.HasAttributes && st.Reader.MoveToFirstAttribute())
             {
                 string ncpath = st.Reader.GetAttribute("path");
+                string blob;
 
-                // Canonicalize the absolute or relative path relative to the current item's path:
-                var abspath = PathObjectModel.ParseBlobPath(ncpath);
-                CanonicalBlobPath path = abspath.Collapse(abs => abs, rel => (st.Item.TreeBlobPath.Path.Tree + rel)).Canonicalize();
-
-                // Fetch the Blob given the absolute path constructed:
-                Task<TreePathStreamedBlob[]> tBlob = st.Engine.TreePathStreamedBlobs.GetBlobsByTreePaths(new TreeBlobPath(st.Item.TreeBlobPath.RootTreeID, path));
-
-                // TODO: we could probably asynchronously load blobs and render their contents
-                // then at a final sync point go in and inject their contents into the proper
-                // places in each imported blob's parent StringBuilder.
-                tBlob.Wait();
-
-                // No blob? Put up an error:
-                if (tBlob.Result == null)
+                if (!blobByPath.TryGetValue(ncpath, out blob))
                 {
-                    st.Error("path '{0}' not found", path);
+                    // Canonicalize the absolute or relative path relative to the current item's path:
+                    var abspath = PathObjectModel.ParseBlobPath(ncpath);
+                    CanonicalBlobPath path = abspath.Collapse(abs => abs, rel => (st.Item.TreeBlobPath.Path.Tree + rel)).Canonicalize();
+
+                    // Fetch the Blob given the absolute path constructed:
+                    TreePathStreamedBlob[] tBlobs = await st.Engine.TreePathStreamedBlobs.GetBlobsByTreePaths(new TreeBlobPath(st.Item.TreeBlobPath.RootTreeID, path));
+
+                    // TODO: we could probably asynchronously load blobs and render their contents
+                    // then at a final sync point go in and inject their contents into the proper
+                    // places in each imported blob's parent StringBuilder.
+
+                    // No blob? Put up an error:
+                    if (tBlobs == null)
+                    {
+                        blobByPath.Add(ncpath, (string)null);
+                        st.Error("path '{0}' not found", ncpath);
+                        return;
+                    }
+
+                    // Render the blob inline:
+                    RenderState rsInner = new RenderState(st);
+                    var innerSb = await rsInner.Render(tBlobs[0]);
+
+                    // Cache the output:
+                    // TODO: is this dangerous?
+                    blob = innerSb.ToString();
+                    blobByPath.Add(ncpath, blob);
+                }
+
+                if (blob == null)
+                {
+                    st.Error("path '{0}' not found", ncpath);
                     return;
                 }
 
-                // Render the blob inline:
-                RenderState rsInner = new RenderState(st);
-                var innerSbTask = rsInner.Render(tBlob.Result[0]);
-                innerSbTask.Wait();
-
-                string innerResult = innerSbTask.Result.ToString();
-                st.Writer.Append(innerResult);
+                st.Writer.Append(blob);
 
                 // Move the reader back to the element node:
                 st.Reader.MoveToElement();

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using IVO.Definition.Models;
+using System.Threading.Tasks;
 
 namespace IVO.CMS.Providers.CustomElements
 {
@@ -17,18 +18,18 @@ namespace IVO.CMS.Providers.CustomElements
 
         public ICustomElementProvider Next { get; private set; }
 
-        public bool ProcessCustomElement(string elementName, RenderState state)
+        public async Task<bool> ProcessCustomElement(string elementName, RenderState state)
         {
             if (elementName != "cms-link") return false;
 
-            processLinkElement(state);
+            await processLinkElement(state);
 
             return true;
         }
 
         #endregion
 
-        private void processLinkElement(RenderState st)
+        private async Task processLinkElement(RenderState st)
         {
             // A 'cms-link' is translated directly into an anchor tag with the 'path' attribute
             // translated and canonicalized into an absolute 'href' attribute, per system
@@ -101,7 +102,7 @@ namespace IVO.CMS.Providers.CustomElements
 
             // Copy the inner contents and close out the </a>.
             st.Writer.Append(">");
-            st.CopyElementChildren("cms-link");
+            await st.CopyElementChildren("cms-link");
             st.Writer.Append("</a>");
             return;
 

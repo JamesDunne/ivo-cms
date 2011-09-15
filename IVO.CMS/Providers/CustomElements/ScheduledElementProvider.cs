@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Xml;
+using System.Threading.Tasks;
 
 namespace IVO.CMS.Providers.CustomElements
 {
@@ -14,18 +15,18 @@ namespace IVO.CMS.Providers.CustomElements
 
         public ICustomElementProvider Next { get; private set; }
 
-        public bool ProcessCustomElement(string elementName, RenderState state)
+        public async Task<bool> ProcessCustomElement(string elementName, RenderState state)
         {
             if (elementName != "cms-scheduled") return false;
 
-            processScheduledElement(state);
+            await processScheduledElement(state);
 
             return true;
         }
 
         #endregion
 
-        private void processScheduledElement(RenderState st)
+        private async Task processScheduledElement(RenderState st)
         {
             // Specifies that content should be scheduled for the entire month of August
             // and the entire month of October but NOT the month of September.
@@ -134,7 +135,7 @@ namespace IVO.CMS.Providers.CustomElements
                     if (displayContent)
                     {
                         // Stream the inner content into the StringBuilder until we get back to the end </content> element.
-                        st.CopyElementChildren("content");
+                        await st.CopyElementChildren("content");
                         if (!xr.IsEmptyElement)
                             xr.ReadEndElement(/* "content" */);
                     }
@@ -169,7 +170,7 @@ namespace IVO.CMS.Providers.CustomElements
                     if (!displayContent)
                     {
                         // Stream the inner content into the StringBuilder until we get back to the end </content> element.
-                        st.CopyElementChildren("else");
+                        await st.CopyElementChildren("else");
                         if (!xr.IsEmptyElement)
                             xr.ReadEndElement(/* "else" */);
                     }

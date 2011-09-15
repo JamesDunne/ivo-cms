@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Xml;
+using System.Threading.Tasks;
 
 namespace IVO.CMS.Providers.CustomElements
 {
@@ -20,11 +21,11 @@ namespace IVO.CMS.Providers.CustomElements
 
         public ICustomElementProvider Next { get; private set; }
 
-        public bool ProcessCustomElement(string elementName, RenderState state)
+        public async Task<bool> ProcessCustomElement(string elementName, RenderState state)
         {
             if (elementName != "cms-conditional") return false;
             
-            processConditionalElement(state);
+            await processConditionalElement(state);
 
             return true;
         }
@@ -38,7 +39,7 @@ namespace IVO.CMS.Providers.CustomElements
             ExpectingEnd
         }
 
-        private void processConditionalElement(RenderState st)
+        private async Task processConditionalElement(RenderState st)
         {
             // <cms-conditional>
             //     <if department="Sales">Hello, Sales dept!</if>
@@ -149,7 +150,7 @@ namespace IVO.CMS.Providers.CustomElements
                         {
                             satisfied = true;
                             // Copy inner contents:
-                            st.CopyElementChildren(st.Reader.LocalName);
+                            await st.CopyElementChildren(st.Reader.LocalName);
                         }
                         else
                         {
@@ -173,7 +174,7 @@ namespace IVO.CMS.Providers.CustomElements
                         }
 
                         // Copy inner contents:
-                        st.CopyElementChildren(st.Reader.LocalName);
+                        await st.CopyElementChildren(st.Reader.LocalName);
                         break;
                 }
             }

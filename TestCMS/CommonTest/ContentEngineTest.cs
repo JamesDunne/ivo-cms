@@ -872,8 +872,9 @@ Well that was fun!
             using (var fs = new FileStream(tmp, FileMode.Open, FileAccess.Write, FileShare.None))
             using (var sw = new StreamWriter(fs))
             {
-                for (int i = 0; i < 1000; ++i)
+                for (int i = 0; i < 8000; ++i)
                 {
+                    //<cms-import path=""/template/header"" />In between content.<cms-import path=""/template/footer"" />
                     sw.WriteLine(String.Format(
 @"<div>
   <cms-scheduled>
@@ -895,6 +896,9 @@ Well that was fun!
             var pblTest = new PersistingBlob(() => new FileStream(tmp, FileMode.Open, FileAccess.Read, FileShare.Read));
 
             var bls = await tc.blrepo.PersistBlobs(pblHeader, pblFooter, pblTest);
+
+            //bls[0] = new MemoryStreamedBlob("HEADER");
+            //bls[1] = new MemoryStreamedBlob("FOOTER");
 
             Tree trTmpl = new Tree.Builder(
                 new List<TreeTreeReference>(0),
