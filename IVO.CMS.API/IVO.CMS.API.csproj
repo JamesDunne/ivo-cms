@@ -72,6 +72,8 @@
   <ItemGroup>
     <Compile Include="Code\CMSContext.cs" />
     <Compile Include="Controllers\CommitController.cs" />
+    <Compile Include="Controllers\TreeController.cs" />
+    <Compile Include="Controllers\TreeModel.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
