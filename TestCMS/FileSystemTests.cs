@@ -173,5 +173,8 @@ namespace TestCMS
 
         [TestMethod]
         public void TestUnknownSkipped() { getTestMethods().TestUnknownSkipped(); }
+
+        [TestMethod]
+        public void SpeedTestRenderBlob() { getTestMethods().SpeedTestRenderBlob().Wait(); }
     }
 }

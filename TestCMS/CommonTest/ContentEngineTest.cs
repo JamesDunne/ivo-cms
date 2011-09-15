@@ -12,6 +12,7 @@ using IVO.Definition.Repositories;
 using IVO.Implementation.SQL;
 using IVO.TestSupport;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Diagnostics;
 
 namespace TestCMS.CommonTest
 {
@@ -856,6 +857,56 @@ Well that was fun!
                 "<div><cms-unknown crap=\"some stuff\"><custom-tag>Skipped stuff.</custom-tag>Random gibberish that will be removed.</cms-unknown></div>",
                 "<div></div>"
             );
+        }
+
+        public async Task SpeedTestRenderBlob()
+        {
+            string tmp = Path.GetTempFileName();
+
+            using (var fs = new FileStream(tmp, FileMode.Open, FileAccess.Write, FileShare.None))
+            using (var sw = new StreamWriter(fs))
+            {
+                for (int i = 0; i < 100000; ++i)
+                {
+                    sw.WriteLine(
+@"<div>
+  <cms-scheduled>
+    <range from=""{0}"" to=""{2}""/>
+    <range from=""{1}"" to=""{2}""/>
+    <content><cms-import path=""/template/header"" />In between content.<cms-import path=""/template/footer"" /></content>
+    <else>Else here?</else>
+  </cms-scheduled>
+</div>"
+                    );
+                }
+            }
+
+            var tc = getTestContext();
+            var pblHeader = new PersistingBlob(() => "HEADER".ToStream());
+            var pblFooter = new PersistingBlob(() => "FOOTER".ToStream());
+            var pblTest = new PersistingBlob(() => new FileStream(tmp, FileMode.Open, FileAccess.Read, FileShare.Read));
+
+            var bls = await tc.blrepo.PersistBlobs(pblHeader, pblFooter, pblTest);
+
+            Tree trTmpl = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
+                    new TreeBlobReference.Builder("header", bls[0].ID),
+                    new TreeBlobReference.Builder("footer", bls[1].ID)
+                }
+            );
+            Tree trRoot = new Tree.Builder(
+                new List<TreeTreeReference> { new TreeTreeReference.Builder("template", trTmpl.ID) },
+                new List<TreeBlobReference> { new TreeBlobReference.Builder("test", bls[2].ID) }
+            );
+
+            await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trRoot, trTmpl));
+
+            Stopwatch stpw = Stopwatch.StartNew();
+            await tc.ce.RenderBlob(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/test", bls[2]));
+            stpw.Stop();
+
+            Console.WriteLine("Time: {0} ms", stpw.ElapsedMilliseconds);
         }
     }
 }
