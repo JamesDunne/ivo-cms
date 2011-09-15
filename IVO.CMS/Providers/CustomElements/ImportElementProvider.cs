@@ -29,7 +29,8 @@ namespace IVO.CMS.Providers.CustomElements
 
         #endregion
 
-        private readonly Dictionary<string, string> blobByPath = new Dictionary<string, string>(8);
+        private readonly Dictionary<string, TreePathStreamedBlob> tpsbByPath = new Dictionary<string, TreePathStreamedBlob>(8);
+        private readonly Dictionary<BlobID, string> blobContents = new Dictionary<BlobID, string>(8);
 
         private async Task processImportElement(RenderState st)
         {
@@ -52,41 +53,61 @@ namespace IVO.CMS.Providers.CustomElements
             {
                 string ncpath = st.Reader.GetAttribute("path");
                 string blob;
+                TreePathStreamedBlob tpsBlob;
 
-                if (!blobByPath.TryGetValue(ncpath, out blob))
+                // Fetch the TreePathStreamedBlob for the given path:
+                if (!tpsbByPath.TryGetValue(ncpath, out tpsBlob))
                 {
                     // Canonicalize the absolute or relative path relative to the current item's path:
                     var abspath = PathObjectModel.ParseBlobPath(ncpath);
                     CanonicalBlobPath path = abspath.Collapse(abs => abs, rel => (st.Item.TreeBlobPath.Path.Tree + rel)).Canonicalize();
 
                     // Fetch the Blob given the absolute path constructed:
-                    TreePathStreamedBlob[] tBlobs = await st.Engine.TreePathStreamedBlobs.GetBlobsByTreePaths(new TreeBlobPath(st.Item.TreeBlobPath.RootTreeID, path));
+                    TreeBlobPath tbp = new TreeBlobPath(st.Item.TreeBlobPath.RootTreeID, path);
+                    tpsBlob = await st.Engine.TreePathStreamedBlobs.GetBlobByTreePath(tbp);
 
+                    if (tpsBlob != null)
+                        Console.WriteLine("Found blob for '{0}'", path.ToString());
+                    else
+                        Console.WriteLine("No blob found for '{0}'", path.ToString());
+                    tpsbByPath.Add(ncpath, tpsBlob);
+                }
+
+                // No blob? Put up an error:
+                if (tpsBlob == null)
+                {
+                    blobContents.Add(tpsBlob.StreamedBlob.ID, (string)null);
+                    st.Error("cms-import path '{0}' not found", ncpath);
+                    return;
+                }
+
+                // Fetch the contents for the given TreePathStreamedBlob:
+                if (!blobContents.TryGetValue(tpsBlob.StreamedBlob.ID, out blob))
+                {
+                    Console.WriteLine("Contents not cached for BlobID {0}", tpsBlob.StreamedBlob.ID);
+                    
                     // TODO: we could probably asynchronously load blobs and render their contents
                     // then at a final sync point go in and inject their contents into the proper
                     // places in each imported blob's parent StringBuilder.
 
-                    // No blob? Put up an error:
-                    if (tBlobs == null)
-                    {
-                        blobByPath.Add(ncpath, (string)null);
-                        st.Error("path '{0}' not found", ncpath);
-                        return;
-                    }
-
                     // Render the blob inline:
                     RenderState rsInner = new RenderState(st);
-                    var innerSb = await rsInner.Render(tBlobs[0]);
+                    var innerSb = await rsInner.Render(tpsBlob);
 
-                    // Cache the output:
-                    // TODO: is this dangerous?
                     blob = innerSb.ToString();
-                    blobByPath.Add(ncpath, blob);
+
+                    // Cache the rendered blob:
+
+                    // TODO: is this dangerous? Perhaps we should build up some state during rendering that indicates whether or
+                    // not content caching per BlobID should be done.
+
+                    blobContents.Add(tpsBlob.StreamedBlob.ID, blob);
                 }
 
+                // FIXME: this should never occur.
                 if (blob == null)
                 {
-                    st.Error("path '{0}' not found", ncpath);
+                    st.Error("cms-import path '{0}' not found", ncpath);
                     return;
                 }
 

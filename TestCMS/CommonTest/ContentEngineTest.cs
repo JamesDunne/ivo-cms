@@ -872,7 +872,7 @@ Well that was fun!
             using (var fs = new FileStream(tmp, FileMode.Open, FileAccess.Write, FileShare.None))
             using (var sw = new StreamWriter(fs))
             {
-                for (int i = 0; i < 8000; ++i)
+                for (int i = 0; i < 16000; ++i)
                 {
                     //<cms-import path=""/template/header"" />In between content.<cms-import path=""/template/footer"" />
                     sw.WriteLine(String.Format(
@@ -897,9 +897,6 @@ Well that was fun!
 
             var bls = await tc.blrepo.PersistBlobs(pblHeader, pblFooter, pblTest);
 
-            //bls[0] = new MemoryStreamedBlob("HEADER");
-            //bls[1] = new MemoryStreamedBlob("FOOTER");
-
             Tree trTmpl = new Tree.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
@@ -918,6 +915,13 @@ Well that was fun!
             await tc.ce.RenderBlob(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/test", bls[2]));
             stpw.Stop();
 
+            var errs = tc.ce.GetErrors();
+            Console.WriteLine("Errors: {0}", errs.Count);
+            for (int i = 0; i < 10 && i < errs.Count; ++i)
+            {
+                Console.WriteLine("  {0}", errs[i].ToString());
+            }
+            Console.WriteLine();
             Console.WriteLine("Time: {0} ms", stpw.ElapsedMilliseconds);
         }
     }
