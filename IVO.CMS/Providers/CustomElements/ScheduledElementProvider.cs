@@ -48,16 +48,18 @@ namespace IVO.CMS.Providers.CustomElements
             bool hasContent = false;
             bool hasElse = false;
 
-            int knownDepth = st.Reader.Depth;
-            while (st.Reader.Read() && st.Reader.Depth > knownDepth)
-            {
-                if (st.Reader.NodeType != XmlNodeType.Element) continue;
+            XmlTextReader xr = st.Reader;
 
-                if (st.Reader.LocalName == "range")
+            int knownDepth = xr.Depth;
+            while (xr.Read() && xr.Depth > knownDepth)
+            {
+                if (xr.NodeType != XmlNodeType.Element) continue;
+
+                if (xr.LocalName == "range")
                 {
                     hasRanges = true;
 
-                    if (!st.Reader.IsEmptyElement)
+                    if (!xr.IsEmptyElement)
                     {
                         st.Error("'range' element must be empty");
                         // Skip to end of cms-scheduled element and exit.
@@ -73,14 +75,14 @@ namespace IVO.CMS.Providers.CustomElements
                     string fromAttr, toAttr;
 
                     // Validate the element's form:
-                    if (!st.Reader.HasAttributes) st.Error("range element must have attributes");
-                    if ((fromAttr = st.Reader.GetAttribute("from")) == null) st.Error("'range' element must have 'from' attribute");
+                    if (!xr.HasAttributes) st.Error("range element must have attributes");
+                    if ((fromAttr = xr.GetAttribute("from")) == null) st.Error("'range' element must have 'from' attribute");
                     // 'to' attribute is optional:
-                    toAttr = st.Reader.GetAttribute("to");
+                    toAttr = xr.GetAttribute("to");
 
                     // Parse the dates:
                     DateTimeOffset fromDate, toDateTmp;
-                    DateTimeOffset toDate = DateTimeOffset.Now;
+                    DateTimeOffset toDate;
 
                     if (!DateTimeOffset.TryParse(fromAttr, out fromDate))
                     {
@@ -97,6 +99,10 @@ namespace IVO.CMS.Providers.CustomElements
                             continue;
                         }
                     }
+                    else
+                    {
+                        toDate = st.Engine.ViewDate;
+                    }
 
                     // Validate the range's dates are ordered correctly:
                     if (toDate <= fromDate) st.Error("'to' date must be later than 'from' date or empty");
@@ -104,7 +110,7 @@ namespace IVO.CMS.Providers.CustomElements
                     // Check the schedule range:
                     displayContent = (st.Engine.ViewDate >= fromDate && st.Engine.ViewDate < toDate);
                 }
-                else if (st.Reader.LocalName == "content")
+                else if (xr.LocalName == "content")
                 {
                     if (hasElse)
                     {
@@ -129,18 +135,18 @@ namespace IVO.CMS.Providers.CustomElements
                     {
                         // Stream the inner content into the StringBuilder until we get back to the end </content> element.
                         st.CopyElementChildren("content");
-                        if (!st.Reader.IsEmptyElement)
-                            st.Reader.ReadEndElement(/* "content" */);
+                        if (!xr.IsEmptyElement)
+                            xr.ReadEndElement(/* "content" */);
                     }
                     else
                     {
                         // Skip the inner content entirely:
                         st.SkipElementAndChildren("content");
-                        if (!st.Reader.IsEmptyElement)
-                            st.Reader.ReadEndElement(/* "content" */);
+                        if (!xr.IsEmptyElement)
+                            xr.ReadEndElement(/* "content" */);
                     }
                 }
-                else if (st.Reader.LocalName == "else")
+                else if (xr.LocalName == "else")
                 {
                     if (!hasContent)
                     {
@@ -164,20 +170,20 @@ namespace IVO.CMS.Providers.CustomElements
                     {
                         // Stream the inner content into the StringBuilder until we get back to the end </content> element.
                         st.CopyElementChildren("else");
-                        if (!st.Reader.IsEmptyElement)
-                            st.Reader.ReadEndElement(/* "else" */);
+                        if (!xr.IsEmptyElement)
+                            xr.ReadEndElement(/* "else" */);
                     }
                     else
                     {
                         // Skip the inner content entirely:
                         st.SkipElementAndChildren("else");
-                        if (!st.Reader.IsEmptyElement)
-                            st.Reader.ReadEndElement(/* "else" */);
+                        if (!xr.IsEmptyElement)
+                            xr.ReadEndElement(/* "else" */);
                     }
                 }
                 else
                 {
-                    st.Error("unexpected element '{0}'", st.Reader.LocalName);
+                    st.Error("unexpected element '{0}'", xr.LocalName);
                 }
             }
 
@@ -186,13 +192,13 @@ namespace IVO.CMS.Providers.CustomElements
             if (!hasContent) st.Error("no 'content' element found");
 
             // Skip Whitespace and Comments etc. until we find the end element:
-            while (st.Reader.NodeType != XmlNodeType.EndElement && st.Reader.Read()) { }
+            while (xr.NodeType != XmlNodeType.EndElement && xr.Read()) { }
 
             // Validate:
-            if (st.Reader.LocalName != "cms-scheduled") st.Error("expected end <cms-scheduled/> element");
+            if (xr.LocalName != "cms-scheduled") st.Error("expected end <cms-scheduled/> element");
 
-            // Don't read this element because the next `st.Reader.Read()` in the main loop will:
-            //st.Reader.ReadEndElement(/* "cms-scheduled" */);
+            // Don't read this element because the next `xr.Read()` in the main loop will:
+            //xr.ReadEndElement(/* "cms-scheduled" */);
         }
     }
 }

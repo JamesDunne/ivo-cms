@@ -149,7 +149,7 @@ namespace IVO.CMS
         public async Task<HTMLFragment> RenderBlob(TreePathStreamedBlob item)
         {
             // Refresh the error and warning lists:
-            errors = new List<SemanticError>();
+            errors = new List<SemanticError>( (int)((item.StreamedBlob.Length ?? 16384L) / 5L) );
             warnings = new List<SemanticWarning>();
 
             RenderState rs = new RenderState(this);

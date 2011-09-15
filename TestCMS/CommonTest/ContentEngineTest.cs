@@ -159,9 +159,9 @@ namespace TestCMS.CommonTest
     <else>Else here?</else>
   </cms-scheduled>
 </div>",
-                    a.ToString("u"),
-                    b.ToString("u"),
-                    c.ToString("u")
+                    a.ToString(),
+                    b.ToString(),
+                    c.ToString()
                 ),
 @"<div>
   Schedule content here!
@@ -188,9 +188,9 @@ namespace TestCMS.CommonTest
     <else />
   </cms-scheduled>
 </div>",
-                    a.ToString("u"),
-                    b.ToString("u"),
-                    c.ToString("u")
+                    a.ToString(),
+                    b.ToString(),
+                    c.ToString()
                 ),
 @"<div>
   Schedule content here!
@@ -217,9 +217,9 @@ namespace TestCMS.CommonTest
     <else>Not empty</else>
   </cms-scheduled>
 </div>",
-                    a.ToString("u"),
-                    b.ToString("u"),
-                    c.ToString("u")
+                    a.ToString(),
+                    b.ToString(),
+                    c.ToString()
                 ),
 @"<div>
   
@@ -246,9 +246,9 @@ namespace TestCMS.CommonTest
     <else>Else here?</else>
   </cms-scheduled>
 </div>",
-                    a.ToString("u"),
-                    b.ToString("u"),
-                    c.ToString("u")
+                    a.ToString(),
+                    b.ToString(),
+                    c.ToString()
                 ),
 @"<div>
   Else here?
@@ -729,15 +729,15 @@ Well that was fun!
 
         public async Task TestNestedElements()
         {
-                DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
-                DateTimeOffset b = a.AddDays(15);
-                DateTimeOffset c = a.AddDays(30);
-                // Use a + 5 days as the viewing date for scheduling:
-                var tc = getTestContext(a.AddDays(5));
+            DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
+            DateTimeOffset b = a.AddDays(15);
+            DateTimeOffset c = a.AddDays(30);
+            // Use a + 5 days as the viewing date for scheduling:
+            var tc = getTestContext(a.AddDays(5));
 
-                PersistingBlob blHeader = new PersistingBlob(() => "<div>Header</div>".ToStream());
-                PersistingBlob blFooter = new PersistingBlob(() => "<div>Footer</div>".ToStream());
-                PersistingBlob blTest = new PersistingBlob(() => String.Format(
+            PersistingBlob blHeader = new PersistingBlob(() => "<div>Header</div>".ToStream());
+            PersistingBlob blFooter = new PersistingBlob(() => "<div>Footer</div>".ToStream());
+            PersistingBlob blTest = new PersistingBlob(() => String.Format(
 @"<div>
   <cms-scheduled>
     <range from=""{0}"" to=""{2}""/>
@@ -746,47 +746,47 @@ Well that was fun!
     <else>Else here?</else>
   </cms-scheduled>
 </div>",
-                    a.ToString("u"),
-                    b.ToString("u"),
-                    c.ToString("u")
-                ).ToStream());
+                a.ToString(),
+                b.ToString(),
+                c.ToString()
+            ).ToStream());
 
-                Tree trTemplate = new Tree.Builder(
-                    new List<TreeTreeReference>(0),
-                    new List<TreeBlobReference> {
+            Tree trTemplate = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
                     new TreeBlobReference.Builder("header", blHeader.ComputedID),
                     new TreeBlobReference.Builder("footer", blFooter.ComputedID)
                 }
-                );
-                Tree trPages = new Tree.Builder(
-                    new List<TreeTreeReference>(0),
-                    new List<TreeBlobReference> {
+            );
+            Tree trPages = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
                     new TreeBlobReference.Builder("test", blTest.ComputedID)
                 }
-                );
-                Tree trRoot = new Tree.Builder(
-                    new List<TreeTreeReference> {
+            );
+            Tree trRoot = new Tree.Builder(
+                new List<TreeTreeReference> {
                     new TreeTreeReference.Builder("template", trTemplate.ID),
                     new TreeTreeReference.Builder("pages", trPages.ID)
                 },
-                    new List<TreeBlobReference>(0)
-                );
+                new List<TreeBlobReference>(0)
+            );
 
-                // Persist the blob contents:
-                var blTask = await tc.blrepo.PersistBlobs(blHeader, blFooter, blTest);
-                // Persist the trees:
-                var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
+            // Persist the blob contents:
+            var blTask = await tc.blrepo.PersistBlobs(blHeader, blFooter, blTest);
+            // Persist the trees:
+            var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
 
-                output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", blTask[0]));
-                output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", blTask[1]));
-                assertTranslated(
-                    tc,
-                    blTask[2],
-                    trRoot.ID,
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", blTask[0]));
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", blTask[1]));
+            assertTranslated(
+                tc,
+                blTask[2],
+                trRoot.ID,
 @"<div>
   <div>Header</div>In between content.<div>Footer</div>
 </div>"
-                );
+            );
         }
 
         public async Task TestNestedElementsSkip()
@@ -808,9 +808,9 @@ Well that was fun!
     <else>Else here?</else>
   </cms-scheduled>
 </div>",
-                a.ToString("u"),
-                b.ToString("u"),
-                c.ToString("u")
+                a.ToString(),
+                b.ToString(),
+                c.ToString()
             ).ToStream());
 
             Tree trTemplate = new Tree.Builder(
@@ -861,14 +861,20 @@ Well that was fun!
 
         public async Task SpeedTestRenderBlob()
         {
+            DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
+            DateTimeOffset b = a.AddDays(15);
+            DateTimeOffset c = a.AddDays(30);
+            // Use a + 5 days as the viewing date for scheduling:
+            var tc = getTestContext(a.AddDays(5));
+
             string tmp = Path.GetTempFileName();
 
             using (var fs = new FileStream(tmp, FileMode.Open, FileAccess.Write, FileShare.None))
             using (var sw = new StreamWriter(fs))
             {
-                for (int i = 0; i < 100000; ++i)
+                for (int i = 0; i < 1000; ++i)
                 {
-                    sw.WriteLine(
+                    sw.WriteLine(String.Format(
 @"<div>
   <cms-scheduled>
     <range from=""{0}"" to=""{2}""/>
@@ -876,12 +882,14 @@ Well that was fun!
     <content><cms-import path=""/template/header"" />In between content.<cms-import path=""/template/footer"" /></content>
     <else>Else here?</else>
   </cms-scheduled>
-</div>"
-                    );
+</div>",
+                        a.ToString(),
+                        b.ToString(),
+                        c.ToString()
+                    ));
                 }
             }
 
-            var tc = getTestContext();
             var pblHeader = new PersistingBlob(() => "HEADER".ToStream());
             var pblFooter = new PersistingBlob(() => "FOOTER".ToStream());
             var pblTest = new PersistingBlob(() => new FileStream(tmp, FileMode.Open, FileAccess.Read, FileShare.Read));
