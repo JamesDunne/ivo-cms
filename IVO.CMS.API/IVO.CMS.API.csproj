@@ -54,7 +54,7 @@
     <Reference Include="System.Data.DataSetExtensions">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
-    <Reference Include="System.Web.Mvc, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Web.Mvc, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Xml.Linq">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
@@ -71,9 +71,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Code\CMSContext.cs" />
+    <Compile Include="Models\BlobReferenceModel.cs" />
     <Compile Include="Controllers\CommitController.cs" />
     <Compile Include="Controllers\TreeController.cs" />
-    <Compile Include="Controllers\TreeModel.cs" />
+    <Compile Include="Models\TreeModel.cs" />
+    <Compile Include="Models\TreeReferenceModel.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -91,7 +93,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ivo\" />
-    <Folder Include="Models\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\IVO.CMS.Web\IVO.CMS.Web.csproj">
