@@ -23,27 +23,38 @@ namespace IVO.CMS.API.Controllers
             base.OnActionExecuting(filterContext);
         }
 
-        [HttpGet]
-        [ActionName("get")]
-        public async Task<ActionResult> GetTreeByID(TreeID id)
-        {
-            var tree = await cms.trrepo.GetTree(id);
+        #region Private implementation
 
-            return Json(new { tree }, JsonRequestBehavior.AllowGet);
+        private static object projectTreeJSON(Tree tree)
+        {
+            return new
+            {
+                id = tree.ID.ToString(),
+                blobs = tree.Blobs.SelectAsArray(bl => new { name = bl.Name, id = bl.BlobID.ToString() }),
+                trees = tree.Trees.SelectAsArray(tr => new { name = tr.Name, id = tr.TreeID.ToString() })
+            };
         }
 
         private static Tree[] convertRecursively(TreeModel tm)
         {
-            Tree.Builder tb = new Tree.Builder(new List<TreeTreeReference>(tm.Blobs.Length), new List<TreeBlobReference>(tm.Trees.Length));
-            
-            tb.Blobs.AddRange(from bl in tm.Blobs select (TreeBlobReference)new TreeBlobReference.Builder(bl.Name, bl.BlobID));
+            int treeCount = tm.Trees != null ? tm.Trees.Length : 0;
+            int blobCount = tm.Blobs != null ? tm.Blobs.Length : 0;
+
+            Tree.Builder tb = new Tree.Builder(
+                new List<TreeTreeReference>(treeCount),
+                new List<TreeBlobReference>(blobCount)
+            );
+
+            // Add the blobs to the Tree.Builder:
+            if ((tm.Blobs != null) && (blobCount > 0))
+                tb.Blobs.AddRange(from bl in tm.Blobs select (TreeBlobReference)new TreeBlobReference.Builder(bl.Name, bl.BlobID));
 
             // Create our output list:
-            List<Tree> trees = new List<Tree>(1 + tm.Trees.Length /* + more, could calculate recursively but why bother */);
-            
+            List<Tree> trees = new List<Tree>(1 + treeCount /* + more, could calculate recursively but why bother */);
+
             // Dummy placeholder for this Tree:
             trees.Add((Tree)null);
-            for (int i = 0; i < tm.Trees.Length; ++i)
+            for (int i = 0; i < treeCount; ++i)
             {
                 // Convert the child trees:
                 Tree[] childTrees = convertRecursively(tm.Trees[i].Tree);
@@ -53,8 +64,20 @@ namespace IVO.CMS.API.Controllers
                 tb.Trees.Add(new TreeTreeReference.Builder(tm.Trees[i].Name, childTrees[0].ID));
             }
 
+            // Set the first element (was a placeholder) to the built Tree:
             trees[0] = tb;
             return trees.ToArray();
+        }
+
+        #endregion
+
+        [HttpGet]
+        [ActionName("get")]
+        public async Task<ActionResult> GetTreeByID(TreeID id)
+        {
+            var tree = await cms.trrepo.GetTree(id);
+
+            return Json(new { tree = projectTreeJSON(tree) }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpPost]
@@ -74,7 +97,7 @@ namespace IVO.CMS.API.Controllers
             var tree = await cms.trrepo.PersistTree(root, trees);
 
             // Return the array of `Tree` models we persisted:
-            return Json(new { trees = treeArr });
+            return Json(new { trees = treeArr.SelectAsArray(projectTreeJSON) });
         }
     }
 }
