@@ -96,7 +96,7 @@ namespace IVO.CMS.Providers
         public async Task<StringBuilder> Render(TreePathStreamedBlob item)
         {
             // Begin to stream contents from the blob:
-            await item.StreamedBlob.ReadStream(async sr =>
+            await item.StreamedBlob.ReadStreamAsync(async sr =>
             {
                 // Create a string builder used to build the output polyglot HTML5 document fragment:
                 this.item = item;

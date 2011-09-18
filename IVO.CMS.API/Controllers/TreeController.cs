@@ -1,19 +1,21 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Mvc;
 using IVO.CMS.API.Code;
-using IVO.CMS.Web.Mvc;
-using IVO.Definition.Models;
-using IVO.Definition.Containers;
 using IVO.CMS.API.Models;
-using System.Collections.Generic;
+using IVO.CMS.Web.Mvc;
+using IVO.Definition.Containers;
+using IVO.Definition.Models;
 
 namespace IVO.CMS.API.Controllers
 {
     public class TreeController : TaskAsyncController
     {
+        #region Private implementation
+
         private CMSContext cms;
 
         protected override void OnActionExecuting(ActionExecutingContext filterContext)
@@ -22,8 +24,6 @@ namespace IVO.CMS.API.Controllers
 
             base.OnActionExecuting(filterContext);
         }
-
-        #region Private implementation
 
         private static object projectTreeJSON(Tree tree)
         {

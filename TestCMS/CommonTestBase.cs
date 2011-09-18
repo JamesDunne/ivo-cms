@@ -45,7 +45,7 @@ namespace TestCMS
             {
                 output((HTMLFragment)"-----------------------------------------");
                 output((HTMLFragment)(item.TreeBlobPath.Path.ToString() + ":"));
-                output((HTMLFragment)Encoding.UTF8.GetString(await item.StreamedBlob.ReadStream((Func<System.IO.Stream, Task<byte[]>>) async sr =>
+                output((HTMLFragment)Encoding.UTF8.GetString(await item.StreamedBlob.ReadStreamAsync((Func<System.IO.Stream, Task<byte[]>>) async sr =>
                 {
                     byte[] tmp = new byte[sr.Length];
                     sr.Read(tmp, 0, (int)sr.Length);
