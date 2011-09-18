@@ -17,11 +17,30 @@ namespace IVO.CMS.API
             routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
 
             routes.MapRoute(
+                "Render",
+                "render/{*rootedPath}",
+                new { controller = "Render", action = "render" },
+                new { rootedPath = @"[\w\d]{40}/.*" }
+            );
+
+            routes.MapRoute(
+                "BlobGetPath",
+                "blob/get/tree/{*rootedPath}",
+                new { controller = "Blob", action = "getByPath" },
+                new { rootedPath = @"[\w\d]{40}/.*" }
+            );
+
+            routes.MapRoute(
+                "BlobGetID",
+                "blob/get/blob/{id}",
+                new { controller = "Blob", action = "get" }
+            );
+
+            routes.MapRoute(
                 "Default", // Route name
                 "{controller}/{action}/{id}", // URL with parameters
                 new { controller = "Home", action = "Index", id = UrlParameter.Optional } // Parameter defaults
             );
-
         }
 
         protected void Application_Start()

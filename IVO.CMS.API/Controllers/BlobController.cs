@@ -33,35 +33,19 @@ namespace IVO.CMS.API.Controllers
         public async Task<ActionResult> GetBlob(BlobID id)
         {
             var blobs = await cms.blrepo.GetBlobs(id);
-            if (blobs.Length == 0)
-                return new EmptyResult();
+            if (blobs.Length == 0) return new EmptyResult();
 
             return new StreamedBlobResult(blobs[0]);
         }
 
         [HttpGet]
         [ActionName("getByPath")]
-        public async Task<ActionResult> GetBlobByPath(TreeID root, CanonicalBlobPath path)
+        public async Task<ActionResult> GetBlobByPath(TreeBlobPath rootedPath)
         {
-            var blob = await cms.tpsbrepo.GetBlobByTreePath(new TreeBlobPath(root, path));
+            var blob = await cms.tpsbrepo.GetBlobByTreePath(rootedPath);
+            if (blob == null) return new EmptyResult();
 
             return new StreamedBlobResult(blob.StreamedBlob);
-        }
-
-        [HttpGet]
-        [ActionName("render")]
-        public async Task<ActionResult> RenderBlob(TreeID root, CanonicalBlobPath path, DateTimeOffset? viewDate)
-        {
-            TreeBlobPath tbp = new TreeBlobPath(root, path);
-
-            // Get the stream for the blob by its path:
-            var blob = await cms.tpsbrepo.GetBlobByTreePath(tbp);
-
-            // TODO: streaming output!
-            var html = await cms.GetContentEngine(viewDate).RenderBlob(blob);
-
-            // HTML5 output:
-            return Content((string)html, "application/xhtml+xml", Encoding.UTF8);
         }
 
         [HttpPost]

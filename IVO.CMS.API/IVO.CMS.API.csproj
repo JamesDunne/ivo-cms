@@ -71,9 +71,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Code\CMSContext.cs" />
-    <Compile Include="Controllers\Blob.cs" />
     <Compile Include="Controllers\BlobController.cs" />
     <Compile Include="Code\StreamedBlobResult.cs" />
+    <Compile Include="Controllers\RenderController.cs" />
     <Compile Include="Models\BlobReferenceModel.cs" />
     <Compile Include="Controllers\CommitController.cs" />
     <Compile Include="Controllers\TreeController.cs" />
