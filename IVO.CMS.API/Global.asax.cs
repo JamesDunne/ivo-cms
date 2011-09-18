@@ -16,6 +16,7 @@ namespace IVO.CMS.API
         {
             routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
 
+            // RenderController
             routes.MapRoute(
                 "Render",
                 "render/{*rootedPath}",
@@ -23,19 +24,40 @@ namespace IVO.CMS.API
                 new { rootedPath = @"[\w\d]{40}/.*" }
             );
 
+            // BlobController
             routes.MapRoute(
-                "BlobGetPath",
+                "BlobGetByPath",
                 "blob/get/tree/{*rootedPath}",
                 new { controller = "Blob", action = "getByPath" },
                 new { rootedPath = @"[\w\d]{40}/.*" }
             );
 
             routes.MapRoute(
-                "BlobGetID",
+                "BlobGetByID",
                 "blob/get/blob/{id}",
                 new { controller = "Blob", action = "get" }
             );
 
+            // CommitController
+            routes.MapRoute(
+                "CommitGetByID",
+                "commit/get/id/{id}",
+                new { controller = "Commit", action = "getByID" }
+            );
+
+            routes.MapRoute(
+                "CommitGetByTag",
+                "commit/get/tag/{*tagName}",
+                new { controller = "Commit", action = "getByTag" }
+            );
+
+            routes.MapRoute(
+                "CommitGetByRef",
+                "commit/get/ref/{*refName}",
+                new { controller = "Commit", action = "getByRef" }
+            );
+
+            // Default
             routes.MapRoute(
                 "Default", // Route name
                 "{controller}/{action}/{id}", // URL with parameters
