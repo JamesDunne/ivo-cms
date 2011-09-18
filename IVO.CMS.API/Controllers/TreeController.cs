@@ -37,8 +37,8 @@ namespace IVO.CMS.API.Controllers
 
         private static Tree[] convertRecursively(TreeModel tm)
         {
-            int treeCount = tm.Trees != null ? tm.Trees.Length : 0;
-            int blobCount = tm.Blobs != null ? tm.Blobs.Length : 0;
+            int treeCount = tm.trees != null ? tm.trees.Length : 0;
+            int blobCount = tm.blobs != null ? tm.blobs.Length : 0;
 
             Tree.Builder tb = new Tree.Builder(
                 new List<TreeTreeReference>(treeCount),
@@ -46,8 +46,8 @@ namespace IVO.CMS.API.Controllers
             );
 
             // Add the blobs to the Tree.Builder:
-            if ((tm.Blobs != null) && (blobCount > 0))
-                tb.Blobs.AddRange(from bl in tm.Blobs select (TreeBlobReference)new TreeBlobReference.Builder(bl.Name, bl.BlobID));
+            if ((tm.blobs != null) && (blobCount > 0))
+                tb.Blobs.AddRange(from bl in tm.blobs select (TreeBlobReference)new TreeBlobReference.Builder(bl.name, new BlobID(bl.blobid)));
 
             // Create our output list:
             List<Tree> trees = new List<Tree>(1 + treeCount /* + more, could calculate recursively but why bother */);
@@ -57,11 +57,11 @@ namespace IVO.CMS.API.Controllers
             for (int i = 0; i < treeCount; ++i)
             {
                 // Convert the child trees:
-                Tree[] childTrees = convertRecursively(tm.Trees[i].Tree);
+                Tree[] childTrees = convertRecursively(tm.trees[i].tree);
                 // Add them to the output list:
                 trees.AddRange(childTrees);
                 // Add the child TreeTreeReference to this Tree.Builder:
-                tb.Trees.Add(new TreeTreeReference.Builder(tm.Trees[i].Name, childTrees[0].ID));
+                tb.Trees.Add(new TreeTreeReference.Builder(tm.trees[i].name, childTrees[0].ID));
             }
 
             // Set the first element (was a placeholder) to the built Tree:

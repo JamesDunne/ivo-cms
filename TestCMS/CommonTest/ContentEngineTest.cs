@@ -59,20 +59,24 @@ namespace TestCMS.CommonTest
         {
             var tc = getTestContext();
 
-            PersistingBlob blHeader = new PersistingBlob(() => "<div>Header</div>".ToStream());
-            PersistingBlob blFooter = new PersistingBlob(() => "<div>Footer</div>".ToStream());
-            PersistingBlob blTest = new PersistingBlob(() => "<div><cms-import path=\"/template/header\" /><cms-import path=\"/template/footer\" /></div>".ToStream());
+            PersistingBlob blHeader = new PersistingBlob("<div>Header</div>".ToStream());
+            PersistingBlob blFooter = new PersistingBlob("<div>Footer</div>".ToStream());
+            PersistingBlob blTest = new PersistingBlob("<div><cms-import path=\"/template/header\" /><cms-import path=\"/template/footer\" /></div>".ToStream());
+
+            // Persist the blob contents:
+            var sblobs = await tc.blrepo.PersistBlobs(blHeader, blFooter, blTest);
+
             Tree trTemplate = new Tree.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                        new TreeBlobReference.Builder("header", blHeader.ComputedID),
-                        new TreeBlobReference.Builder("footer", blFooter.ComputedID)
+                        new TreeBlobReference.Builder("header", sblobs[0].ID),
+                        new TreeBlobReference.Builder("footer", sblobs[1].ID)
                     }
             );
             Tree trPages = new Tree.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                        new TreeBlobReference.Builder("test", blTest.ComputedID)
+                        new TreeBlobReference.Builder("test", sblobs[2].ID)
                     }
             );
             Tree trRoot = new Tree.Builder(
@@ -83,15 +87,12 @@ namespace TestCMS.CommonTest
                 new List<TreeBlobReference>(0)
             );
 
-            // Persist the blob contents:
-            var blTask = await tc.blrepo.PersistBlobs(blHeader, blFooter, blTest);
-
             // Persist the trees:
             var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
 
             assertTranslated(
                 tc,
-                blTask[2],   // aka blTest
+                sblobs[2],   // aka blTest
                 trRoot.ID,
                 "<div><div>Header</div><div>Footer</div></div>"
             );
@@ -101,20 +102,24 @@ namespace TestCMS.CommonTest
         {
             var tc = getTestContext();
 
-            PersistingBlob blHeader = new PersistingBlob(() => "<div>Header</div>".ToStream());
-            PersistingBlob blFooter = new PersistingBlob(() => "<div>Footer</div>".ToStream());
-            PersistingBlob blTest = new PersistingBlob(() => "<div><cms-import path=\"../template/header\" /><cms-import path=\"../template/footer\" /></div>".ToStream());
+            PersistingBlob blHeader = new PersistingBlob("<div>Header</div>".ToStream());
+            PersistingBlob blFooter = new PersistingBlob("<div>Footer</div>".ToStream());
+            PersistingBlob blTest = new PersistingBlob("<div><cms-import path=\"../template/header\" /><cms-import path=\"../template/footer\" /></div>".ToStream());
+
+            // Persist the blob contents:
+            var sblobs = await tc.blrepo.PersistBlobs(blHeader, blFooter, blTest);
+
             Tree trTemplate = new Tree.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("header", blHeader.ComputedID),
-                    new TreeBlobReference.Builder("footer", blFooter.ComputedID)
+                    new TreeBlobReference.Builder("header", sblobs[0].ID),
+                    new TreeBlobReference.Builder("footer", sblobs[1].ID)
                 }
             );
             Tree trPages = new Tree.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("test", blTest.ComputedID)
+                    new TreeBlobReference.Builder("test", sblobs[2].ID)
                 }
             );
             Tree trRoot = new Tree.Builder(
@@ -125,17 +130,14 @@ namespace TestCMS.CommonTest
                 new List<TreeBlobReference>(0)
             );
 
-            // Persist the blob contents:
-            var blTask = await tc.blrepo.PersistBlobs(blHeader, blFooter, blTest);
-
             // Persist the trees:
             var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
 
-            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", blTask[0]));
-            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", blTask[1]));
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", sblobs[0]));
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", sblobs[1]));
             assertTranslated(
                 tc,
-                new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/pages/test", blTask[2]),
+                new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/pages/test", sblobs[2]),
                 "<div><div>Header</div><div>Footer</div></div>"
             );
         }
@@ -735,9 +737,9 @@ Well that was fun!
             // Use a + 5 days as the viewing date for scheduling:
             var tc = getTestContext(a.AddDays(5));
 
-            PersistingBlob blHeader = new PersistingBlob(() => "<div>Header</div>".ToStream());
-            PersistingBlob blFooter = new PersistingBlob(() => "<div>Footer</div>".ToStream());
-            PersistingBlob blTest = new PersistingBlob(() => String.Format(
+            PersistingBlob blHeader = new PersistingBlob("<div>Header</div>".ToStream());
+            PersistingBlob blFooter = new PersistingBlob("<div>Footer</div>".ToStream());
+            PersistingBlob blTest = new PersistingBlob(String.Format(
 @"<div>
   <cms-scheduled>
     <range from=""{0}"" to=""{2}""/>
@@ -751,17 +753,20 @@ Well that was fun!
                 c.ToString()
             ).ToStream());
 
+            // Persist the blob contents:
+            var sblobs = await tc.blrepo.PersistBlobs(blHeader, blFooter, blTest);
+
             Tree trTemplate = new Tree.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("header", blHeader.ComputedID),
-                    new TreeBlobReference.Builder("footer", blFooter.ComputedID)
+                    new TreeBlobReference.Builder("header", sblobs[0].ID),
+                    new TreeBlobReference.Builder("footer", sblobs[1].ID)
                 }
             );
             Tree trPages = new Tree.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("test", blTest.ComputedID)
+                    new TreeBlobReference.Builder("test", sblobs[2].ID)
                 }
             );
             Tree trRoot = new Tree.Builder(
@@ -772,16 +777,14 @@ Well that was fun!
                 new List<TreeBlobReference>(0)
             );
 
-            // Persist the blob contents:
-            var blTask = await tc.blrepo.PersistBlobs(blHeader, blFooter, blTest);
             // Persist the trees:
             var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
 
-            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", blTask[0]));
-            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", blTask[1]));
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", sblobs[0]));
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", sblobs[1]));
             assertTranslated(
                 tc,
-                blTask[2],
+                sblobs[2],
                 trRoot.ID,
 @"<div>
   <div>Header</div>In between content.<div>Footer</div>
@@ -797,9 +800,9 @@ Well that was fun!
             // Use a - 5 days as the viewing date for scheduling:
             var tc = getTestContext(a.AddDays(-5));
 
-            PersistingBlob blHeader = new PersistingBlob(() => "<div>Header</div>".ToStream());
-            PersistingBlob blFooter = new PersistingBlob(() => "<div>Footer</div>".ToStream());
-            PersistingBlob blTest = new PersistingBlob(() => String.Format(
+            PersistingBlob blHeader = new PersistingBlob("<div>Header</div>".ToStream());
+            PersistingBlob blFooter = new PersistingBlob("<div>Footer</div>".ToStream());
+            PersistingBlob blTest = new PersistingBlob(String.Format(
 @"<div>
   <cms-scheduled>
     <range from=""{0}"" to=""{2}""/>
@@ -813,17 +816,20 @@ Well that was fun!
                 c.ToString()
             ).ToStream());
 
+            // Persist the blob contents:
+            var sblobs = await tc.blrepo.PersistBlobs(blHeader, blFooter, blTest);
+
             Tree trTemplate = new Tree.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("header", blHeader.ComputedID),
-                    new TreeBlobReference.Builder("footer", blFooter.ComputedID)
+                    new TreeBlobReference.Builder("header", sblobs[0].ID),
+                    new TreeBlobReference.Builder("footer", sblobs[1].ID)
                 }
             );
             Tree trPages = new Tree.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("test", blTest.ComputedID)
+                    new TreeBlobReference.Builder("test", sblobs[2].ID)
                 }
             );
             Tree trRoot = new Tree.Builder(
@@ -834,16 +840,14 @@ Well that was fun!
                 new List<TreeBlobReference>(0)
             );
 
-            // Persist the blob contents:
-            var blTask = await tc.blrepo.PersistBlobs(blHeader, blFooter, blTest);
             // Persist the trees:
             var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
 
-            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", blTask[0]));
-            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", blTask[1]));
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", sblobs[0]));
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", sblobs[1]));
             assertTranslated(
                 tc,
-                blTask[2],
+                sblobs[2],
                 trRoot.ID,
 @"<div>
   Else here?
@@ -891,9 +895,9 @@ Well that was fun!
                 }
             }
 
-            var pblHeader = new PersistingBlob(() => "HEADER".ToStream());
-            var pblFooter = new PersistingBlob(() => "FOOTER".ToStream());
-            var pblTest = new PersistingBlob(() => new FileStream(tmp, FileMode.Open, FileAccess.Read, FileShare.Read));
+            var pblHeader = new PersistingBlob("HEADER".ToStream());
+            var pblFooter = new PersistingBlob("FOOTER".ToStream());
+            var pblTest = new PersistingBlob(new FileStream(tmp, FileMode.Open, FileAccess.Read, FileShare.Read));
 
             var bls = await tc.blrepo.PersistBlobs(pblHeader, pblFooter, pblTest);
 

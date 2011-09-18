@@ -9,7 +9,7 @@ namespace IVO.CMS.API.Models
     [Serializable]
     public sealed class BlobReferenceModel
     {
-        public string Name { get; set; }
-        public BlobID BlobID { get; set; }
+        public string name { get; set; }
+        public string blobid { get; set; }
     }
 }

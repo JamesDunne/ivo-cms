@@ -24,8 +24,6 @@ namespace IVO.CMS.API.Code
 
             // TODO: this kinda sucks; I'd like to see truly async streaming via MVC.
             blob.ReadStream(sr => { sr.CopyTo(rsp.OutputStream); });
-            
-            rsp.End();
         }
     }
 }

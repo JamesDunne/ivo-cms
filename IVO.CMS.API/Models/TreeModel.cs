@@ -10,7 +10,7 @@ namespace IVO.CMS.API.Models
     [Serializable]
     public sealed class TreeModel
     {
-        public BlobReferenceModel[] Blobs { get; set; }
-        public TreeReferenceModel[] Trees { get; set; }
+        public BlobReferenceModel[] blobs { get; set; }
+        public TreeReferenceModel[] trees { get; set; }
     }
 }

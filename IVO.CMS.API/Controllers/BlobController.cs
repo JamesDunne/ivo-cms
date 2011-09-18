@@ -68,8 +68,7 @@ namespace IVO.CMS.API.Controllers
         [ActionName("create")]
         public async Task<ActionResult> CreateBlob(string contents)
         {
-            var inStr = Request.InputStream;
-            PersistingBlob pbl = new PersistingBlob(() => inStr);
+            PersistingBlob pbl = new PersistingBlob(Request.InputStream);
 
             // Persist the blob from the input stream:
             var blobs = await cms.blrepo.PersistBlobs(pbl);
