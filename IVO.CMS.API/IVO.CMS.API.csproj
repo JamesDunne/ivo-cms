@@ -73,12 +73,15 @@
     <Compile Include="Code\CMSContext.cs" />
     <Compile Include="Controllers\BlobController.cs" />
     <Compile Include="Code\StreamedBlobResult.cs" />
+    <Compile Include="Controllers\TagController.cs" />
     <Compile Include="Models\CommitModel.cs" />
     <Compile Include="Controllers\RenderController.cs" />
     <Compile Include="Models\BlobReferenceModel.cs" />
     <Compile Include="Controllers\CommitController.cs" />
     <Compile Include="Controllers\TreeController.cs" />
     <Compile Include="Models\JSONTranslateExtensions.cs" />
+    <Compile Include="Models\RefModel.cs" />
+    <Compile Include="Models\TagModel.cs" />
     <Compile Include="Models\TreeModel.cs" />
     <Compile Include="Models\TreeReferenceModel.cs" />
     <Compile Include="Global.asax.cs">

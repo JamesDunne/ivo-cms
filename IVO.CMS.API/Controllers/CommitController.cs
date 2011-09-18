@@ -38,24 +38,30 @@ namespace IVO.CMS.API.Controllers
         [ActionName("getByRef")]
         public async Task<ActionResult> GetCommitByRefName(RefName refName)
         {
+            if (refName == null) return new EmptyResult();
+
             var cm = await cms.cmrepo.GetCommitByRefName(refName);
 
-            return Json(new { @ref = cm.Item1, commit = cm.Item2.ToJSON() }, JsonRequestBehavior.AllowGet);
+            return Json(new { @ref = cm.Item1.ToJSON(), commit = cm.Item2.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
         [ActionName("getByTag")]
         public async Task<ActionResult> GetCommitByTagName(TagName tagName)
         {
+            if (tagName == null) return new EmptyResult();
+
             var cm = await cms.cmrepo.GetCommitByTagName(tagName);
 
-            return Json(new { tag = cm.Item1, commit = cm.Item2.ToJSON() }, JsonRequestBehavior.AllowGet);
+            return Json(new { tag = cm.Item1.ToJSON(), commit = cm.Item2.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpPost]
         [ActionName("create")]
         public async Task<ActionResult> Create(CommitModel cmj)
         {
+            if (cmj == null) return new EmptyResult();
+
             // Map from the JSON CommitModel:
             Commit cm = cmj.FromJSON();
 

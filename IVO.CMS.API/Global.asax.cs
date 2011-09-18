@@ -57,6 +57,20 @@ namespace IVO.CMS.API
                 new { controller = "Commit", action = "getByRef" }
             );
 
+            // TagController
+            routes.MapRoute(
+                "TagGetByID",
+                "tag/get/id/{id}",
+                new { controller = "Tag", action = "getByID" }
+            );
+
+            routes.MapRoute(
+                "TagGetByName",
+                "tag/get/name/{*tagName}",
+                new { controller = "Tag", action = "getByName" }
+            );
+
+
             // Default
             routes.MapRoute(
                 "Default", // Route name
