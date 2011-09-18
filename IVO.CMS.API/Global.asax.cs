@@ -70,6 +70,13 @@ namespace IVO.CMS.API
                 new { controller = "Tag", action = "getByName" }
             );
 
+            // RefController
+            routes.MapRoute(
+                "RefGetByName",
+                "ref/get/name/{*refName}",
+                new { controller = "Ref", action = "getByName" }
+            );
+
 
             // Default
             routes.MapRoute(
