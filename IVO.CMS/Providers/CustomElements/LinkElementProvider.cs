@@ -22,7 +22,7 @@ namespace IVO.CMS.Providers.CustomElements
         {
             if (elementName != "cms-link") return false;
 
-            await processLinkElement(state);
+            await processLinkElement(state).ConfigureAwait(continueOnCapturedContext: false);
 
             return true;
         }
@@ -102,7 +102,7 @@ namespace IVO.CMS.Providers.CustomElements
 
             // Copy the inner contents and close out the </a>.
             st.Writer.Append(">");
-            await st.CopyElementChildren("cms-link");
+            await st.CopyElementChildren("cms-link").ConfigureAwait(continueOnCapturedContext: false);
             st.Writer.Append("</a>");
             return;
 

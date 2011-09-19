@@ -22,7 +22,7 @@ namespace IVO.CMS.Providers.CustomElements
         {
             if (elementName != "cms-import") return false;
 
-            await processImportElement(state);
+            await processImportElement(state).ConfigureAwait(continueOnCapturedContext: false);
 
             return true;
         }
@@ -64,7 +64,7 @@ namespace IVO.CMS.Providers.CustomElements
 
                     // Fetch the Blob given the absolute path constructed:
                     TreeBlobPath tbp = new TreeBlobPath(st.Item.TreeBlobPath.RootTreeID, path);
-                    tpsBlob = await st.Engine.TreePathStreamedBlobs.GetBlobByTreePath(tbp);
+                    tpsBlob = await st.Engine.TreePathStreamedBlobs.GetBlobByTreePath(tbp).ConfigureAwait(continueOnCapturedContext: false);
 
                     if (tpsBlob != null)
                         Console.WriteLine("Found blob for '{0}'", path.ToString());
@@ -92,7 +92,7 @@ namespace IVO.CMS.Providers.CustomElements
 
                     // Render the blob inline:
                     RenderState rsInner = new RenderState(st);
-                    var innerSb = await rsInner.Render(tpsBlob);
+                    var innerSb = await rsInner.Render(tpsBlob).ConfigureAwait(continueOnCapturedContext: false);
 
                     blob = innerSb.ToString();
 

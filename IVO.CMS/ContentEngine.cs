@@ -153,7 +153,7 @@ namespace IVO.CMS
             warnings = new List<SemanticWarning>();
 
             RenderState rs = new RenderState(this);
-            var writer = await rs.Render(item);
+            var writer = await rs.Render(item).ConfigureAwait(continueOnCapturedContext: false);
 
             string result = writer.ToString();
             return new HTMLFragment(result);

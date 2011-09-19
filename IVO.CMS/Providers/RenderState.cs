@@ -109,9 +109,9 @@ namespace IVO.CMS.Providers
                     this.xr.Read();
 
                     // Stream in the content and output it to the StringBuilder:
-                    await this.StreamContent(this.DefaultProcessElements, this.DefaultEarlyExit);
+                    await this.StreamContent(this.DefaultProcessElements, this.DefaultEarlyExit).ConfigureAwait(continueOnCapturedContext: false);
                 }
-            });
+            }).ConfigureAwait(continueOnCapturedContext: false);
 
             return this.sb;
         }
@@ -131,7 +131,7 @@ namespace IVO.CMS.Providers
             do
             {
                 if (earlyExit()) break;
-                if (!await processElements()) continue;
+                if (!await processElements().ConfigureAwait(continueOnCapturedContext: false)) continue;
 
                 switch (xr.NodeType)
                 {
@@ -214,7 +214,7 @@ namespace IVO.CMS.Providers
             if (xr.NodeType == XmlNodeType.Element && xr.LocalName.StartsWith("cms-"))
             {
                 // Call out to the custom element handlers:
-                await ProcessCMSInstruction(xr.LocalName, this);
+                await ProcessCMSInstruction(xr.LocalName, this).ConfigureAwait(continueOnCapturedContext: false);
 
                 // Skip normal copying behavior for this element:
                 return false;
@@ -241,7 +241,7 @@ namespace IVO.CMS.Providers
             bool processed = false;
             while (provider != null)
             {
-                if (true == (processed = await provider.ProcessCustomElement(elementName, state)))
+                if (true == (processed = await provider.ProcessCustomElement(elementName, state).ConfigureAwait(continueOnCapturedContext: false)))
                     break;
 
                 provider = provider.Next;
@@ -379,7 +379,7 @@ namespace IVO.CMS.Providers
             if (!xr.Read()) Error("could not read content after <content> start element");
 
             // Stream-copy and process inner custom cms- elements until we get back to the current depth:
-            await new RenderState(this).StreamContent(DefaultProcessElements, () => xr.Depth == knownDepth);
+            await new RenderState(this).StreamContent(DefaultProcessElements, () => xr.Depth == knownDepth).ConfigureAwait(continueOnCapturedContext: false);
 
             if (xr.NodeType != XmlNodeType.EndElement) Error("expected end </{0}> element", elementName);
             if (xr.LocalName != elementName) Error("expected end </{0}> element", elementName);
