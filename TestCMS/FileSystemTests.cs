@@ -73,6 +73,21 @@ namespace TestCMS
         public void TestImportRelative() { getTestMethods().TestImportRelative().Wait(); }
 
         [TestMethod]
+        public void TestImportTemplateAbsolute() { getTestMethods().TestImportTemplateAbsolute().Wait(); }
+
+        [TestMethod]
+        public void TestImportTemplateAbsoluteExtra() { getTestMethods().TestImportTemplateAbsoluteExtra().Wait(); }
+
+        [TestMethod]
+        public void TestImportTemplateAbsoluteDefault() { getTestMethods().TestImportTemplateAbsoluteDefault().Wait(); }
+
+        [TestMethod]
+        public void TestImportTemplateAbsoluteNestedArea() { getTestMethods().TestImportTemplateAbsoluteNestedArea().Wait(); }
+
+        [TestMethod]
+        public void TestImportTemplateAbsoluteNestedAreaDefault() { getTestMethods().TestImportTemplateAbsoluteNestedAreaDefault().Wait(); }
+        
+        [TestMethod]
         public void TestScheduled() { getTestMethods().TestScheduled(); }
 
         [TestMethod]

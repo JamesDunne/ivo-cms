@@ -142,6 +142,133 @@ namespace TestCMS.CommonTest
             );
         }
 
+        private async Task testImportTemplate(string templateMain, string pagesTest, string expected)
+        {
+            var tc = getTestContext();
+
+            PersistingBlob blHeader = new PersistingBlob(templateMain.ToStream());
+            PersistingBlob blTest = new PersistingBlob(pagesTest.ToStream());
+
+            // Persist the blob contents:
+            var sblobs = await tc.blrepo.PersistBlobs(blHeader, blTest);
+
+            Tree trTemplate = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
+                    new TreeBlobReference.Builder("main", sblobs[0].ID),
+                }
+            );
+            Tree trPages = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
+                    new TreeBlobReference.Builder("test", sblobs[1].ID)
+                }
+            );
+            Tree trRoot = new Tree.Builder(
+                new List<TreeTreeReference> {
+                    new TreeTreeReference.Builder("template", trTemplate.ID),
+                    new TreeTreeReference.Builder("pages", trPages.ID)
+                },
+                new List<TreeBlobReference>(0)
+            );
+
+            // Persist the trees:
+            var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
+
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/templates/main", sblobs[0]));
+            assertTranslated(tc, new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/pages/test", sblobs[1]), expected);
+        }
+
+        public Task TestImportTemplateAbsolute()
+        {
+            return testImportTemplate(
+@"<cms-template><html>
+    <head><cms-template-area id=""head""/></head>
+    <body><cms-template-area id=""body""/></body>
+</html></cms-template>",
+@"<cms-import-template path=""/template/main"">
+    <area id=""head""></area>
+    <area id=""body"">Body</area>
+</cms-import-template>",
+@"<html>
+    <head></head>
+    <body>Body</body>
+</html>"
+            );
+        }
+
+        public Task TestImportTemplateAbsoluteExtra()
+        {
+            return testImportTemplate(
+@"<cms-template><html>
+    <head><cms-template-area id=""head""/></head>
+    <body><cms-template-area id=""pre-body""/><cms-template-area id=""body""/></body>
+</html></cms-template>",
+@"<cms-import-template path=""/template/main"">
+    <area id=""head""></area>
+    <area id=""body"">Body</area>
+</cms-import-template>",
+@"<html>
+    <head></head>
+    <body>Body</body>
+</html>"
+            );
+        }
+
+        public Task TestImportTemplateAbsoluteDefault()
+        {
+            return testImportTemplate(
+@"<cms-template><html>
+    <head><cms-template-area id=""head""/></head>
+    <body><cms-template-area id=""pre-body"">Pre-Body </cms-template-area><cms-template-area id=""body""/></body>
+</html></cms-template>",
+@"<cms-import-template path=""/template/main"">
+    <area id=""head""></area>
+    <area id=""body"">Body</area>
+</cms-import-template>",
+@"<html>
+    <head></head>
+    <body>Pre-Body Body</body>
+</html>"
+            );
+        }
+
+        public Task TestImportTemplateAbsoluteNestedArea()
+        {
+            return testImportTemplate(
+@"<cms-template><html>
+    <head><cms-template-area id=""head""/></head>
+    <body><cms-template-area id=""body"">Before inner.<cms-template-area id=""body-inner""/>After inner.</cms-template-area></body>
+</html></cms-template>",
+@"<cms-import-template path=""/template/main"">
+    <area id=""head""></area>
+    <area id=""body-inner"">Body inner.</area>
+</cms-import-template>",
+@"<html>
+    <head></head>
+    <body>Before inner.Body inner.After inner.</body>
+</html>"
+            );
+        }
+
+        public Task TestImportTemplateAbsoluteNestedAreaDefault()
+        {
+            return testImportTemplate(
+@"<cms-template><html>
+    <head><cms-template-area id=""head""/></head>
+    <body><cms-template-area id=""body"">Before inner.<cms-template-area id=""body-inner""/>After inner.</cms-template-area></body>
+</html></cms-template>",
+@"<cms-import-template path=""/template/main"">
+    <area id=""head""></area>
+    <area id=""body"">Body.</area>
+</cms-import-template>",
+@"<html>
+    <head></head>
+    <body>Body.</body>
+</html>"
+            );
+        }
+
         public void TestScheduled()
         {
             DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));

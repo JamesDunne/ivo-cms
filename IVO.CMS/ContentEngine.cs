@@ -60,7 +60,9 @@ namespace IVO.CMS
                     new ScheduledElementProvider(
                         new ListElementProvider(
                             new LinkElementProvider(
-                                new ConditionalElementProvider(evaluator, provider)
+                                new ImportTemplateElementProvider(
+                                    new ConditionalElementProvider(evaluator, provider)
+                                )
                             )
                         )
                     )
@@ -146,14 +148,14 @@ namespace IVO.CMS
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        public async Task<HTMLFragment> RenderBlob(TreePathStreamedBlob item)
+        public async Task<HTMLFragment> RenderBlob(TreePathStreamedBlob item, StringBuilder writeTo = null, Func<RenderState, bool> earlyExit = null, Func<RenderState, Task<bool>> processElements = null)
         {
             // Refresh the error and warning lists:
             errors = new List<SemanticError>( (int)((item.StreamedBlob.Length ?? 16384L) / 5L) );
             warnings = new List<SemanticWarning>();
 
-            RenderState rs = new RenderState(this);
-            var writer = await rs.Render(item).ConfigureAwait(continueOnCapturedContext: false);
+            RenderState rs = new RenderState(this, item, null, writeTo, earlyExit, processElements);
+            StringBuilder writer = await rs.Render().ConfigureAwait(continueOnCapturedContext: false);
 
             string result = writer.ToString();
             return new HTMLFragment(result);
