@@ -97,6 +97,9 @@ namespace TestCMS
         public void TestImportTemplateTemplateNestedCustomElements() { getTestMethods().TestImportTemplateTemplateNestedCustomElements().Wait(); }
 
         [TestMethod]
+        public void TestImportTemplateTemplateNestedCustomElementsEmpty() { getTestMethods().TestImportTemplateTemplateNestedCustomElementsEmpty().Wait(); }
+
+        [TestMethod]
         public void TestImportTemplateFail1() { getTestMethods().TestImportTemplateFail1().Wait(); }
 
         [TestMethod]

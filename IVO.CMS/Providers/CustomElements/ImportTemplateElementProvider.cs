@@ -176,7 +176,7 @@ namespace IVO.CMS.Providers.CustomElements
                     .ConfigureAwait(continueOnCapturedContext: false);
 
                 // We missed some <area />s in the cms-import-template:
-                while (!((st.Reader.NodeType == XmlNodeType.EndElement) && (st.Reader.LocalName == "cms-import-template")))
+                while (!((st.Reader.NodeType == XmlNodeType.EndElement) && (st.Reader.LocalName == "cms-import-template")) && !((st.Reader.NodeType == XmlNodeType.Element) && st.Reader.IsEmptyElement && (st.Reader.LocalName == "cms-import-template")))
                 {
                     // Move to the next <area /> start element:
                     fillerAreaId = moveToNextAreaElement(st);
@@ -219,7 +219,11 @@ namespace IVO.CMS.Providers.CustomElements
             {
                 // Skip the opening element:
                 if ((st.Reader.NodeType == System.Xml.XmlNodeType.Element) && (st.Reader.LocalName == "cms-import-template"))
-                    continue;
+                {
+                    if (!st.Reader.IsEmptyElement) continue;
+                    // Empty?
+                    return null;
+                }
 
                 // Early out case:
                 if ((st.Reader.NodeType == System.Xml.XmlNodeType.EndElement) && (st.Reader.LocalName == "cms-import-template"))

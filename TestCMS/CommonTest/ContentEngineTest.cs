@@ -452,6 +452,22 @@ namespace TestCMS.CommonTest
             );
         }
 
+        public Task TestImportTemplateTemplateNestedCustomElementsEmpty()
+        {
+            return testImportTemplate(
+@"<cms-template><html>
+    <head><cms-template-area id=""head""><cms-conditional>
+        <if true=""false"">Not this</if>
+        <else>Yeah!</else>
+    </cms-conditional></cms-template-area></head>
+</html></cms-template>",
+@"<cms-import-template path=""/template/main"" />",
+@"<html>
+    <head>Yeah!</head>
+</html>"
+            );
+        }
+
         public void TestScheduled()
         {
             DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));
