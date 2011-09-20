@@ -29,8 +29,10 @@ namespace IVO.CMS.Providers.CustomElements
 
         #endregion
 
+#if ImportCache
         private readonly Dictionary<string, TreePathStreamedBlob> tpsbByPath = new Dictionary<string, TreePathStreamedBlob>(8);
         private readonly Dictionary<BlobID, string> blobContents = new Dictionary<BlobID, string>(8);
+#endif
 
         private async Task processImportElement(RenderState st)
         {
@@ -56,8 +58,10 @@ namespace IVO.CMS.Providers.CustomElements
                 TreePathStreamedBlob tpsBlob;
 
                 // Fetch the TreePathStreamedBlob for the given path:
+#if ImportCache
                 if (!tpsbByPath.TryGetValue(ncpath, out tpsBlob))
                 {
+#endif
                     // Canonicalize the absolute or relative path relative to the current item's path:
                     var abspath = PathObjectModel.ParseBlobPath(ncpath);
                     CanonicalBlobPath path = abspath.Collapse(abs => abs, rel => (st.Item.TreeBlobPath.Path.Tree + rel)).Canonicalize();
@@ -66,26 +70,32 @@ namespace IVO.CMS.Providers.CustomElements
                     TreeBlobPath tbp = new TreeBlobPath(st.Item.TreeBlobPath.RootTreeID, path);
                     tpsBlob = await st.Engine.TreePathStreamedBlobs.GetBlobByTreePath(tbp).ConfigureAwait(continueOnCapturedContext: false);
 
+#if false
                     if (tpsBlob != null)
                         Console.WriteLine("Found blob for '{0}'", path.ToString());
                     else
                         Console.WriteLine("No blob found for '{0}'", path.ToString());
+#endif
+#if ImportCache
                     tpsbByPath.Add(ncpath, tpsBlob);
                 }
-
+#endif
                 // No blob? Put up an error:
                 if (tpsBlob == null)
                 {
+#if ImportCache
                     blobContents.Add(tpsBlob.StreamedBlob.ID, (string)null);
+#endif
                     st.Error("cms-import path '{0}' not found", ncpath);
                     return;
                 }
 
                 // Fetch the contents for the given TreePathStreamedBlob:
+#if ImportCache
                 if (!blobContents.TryGetValue(tpsBlob.StreamedBlob.ID, out blob))
                 {
                     Console.WriteLine("Contents not cached for BlobID {0}", tpsBlob.StreamedBlob.ID);
-                    
+#endif
                     // TODO: we could probably asynchronously load blobs and render their contents
                     // then at a final sync point go in and inject their contents into the proper
                     // places in each imported blob's parent StringBuilder.
@@ -95,6 +105,7 @@ namespace IVO.CMS.Providers.CustomElements
                     var innerSb = await rsInner.Render().ConfigureAwait(continueOnCapturedContext: false);
 
                     blob = innerSb.ToString();
+#if ImportCache
 
                     // Cache the rendered blob:
 
@@ -110,6 +121,7 @@ namespace IVO.CMS.Providers.CustomElements
                     st.Error("cms-import path '{0}' not found", ncpath);
                     return;
                 }
+#endif
 
                 st.Writer.Append(blob);
 
