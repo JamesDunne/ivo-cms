@@ -26,6 +26,7 @@ namespace IVO.CMS.API.Controllers
 
         [HttpGet]
         [ActionName("render")]
+        [ValidateInput(false)]
         public async Task<ActionResult> RenderBlob(TreeBlobPath rootedPath, DateTimeOffset? viewDate)
         {
             // Get the stream for the blob by its path:

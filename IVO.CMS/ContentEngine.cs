@@ -7,6 +7,7 @@ using IVO.CMS.Providers.CustomElements;
 using IVO.Definition.Models;
 using IVO.Definition.Repositories;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace IVO.CMS
 {
@@ -157,6 +158,27 @@ namespace IVO.CMS
 
             string result = writer.ToString();
             return new HTMLFragment(result);
+        }
+
+        public ValidationResult ValidateBlob(System.IO.Stream stream)
+        {
+            // Start an XmlReader over the contents:
+            using (var xr = new XmlTextReader(stream, XmlNodeType.Element, new XmlParserContext(null, null, null, XmlSpace.Default)))
+            {
+                try
+                {
+                    // Parse the entire document fragment:
+                    while (xr.Read())
+                    {
+                    }
+                }
+                catch (XmlException xex)
+                {
+                    return new ValidationResult(xex.Message, xex.LineNumber, xex.LinePosition);
+                }
+            }
+
+            return (ValidationResult)null;
         }
     }
 }

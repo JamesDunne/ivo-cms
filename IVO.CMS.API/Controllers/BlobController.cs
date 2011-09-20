@@ -50,7 +50,7 @@ namespace IVO.CMS.API.Controllers
 
         [HttpPost]
         [ActionName("create")]
-        public async Task<ActionResult> CreateBlob(string contents)
+        public async Task<ActionResult> CreateBlob()
         {
             PersistingBlob pbl = new PersistingBlob(Request.InputStream);
 
@@ -59,6 +59,20 @@ namespace IVO.CMS.API.Controllers
 
             // Return the BlobID:
             return Json(new { id = blobs[0].ID.ToString() });
+        }
+
+        [HttpPost]
+        [ActionName("validate")]
+        public ActionResult ValidateBlob()
+        {
+            // Validate the blob's contents:
+            var vr = cms.GetContentEngine().ValidateBlob(Request.InputStream);
+
+            // Return the validation results:
+            return Json(new {
+                successful = (vr == null),
+                error = (vr == null) ? (object)null : new { message = vr.Message, lineNumber = vr.LineNumber, linePosition = vr.LinePosition }
+            });
         }
     }
 }

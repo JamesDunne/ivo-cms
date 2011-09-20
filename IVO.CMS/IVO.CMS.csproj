@@ -59,6 +59,7 @@
     <Compile Include="SemanticError.cs" />
     <Compile Include="SemanticErrorMessageComparer.cs" />
     <Compile Include="SemanticWarning.cs" />
+    <Compile Include="ValidationResult.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Internal\" />
