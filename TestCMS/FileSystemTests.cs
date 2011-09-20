@@ -86,7 +86,7 @@ namespace TestCMS
 
         [TestMethod]
         public void TestImportTemplateAbsoluteNestedAreaDefault() { getTestMethods().TestImportTemplateAbsoluteNestedAreaDefault().Wait(); }
-       
+
         [TestMethod]
         public void TestImportTemplateAbsoluteNoFiller() { getTestMethods().TestImportTemplateAbsoluteNoFiller().Wait(); }
 
@@ -101,7 +101,13 @@ namespace TestCMS
 
         [TestMethod]
         public void TestImportTemplateFail4() { getTestMethods().TestImportTemplateFail4().Wait(); }
-        
+
+        [TestMethod]
+        public void TestImportTemplateFail5() { getTestMethods().TestImportTemplateFail5().Wait(); }
+
+        [TestMethod]
+        public void TestImportTemplateFail6() { getTestMethods().TestImportTemplateFail6().Wait(); }
+
         [TestMethod]
         public void TestScheduled() { getTestMethods().TestScheduled(); }
 

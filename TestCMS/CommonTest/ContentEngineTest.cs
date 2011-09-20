@@ -389,6 +389,34 @@ namespace TestCMS.CommonTest
             );
         }
 
+        public Task TestImportTemplateFail5()
+        {
+            return testImportTemplateFail(
+@"<cms-template><html>
+    <head><cms-template-area id=""head"" /></head>
+</html></cms-template>",
+@"<cms-import-template path=""/template/main"">
+    <div>This can't be here.</div>
+</cms-import-template>",
+                new SemanticError[] { new SemanticError("cms-import-template may only contain 'area' elements", null, 0, 0) },
+                new SemanticWarning[] { }
+            );
+        }
+
+        public Task TestImportTemplateFail6()
+        {
+            return testImportTemplateFail(
+@"<cms-template><html>
+    <head><cms-template-area id=""head"" /></head>
+</html></cms-template>",
+@"<cms-import-template path=""/template/main"">
+    <area>This needs an 'id' attribute.</area>
+</cms-import-template>",
+                new SemanticError[] { new SemanticError("area element must have an 'id' attribute", null, 0, 0) },
+                new SemanticWarning[] { }
+            );
+        }
+
         public void TestScheduled()
         {
             DateTimeOffset a = new DateTimeOffset(2011, 09, 1, 0, 0, 0, 0, TimeSpan.FromHours(-5));

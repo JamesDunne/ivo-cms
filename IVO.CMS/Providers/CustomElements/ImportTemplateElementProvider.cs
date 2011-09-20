@@ -118,8 +118,8 @@ namespace IVO.CMS.Providers.CustomElements
                     // Only process cms-template-area elements:
                     if (tst.Reader.LocalName != "cms-template-area")
                     {
-                        // TODO: call to DefaultProcessElements?
-                        return true;
+                        // Use DefaultProcessElements to handle copying all other elements from the template:
+                        return await RenderState.DefaultProcessElements(tst);
                     }
 
                     // Read the cms-template-area's id attribute:
