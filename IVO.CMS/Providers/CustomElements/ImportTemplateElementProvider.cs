@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using IVO.Definition.Models;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace IVO.CMS.Providers.CustomElements
 {
@@ -57,13 +58,15 @@ namespace IVO.CMS.Providers.CustomElements
 
             if (!xr.HasAttributes || !xr.MoveToAttribute("path"))
             {
-                // TODO: proper error handling.
                 st.Error("cms-import-template requires a 'path' attribute");
+                st.SkipElementAndChildren("cms-import-template");
                 return;
             }
 
             string ncpath = xr.Value;
-            TreePathStreamedBlob tpsBlob;
+            st.Reader.MoveToElement();
+
+            TreePathStreamedBlob tmplBlob;
 
             // Canonicalize the absolute or relative path relative to the current item's path:
             var abspath = PathObjectModel.ParseBlobPath(ncpath);
@@ -71,7 +74,7 @@ namespace IVO.CMS.Providers.CustomElements
 
             // Fetch the Blob given the absolute path constructed:
             TreeBlobPath tbp = new TreeBlobPath(st.Item.TreeBlobPath.RootTreeID, path);
-            tpsBlob = await st.Engine.TreePathStreamedBlobs.GetBlobByTreePath(tbp).ConfigureAwait(continueOnCapturedContext: false);
+            tmplBlob = await st.Engine.TreePathStreamedBlobs.GetBlobByTreePath(tbp).ConfigureAwait(continueOnCapturedContext: false);
 
 #if false
             if (tpsBlob != null)
@@ -81,10 +84,10 @@ namespace IVO.CMS.Providers.CustomElements
 #endif
 
             // No blob? Put up an error:
-            if (tpsBlob == null)
+            if (tmplBlob == null)
             {
-                // TODO: proper error handling.
-                st.Error("cms-import-template path '{0}' not found", ncpath);
+                st.Error("cms-import-template path '{0}' not found", path.ToString());
+                st.SkipElementAndChildren("cms-import-template");
                 return;
             }
 
@@ -96,7 +99,6 @@ namespace IVO.CMS.Providers.CustomElements
                 // Make sure cms-template is the first element from the imported template blob:
                 if (sst.Reader.LocalName != "cms-template")
                 {
-                    // TODO: proper error handling.
                     sst.Error("cms-import-template expected cms-template as first element of imported template");
                     sst.SkipElementAndChildren(sst.Reader.LocalName);
                     st.SkipElementAndChildren("cms-import-template");
@@ -123,8 +125,9 @@ namespace IVO.CMS.Providers.CustomElements
                     // Read the cms-template-area's id attribute:
                     if (!tst.Reader.MoveToAttribute("id"))
                     {
-                        // TODO: proper error handling.
                         tst.Error("cms-template-area needs an 'id' attribute");
+                        tst.Reader.MoveToElement();
+                        tst.SkipElementAndChildren("cms-template-area");
                         return false;
                     }
 
@@ -172,13 +175,25 @@ namespace IVO.CMS.Providers.CustomElements
                     sst.CopyElementChildren("cms-template", null, processTemplateAreaElements)
                     .ConfigureAwait(continueOnCapturedContext: false);
 
+                // We missed some <area />s in the cms-import-template:
+                while (!((st.Reader.NodeType == XmlNodeType.EndElement) && (st.Reader.LocalName == "cms-import-template")))
+                {
+                    // Move to the next <area /> start element:
+                    fillerAreaId = moveToNextAreaElement(st);
+                    if (fillerAreaId != null)
+                    {
+                        st.Warning("area '{0}' unused by the template", fillerAreaId);
+                        st.SkipElementAndChildren("area");
+                    }
+                }
+
                 return false;
             });
 
             // Process the imported cms-template and inject the <area /> elements from the current <cms-import-template /> element:
             RenderState importedTemplate = new RenderState(
                 st.Engine,
-                tpsBlob,
+                tmplBlob,
 
                 earlyExit: (Func<RenderState, bool>)(sst =>
                 {
@@ -197,38 +212,47 @@ namespace IVO.CMS.Providers.CustomElements
             st.Writer.Append(blob);
         }
 
-        private static string moveToNextAreaElement(RenderState st)
+        private static string moveToNextAreaElement(RenderState st, bool suppressErrors = false)
         {
             // Now, back on the cms-import-template element from the parent blob, read up to the first child element:
-            while (st.Reader.Read() && st.Reader.NodeType != System.Xml.XmlNodeType.Element && st.Reader.NodeType != System.Xml.XmlNodeType.EndElement) ;
-
-            if ((st.Reader.NodeType == System.Xml.XmlNodeType.EndElement) && (st.Reader.LocalName == "cms-import-template"))
+            do
             {
-                // Properly read up to the EndElement. Stop here.
-                return null;
-            }
+                // Skip the opening element:
+                if ((st.Reader.NodeType == System.Xml.XmlNodeType.Element) && (st.Reader.LocalName == "cms-import-template"))
+                    continue;
 
-            // Only <area /> elements are allowed within <cms-import-template />.
-            if (st.Reader.LocalName != "area")
-            {
-                // TODO: proper error handling.
-                st.Error("cms-import-template may only contain 'area' elements");
-                return null;
-            }
+                // Early out case:
+                if ((st.Reader.NodeType == System.Xml.XmlNodeType.EndElement) && (st.Reader.LocalName == "cms-import-template"))
+                    return null;
 
-            // Need an 'id' attribute:
-            if (!st.Reader.MoveToAttribute("id"))
-            {
-                // TODO: proper error handling.
-                st.Error("area element must have an 'id' attribute");
-                return null;
-            }
+                if (st.Reader.NodeType == System.Xml.XmlNodeType.Element)
+                {
+                    // Only <area /> elements are allowed within <cms-import-template />.
+                    if (st.Reader.LocalName != "area")
+                    {
+                        if (!suppressErrors) st.Error("cms-import-template may only contain 'area' elements");
+                        st.SkipElementAndChildren(st.Reader.LocalName);
+                        return null;
+                    }
 
-            string id = st.Reader.Value;
-            st.Reader.MoveToElement();
+                    // Need an 'id' attribute:
+                    if (!st.Reader.MoveToAttribute("id"))
+                    {
+                        if (!suppressErrors) st.Error("area element must have an 'id' attribute");
+                        st.Reader.MoveToElement();
+                        st.SkipElementAndChildren("area");
+                        return null;
+                    }
 
-            // Return the new area's id:
-            return id;
+                    string id = st.Reader.Value;
+                    st.Reader.MoveToElement();
+
+                    // Return the new area's id:
+                    return id;
+                }
+            } while (st.Reader.Read());
+
+            return null;
         }
     }
 }

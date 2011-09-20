@@ -142,7 +142,7 @@ namespace TestCMS.CommonTest
             );
         }
 
-        private async Task testImportTemplate(string templateMain, string pagesTest, string expected)
+        private async Task testImportTemplate(string templateMain, string pagesTest, string expected, params SemanticWarning[] expectedWarnings)
         {
             var tc = getTestContext();
 
@@ -176,7 +176,44 @@ namespace TestCMS.CommonTest
             var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
 
             output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/templates/main", sblobs[0]));
-            assertTranslated(tc, new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/pages/test", sblobs[1]), expected);
+            assertTranslated(tc, new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/pages/test", sblobs[1]), expected, expectedWarnings);
+        }
+
+        private async Task testImportTemplateFail(string templateMain, string pagesTest, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
+        {
+            var tc = getTestContext();
+
+            PersistingBlob blHeader = new PersistingBlob(templateMain.ToStream());
+            PersistingBlob blTest = new PersistingBlob(pagesTest.ToStream());
+
+            // Persist the blob contents:
+            var sblobs = await tc.blrepo.PersistBlobs(blHeader, blTest);
+
+            Tree trTemplate = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
+                    new TreeBlobReference.Builder("main", sblobs[0].ID),
+                }
+            );
+            Tree trPages = new Tree.Builder(
+                new List<TreeTreeReference>(0),
+                new List<TreeBlobReference> {
+                    new TreeBlobReference.Builder("test", sblobs[1].ID)
+                }
+            );
+            Tree trRoot = new Tree.Builder(
+                new List<TreeTreeReference> {
+                    new TreeTreeReference.Builder("template", trTemplate.ID),
+                    new TreeTreeReference.Builder("pages", trPages.ID)
+                },
+                new List<TreeBlobReference>(0)
+            );
+
+            // Persist the trees:
+            var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, Tree>(tr => tr.ID, trTemplate, trPages, trRoot));
+
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/templates/main", sblobs[0]));
+            assumeFail(tc, new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/pages/test", sblobs[1]), expectedErrors, expectedWarnings);
         }
 
         public Task TestImportTemplateAbsolute()
@@ -266,6 +303,89 @@ namespace TestCMS.CommonTest
     <head></head>
     <body>Body.</body>
 </html>"
+            );
+        }
+
+        public Task TestImportTemplateAbsoluteNoFiller()
+        {
+            return testImportTemplate(
+@"<cms-template><html>
+    <head><cms-template-area id=""head""/></head>
+    <body><cms-template-area id=""body"">Before inner.<cms-template-area id=""body-inner""/>After inner.</cms-template-area></body>
+</html></cms-template>",
+@"<cms-import-template path=""/template/main"">
+    <area id=""dumb""></area>
+    <area id=""world""></area>
+</cms-import-template>",
+@"<html>
+    <head></head>
+    <body>Before inner.After inner.</body>
+</html>",
+                new SemanticWarning("area 'dumb' unused by the template", null, 0, 0),
+                new SemanticWarning("area 'world' unused by the template", null, 0, 0)
+            );
+        }
+
+        public Task TestImportTemplateFail1()
+        {
+            return testImportTemplateFail(
+@"<cms-template><html>
+    <head><cms-template-area id=""head""/></head>
+</html></cms-template>",
+@"<cms-import-template>
+    <area id=""head""></area>
+    <area id=""body"">Body.</area>
+</cms-import-template>",
+                new SemanticError[] { new SemanticError("cms-import-template requires a 'path' attribute", null, 0, 0) },
+                new SemanticWarning[] { }
+            );
+        }
+
+        public Task TestImportTemplateFail2()
+        {
+            return testImportTemplateFail(
+@"<cms-template><html>
+    <head><cms-template-area id=""head""/></head>
+</html></cms-template>",
+@"<cms-import-template path=""fail"">
+    <area id=""head""></area>
+    <area id=""body"">Body.</area>
+</cms-import-template>",
+                new SemanticError[] { new SemanticError("cms-import-template path '/pages/fail' not found", null, 0, 0) },
+                new SemanticWarning[] { }
+            );
+        }
+
+        public Task TestImportTemplateFail3()
+        {
+            return testImportTemplateFail(
+@"<html>
+    <head><cms-template-area id=""head""/></head>
+</html>",
+@"<cms-import-template path=""/template/main"">
+    <area id=""head""></area>
+    <area id=""body"">Body.</area>
+</cms-import-template>",
+                new SemanticError[] { new SemanticError("cms-import-template expected cms-template as first element of imported template", null, 0, 0) },
+                new SemanticWarning[] { }
+            );
+        }
+
+        public Task TestImportTemplateFail4()
+        {
+            return testImportTemplateFail(
+@"<cms-template><html>
+    <head><cms-template-area /></head>
+</html></cms-template>",
+@"<cms-import-template path=""/template/main"">
+    <area id=""head""></area>
+    <area id=""body"">Body.</area>
+</cms-import-template>",
+                new SemanticError[] { new SemanticError("cms-template-area needs an 'id' attribute", null, 0, 0) },
+                new SemanticWarning[] {
+                    new SemanticWarning("area 'head' unused by the template", null, 0, 0),
+                    new SemanticWarning("area 'body' unused by the template", null, 0, 0)
+                }
             );
         }
 
@@ -986,7 +1106,8 @@ Well that was fun!
         {
             assertTranslated(
                 "<div><cms-unknown crap=\"some stuff\"><custom-tag>Skipped stuff.</custom-tag>Random gibberish that will be removed.</cms-unknown></div>",
-                "<div></div>"
+                "<div></div>",
+                new SemanticWarning("No custom element providers processed unknown element, 'cms-unknown'; skipping its contents entirely.", null, 0, 0)
             );
         }
 

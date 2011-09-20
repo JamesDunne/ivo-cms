@@ -91,7 +91,7 @@ namespace IVO.CMS.Providers.CustomElements
                     // places in each imported blob's parent StringBuilder.
 
                     // Render the blob inline:
-                    RenderState rsInner = new RenderState(st, tpsBlob);
+                    RenderState rsInner = new RenderState(st.Engine, tpsBlob);
                     var innerSb = await rsInner.Render().ConfigureAwait(continueOnCapturedContext: false);
 
                     blob = innerSb.ToString();

@@ -54,25 +54,25 @@ namespace TestCMS
             }).Wait();
         }
 
-        protected void assertTranslated(string blob, string expected)
+        protected void assertTranslated(string blob, string expected, params SemanticWarning[] expectedWarnings)
         {
             var tc = getTestContext();
-            assertTranslated(tc, blob, expected);
+            assertTranslated(tc, blob, expected, expectedWarnings);
         }
 
-        protected void assertTranslated(TestContext tc, string blob, string expected)
+        protected void assertTranslated(TestContext tc, string blob, string expected, params SemanticWarning[] expectedWarnings)
         {
             var bl = new MemoryStreamedBlob(blob);
-            assertTranslated(tc, bl, new TreeID(), expected);
+            assertTranslated(tc, bl, new TreeID(), expected, expectedWarnings);
         }
 
-        protected void assertTranslated(TestContext tc, IStreamedBlob bl, TreeID rootid, string expected)
+        protected void assertTranslated(TestContext tc, IStreamedBlob bl, TreeID rootid, string expected, params SemanticWarning[] expectedWarnings)
         {
             var item = new TreePathStreamedBlob(rootid, (CanonicalBlobPath)"/test", bl);
-            assertTranslated(tc, item, expected);
+            assertTranslated(tc, item, expected, expectedWarnings);
         }
 
-        protected void assertTranslated(TestContext tc, TreePathStreamedBlob item, string expected)
+        protected void assertTranslated(TestContext tc, TreePathStreamedBlob item, string expected, params SemanticWarning[] expectedWarnings)
         {
             output(item);
 
@@ -81,12 +81,30 @@ namespace TestCMS
             var frag = fragTask.Result;
             output(frag);
 
-            foreach (var err in tc.ce.GetErrors())
+            var errors = tc.ce.GetErrors();
+            if (errors.Count > 0)
             {
-                Console.Error.WriteLine("{0} ({1}:{2}): {3}", err.Item.TreeBlobPath.Path, err.LineNumber, err.LinePosition, err.Message);
+                Console.Error.WriteLine("Error(s):");
+                foreach (var err in errors)
+                {
+                    Console.Error.WriteLine("  {0} ({1}:{2}): {3}", err.Item.TreeBlobPath.Path, err.LineNumber, err.LinePosition, err.Message);
+                }
+            }
+
+            var warns = tc.ce.GetWarnings();
+            if (warns.Count > 0)
+            {
+                Console.Error.WriteLine("Warning(s):");
+                foreach (var warn in warns)
+                {
+                    Console.Error.WriteLine("  {0} ({1}:{2}): {3}", warn.Item.TreeBlobPath.Path, warn.LineNumber, warn.LinePosition, warn.Message);
+                }
             }
 
             Assert.AreEqual(expected, (string)frag);
+
+            Assert.AreEqual(expectedWarnings.Length, warns.Count);
+            CollectionAssert.AreEqual(expectedWarnings, warns, new SemanticWarningMessageComparer());
         }
 
         protected void assumeFail(string blob, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)

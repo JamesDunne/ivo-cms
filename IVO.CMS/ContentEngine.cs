@@ -40,7 +40,7 @@ namespace IVO.CMS
         /// <param name="throwOnError"></param>
         /// <param name="injectErrorComments"></param>
         /// <param name="injectWarningComments"></param>
-        public ContentEngine(ITreeRepository trrepo, IStreamedBlobRepository blrepo, ITreePathStreamedBlobRepository tpsbrepo, DateTimeOffset viewDate, IConditionalEvaluator evaluator = null, ICustomElementProvider provider = null, bool throwOnError = false, bool injectErrorComments = true, bool injectWarningComments = true)
+        public ContentEngine(ITreeRepository trrepo, IStreamedBlobRepository blrepo, ITreePathStreamedBlobRepository tpsbrepo, DateTimeOffset viewDate, IConditionalEvaluator evaluator = null, ICustomElementProvider provider = null, bool throwOnError = false, bool injectErrorComments = true, bool injectWarningComments = false)
         {
             this.trrepo = trrepo;
             this.blrepo = blrepo;
