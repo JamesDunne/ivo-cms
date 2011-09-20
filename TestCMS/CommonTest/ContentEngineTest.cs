@@ -717,6 +717,42 @@ namespace TestCMS.CommonTest
             );
         }
 
+        public void TestScheduleFail9()
+        {
+            assumeFail(
+@"<div>
+  <cms-scheduled>
+    <range from=""2009-01-01"" />
+    <content>Hey hey.</content>
+    <else>Two elses are not allowed.</else>
+    <else>Two elses.</else>
+  </cms-scheduled>
+</div>",
+                new SemanticError[] {
+                    new SemanticError("only one 'else' element may exist in cms-scheduled", null, 0, 0)
+                },
+                new SemanticWarning[0]
+            );
+        }
+
+        public void TestScheduleFail10()
+        {
+            assumeFail(
+@"<div>
+  <cms-scheduled>
+    <range from=""2009-01-01"" />
+    <content>Hey hey.</content>
+    <content>Two contents are not allowed.</content>
+    <else>One else.</else>
+  </cms-scheduled>
+</div>",
+                new SemanticError[] {
+                    new SemanticError("only one 'content' element may exist in cms-scheduled", null, 0, 0)
+                },
+                new SemanticWarning[0]
+            );
+        }
+
         private class AEvaluator : IConditionalEvaluator
         {
             private bool setA;
@@ -904,6 +940,43 @@ namespace TestCMS.CommonTest
         }
 
         public void TestConditionalFail3()
+        {
+            var tc = getTestContext(evaluator: new AEvaluator(false));
+
+            // An if with no attributes is an error.
+            assumeFail(
+                tc,
+@"<div>
+  <cms-conditional>
+    <if false=""true"">What a strange test.</if>
+    <dumb>Expecting else or elif</dumb>
+  </cms-conditional>
+</div>",
+                new SemanticError[] { new SemanticError("expected 'elif' or 'else' element", null, 0, 0) },
+                new SemanticWarning[0]
+            );
+        }
+
+        public void TestConditionalFail4()
+        {
+            var tc = getTestContext(evaluator: new AEvaluator(false));
+
+            // An if with no attributes is an error.
+            assumeFail(
+                tc,
+@"<div>
+  <cms-conditional>
+    <if false=""true"">What a strange test.</if>
+    <else>Got an else</else>
+    <dumb>Expecting end of cms-conditional</dumb>
+  </cms-conditional>
+</div>",
+                new SemanticError[] { new SemanticError("expected </cms-conditional> end element", null, 0, 0) },
+                new SemanticWarning[0]
+            );
+        }
+
+        public void TestConditionalFail5()
         {
             var tc = getTestContext(evaluator: new AEvaluator(true));
 

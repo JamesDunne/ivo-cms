@@ -154,6 +154,12 @@ namespace TestCMS
         public void TestScheduleFail8() { getTestMethods().TestScheduleFail8(); }
 
         [TestMethod]
+        public void TestScheduleFail9() { getTestMethods().TestScheduleFail9(); }
+
+        [TestMethod]
+        public void TestScheduleFail10() { getTestMethods().TestScheduleFail10(); }
+
+        [TestMethod]
         public void TestConditionalIfElse_IfWins() { getTestMethods().TestConditionalIfElse_IfWins(); }
 
         [TestMethod]
@@ -179,6 +185,12 @@ namespace TestCMS
 
         [TestMethod]
         public void TestConditionalFail3() { getTestMethods().TestConditionalFail3(); }
+
+        [TestMethod]
+        public void TestConditionalFail4() { getTestMethods().TestConditionalFail4(); }
+
+        [TestMethod]
+        public void TestConditionalFail5() { getTestMethods().TestConditionalFail5(); }
 
         [TestMethod]
         public void TestConditionalOkay1() { getTestMethods().TestConditionalOkay1(); }

@@ -116,12 +116,18 @@ namespace IVO.CMS.Providers.CustomElements
                     if (hasElse)
                     {
                         st.Error("'content' element must come before 'else' element");
+                        st.SkipElementAndChildren("content");
+                        if (!xr.IsEmptyElement)
+                            xr.ReadEndElement(/* "content" */);
                         continue;
                     }
 
                     if (hasContent)
                     {
                         st.Error("only one 'content' element may exist in cms-scheduled");
+                        st.SkipElementAndChildren("content");
+                        if (!xr.IsEmptyElement)
+                            xr.ReadEndElement(/* "content" */);
                         continue;
                     }
 
@@ -152,11 +158,17 @@ namespace IVO.CMS.Providers.CustomElements
                     if (!hasContent)
                     {
                         st.Error("'content' element must come before 'else' element");
+                        st.SkipElementAndChildren("else");
+                        if (!xr.IsEmptyElement)
+                            xr.ReadEndElement(/* "else" */);
                         continue;
                     }
                     if (hasElse)
                     {
                         st.Error("only one 'else' element may exist in cms-scheduled");
+                        st.SkipElementAndChildren("else");
+                        if (!xr.IsEmptyElement)
+                            xr.ReadEndElement(/* "else" */);
                         continue;
                     }
 
@@ -164,6 +176,9 @@ namespace IVO.CMS.Providers.CustomElements
                     if (!hasRanges)
                     {
                         st.Error("no 'range' elements found before 'else' element in cms-scheduled");
+                        st.SkipElementAndChildren("else");
+                        if (!xr.IsEmptyElement)
+                            xr.ReadEndElement(/* "else" */);
                         continue;
                     }
 
