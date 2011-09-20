@@ -91,6 +91,12 @@ namespace TestCMS
         public void TestImportTemplateAbsoluteNoFiller() { getTestMethods().TestImportTemplateAbsoluteNoFiller().Wait(); }
 
         [TestMethod]
+        public void TestImportTemplateFillerNestedCustomElements() { getTestMethods().TestImportTemplateFillerNestedCustomElements().Wait(); }
+
+        [TestMethod]
+        public void TestImportTemplateTemplateNestedCustomElements() { getTestMethods().TestImportTemplateTemplateNestedCustomElements().Wait(); }
+
+        [TestMethod]
         public void TestImportTemplateFail1() { getTestMethods().TestImportTemplateFail1().Wait(); }
 
         [TestMethod]
