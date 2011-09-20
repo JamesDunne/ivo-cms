@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ContentEngine.cs" />
+    <Compile Include="Providers\CustomElements\ImportTemplateElementProvider.cs" />
     <Compile Include="SemanticWarningMessageComparer.cs" />
     <Compile Include="HTMLFragment.cs" />
     <Compile Include="Providers\CustomElements\DefaultFalseConditionalEvaluator.cs" />

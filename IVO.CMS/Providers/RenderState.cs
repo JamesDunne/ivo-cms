@@ -12,17 +12,17 @@ namespace IVO.CMS.Providers
 {
     public sealed class RenderState
     {
-        private XmlTextReader xr;
+        private XmlTextReader readFrom;
         /// <summary>
         /// Gets the current `XmlTextReader` used to parse the incoming XML blob.
         /// </summary>
-        public XmlTextReader Reader { get { return xr; } }
+        public XmlTextReader Reader { get { return readFrom; } }
 
-        private StringBuilder sb;
+        private StringBuilder writeTo;
         /// <summary>
         /// Gets the current `StringBuilder` used to output HTML5 polyglot document fragment code.
         /// </summary>
-        public StringBuilder Writer { get { return sb; } }
+        public StringBuilder Writer { get { return writeTo; } }
 
         private Stack<StringBuilder> _writerStack = new Stack<StringBuilder>();
 
@@ -31,11 +31,11 @@ namespace IVO.CMS.Providers
         /// </summary>
         public void PushWriter()
         {
-            _writerStack.Push(sb);
+            _writerStack.Push(writeTo);
 
             // Create a new StringBuilder from the current one so we can roll-back on error later:
-            StringBuilder newSb = new StringBuilder(sb.ToString());
-            sb = newSb;
+            StringBuilder newSb = new StringBuilder(writeTo.ToString());
+            writeTo = newSb;
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace IVO.CMS.Providers
         /// </summary>
         public void RollbackWriter()
         {
-            sb = _writerStack.Pop();
+            writeTo = _writerStack.Pop();
         }
 
         /// <summary>
@@ -67,53 +67,64 @@ namespace IVO.CMS.Providers
         public ContentEngine Engine { get { return engine; } }
 
         private RenderState previous;
+        private Func<RenderState, bool> earlyExit;
+        private Func<RenderState, Task<bool>> processElements;
         /// <summary>
         /// Gets the previous `RenderState`, i.e. the parser/writer state of the parent blob, if this
         /// blob is being rendered as an import.
         /// </summary>
         public RenderState Previous { get { return previous; } }
 
-        public RenderState(RenderState copy)
+        public RenderState(RenderState copy, TreePathStreamedBlob item = null)
         {
             this.engine = copy.engine;
 
-            this.item = copy.item;
-            this.xr = copy.xr;
-            this.sb = copy.sb;
+            this.item = item ?? copy.item;
+            this.readFrom = copy.readFrom;
+            this.writeTo = copy.writeTo;
+            this.earlyExit = copy.earlyExit;
+            this.processElements = copy.processElements;
+
             this.previous = copy;
         }
 
-        public RenderState(ContentEngine engine)
+        public RenderState(ContentEngine engine, TreePathStreamedBlob item, XmlTextReader readFrom = null, StringBuilder writeTo = null, Func<RenderState, bool> earlyExit = null, Func<RenderState, Task<bool>> processElements = null, RenderState previous = null)
         {
             this.engine = engine;
 
-            this.item = null;
-            this.xr = null;
-            this.sb = null;
-            this.previous = null;
+            this.item = item;
+            this.readFrom = readFrom;
+            this.writeTo = writeTo;
+            this.earlyExit = earlyExit ?? DefaultEarlyExit;
+            this.processElements = processElements ?? DefaultProcessElements;
+
+            this.previous = previous;
         }
 
-        public async Task<StringBuilder> Render(TreePathStreamedBlob item)
+        public async Task<StringBuilder> Render()
         {
             // Begin to stream contents from the blob:
-            await item.StreamedBlob.ReadStreamAsync(async sr =>
-            {
-                // Create a string builder used to build the output polyglot HTML5 document fragment:
-                this.item = item;
-                this.sb = new StringBuilder((int)sr.Length);
-
-                // Start an XmlReader over the contents:
-                using (this.xr = new XmlTextReader(sr, XmlNodeType.Element, new XmlParserContext(null, null, null, XmlSpace.Default)))
+            await
+                item.StreamedBlob.ReadStreamAsync(async sr =>
                 {
-                    // Start reading the document:
-                    this.xr.Read();
+                    // Create a string builder used to build the output polyglot HTML5 document fragment:
+                    this.writeTo = writeTo ?? new StringBuilder((int)sr.Length);
 
-                    // Stream in the content and output it to the StringBuilder:
-                    await this.StreamContent(this.DefaultProcessElements, this.DefaultEarlyExit);
-                }
-            });
+                    // Start an XmlReader over the contents:
+                    using (this.readFrom = new XmlTextReader(sr, XmlNodeType.Element, new XmlParserContext(null, null, null, XmlSpace.Default)))
+                    {
+                        // Start reading the document:
+                        this.readFrom.Read();
 
-            return this.sb;
+                        // Stream in the content and output it to the StringBuilder:
+                        await
+                            this.StreamContent()
+                            .ConfigureAwait(continueOnCapturedContext: false);
+                    }
+                })
+                .ConfigureAwait(continueOnCapturedContext: false);
+
+            return this.writeTo;
         }
 
         /// <summary>
@@ -123,73 +134,73 @@ namespace IVO.CMS.Providers
         /// <param name="sb"></param>
         /// <param name="action"></param>
         /// <param name="exit"></param>
-        public async Task StreamContent(Func<Task<bool>> processElements, Func<bool> earlyExit)
+        public async Task StreamContent(Func<RenderState, bool> earlyExit = null, Func<RenderState, Task<bool>> processElements = null)
         {
-            if (xr == null) throw new InvalidOperationException();
-            if (sb == null) throw new InvalidOperationException();
+            if (readFrom == null) throw new InvalidOperationException();
+            if (writeTo == null) throw new InvalidOperationException();
 
             do
             {
-                if (earlyExit()) break;
-                if (!await processElements()) continue;
+                if ((earlyExit ?? this.earlyExit)(this)) break;
+                if (!await (processElements ?? this.processElements)(this).ConfigureAwait(continueOnCapturedContext: false)) continue;
 
-                switch (xr.NodeType)
+                switch (readFrom.NodeType)
                 {
                     case XmlNodeType.Element:
                         // Normal XHTML node, start adding contents:
-                        sb.AppendFormat("<{0}", xr.LocalName);
+                        writeTo.AppendFormat("<{0}", readFrom.LocalName);
 
                         // Output attributes:
-                        if (xr.HasAttributes && xr.MoveToFirstAttribute())
+                        if (readFrom.HasAttributes && readFrom.MoveToFirstAttribute())
                         {
                             do
                             {
-                                string localName = xr.LocalName;
-                                char quoteChar = xr.QuoteChar;
+                                string localName = readFrom.LocalName;
+                                char quoteChar = readFrom.QuoteChar;
 
-                                sb.AppendFormat(" {0}={1}", localName, quoteChar);
+                                writeTo.AppendFormat(" {0}={1}", localName, quoteChar);
 
-                                while (xr.ReadAttributeValue())
+                                while (readFrom.ReadAttributeValue())
                                 {
-                                    string content = xr.ReadContentAsString();
+                                    string content = readFrom.ReadContentAsString();
                                     string attrEncoded = System.Web.HttpUtility.HtmlAttributeEncode(content);
-                                    sb.Append(attrEncoded);
+                                    writeTo.Append(attrEncoded);
                                 }
 
-                                sb.Append(quoteChar);
-                            } while (xr.MoveToNextAttribute());
+                                writeTo.Append(quoteChar);
+                            } while (readFrom.MoveToNextAttribute());
 
-                            xr.MoveToElement();
+                            readFrom.MoveToElement();
                         }
 
                         // Close the element:
-                        if (xr.IsEmptyElement)
-                            sb.Append(" />");
+                        if (readFrom.IsEmptyElement)
+                            writeTo.Append(" />");
                         else
-                            sb.Append(">");
+                            writeTo.Append(">");
                         break;
 
                     case XmlNodeType.EndElement:
-                        sb.AppendFormat("</{0}>", xr.LocalName);
+                        writeTo.AppendFormat("</{0}>", readFrom.LocalName);
                         break;
 
                     case XmlNodeType.Whitespace:
-                        sb.Append(xr.Value);
+                        writeTo.Append(readFrom.Value);
                         break;
 
                     case XmlNodeType.Text:
                         // HTML-encode the text:
-                        sb.Append(HttpUtility.HtmlEncode(xr.Value));
+                        writeTo.Append(HttpUtility.HtmlEncode(readFrom.Value));
                         break;
 
                     case XmlNodeType.EntityReference:
                         // HTML-encode the entity reference:
-                        sb.Append(HttpUtility.HtmlEncode(xr.Value));
+                        writeTo.Append(HttpUtility.HtmlEncode(readFrom.Value));
                         break;
 
                     case XmlNodeType.Comment:
                         // FIXME: encode the comment text somehow? What rules?
-                        sb.AppendFormat("<!--{0}-->", xr.Value);
+                        writeTo.AppendFormat("<!--{0}-->", readFrom.Value);
                         break;
 
                     case XmlNodeType.CDATA:
@@ -201,20 +212,20 @@ namespace IVO.CMS.Providers
 
                     default:
                         // Whatever else is unnecessary:
-                        throw new NotImplementedException(String.Format("Node type {0} not implemented!", xr.NodeType));
+                        throw new NotImplementedException(String.Format("Node type {0} not implemented!", readFrom.NodeType));
                 }
-            } while (xr.Read());
+            } while (readFrom.Read());
         }
 
-        public async Task<bool> DefaultProcessElements()
+        public static async Task<bool> DefaultProcessElements(RenderState st)
         {
-            if (xr == null) throw new InvalidOperationException();
-            if (sb == null) throw new InvalidOperationException();
+            if (st.Reader == null) throw new InvalidOperationException();
+            if (st.Writer == null) throw new InvalidOperationException();
 
-            if (xr.NodeType == XmlNodeType.Element && xr.LocalName.StartsWith("cms-"))
+            if (st.Reader.NodeType == XmlNodeType.Element && st.Reader.LocalName.StartsWith("cms-"))
             {
                 // Call out to the custom element handlers:
-                await ProcessCMSInstruction(xr.LocalName, this);
+                await ProcessCMSInstruction(st.Reader.LocalName, st).ConfigureAwait(continueOnCapturedContext: false);
 
                 // Skip normal copying behavior for this element:
                 return false;
@@ -223,16 +234,16 @@ namespace IVO.CMS.Providers
             return true;
         }
 
-        public bool DefaultEarlyExit()
+        public static bool DefaultEarlyExit(RenderState st)
         {
             return false;
         }
 
         public static async Task<bool> ProcessCMSInstruction(string elementName, RenderState state)
         {
-            string openingElement = state.xr.LocalName;
-            int openingDepth = state.xr.Depth;
-            bool openingEmpty = state.xr.IsEmptyElement;
+            string openingElement = state.readFrom.LocalName;
+            int openingDepth = state.readFrom.Depth;
+            bool openingEmpty = state.readFrom.IsEmptyElement;
 
             // Run the cms- element name through the custom-element provider chain:
             ICustomElementProvider provider = state.engine.CustomElementProviderRoot;
@@ -241,7 +252,7 @@ namespace IVO.CMS.Providers
             bool processed = false;
             while (provider != null)
             {
-                if (true == (processed = await provider.ProcessCustomElement(elementName, state)))
+                if (true == (processed = await provider.ProcessCustomElement(elementName, state).ConfigureAwait(continueOnCapturedContext: false)))
                     break;
 
                 provider = provider.Next;
@@ -256,13 +267,13 @@ namespace IVO.CMS.Providers
                 // they have not.
 
                 // We must be at the same element of the custom instruction:
-                if (state.xr.NodeType != XmlNodeType.Element)
+                if (state.readFrom.NodeType != XmlNodeType.Element)
                     state.Error("custom element provider left XML parser on an unexpected node type");
                 // The element name must be the same:
-                if (state.xr.LocalName != openingElement)
+                if (state.readFrom.LocalName != openingElement)
                     state.Error("custom element provider left XML parser on an unexpected end element");
                 // The depth level must be the same:
-                if (state.xr.Depth != openingDepth)
+                if (state.readFrom.Depth != openingDepth)
                     state.Error("custom element provider left XML parser at an unexpected depth level");
 
                 // Issue a warning:
@@ -273,25 +284,27 @@ namespace IVO.CMS.Providers
             }
 
             // We must be at the end (or same, if empty) element of the custom instruction:
-            if (state.xr.NodeType != (openingEmpty ? XmlNodeType.Element : XmlNodeType.EndElement))
+            if (state.readFrom.NodeType != (openingEmpty ? XmlNodeType.Element : XmlNodeType.EndElement))
                 state.Error("custom element provider left XML parser on an unexpected node type");
             // The element name must be the same:
-            if (state.xr.LocalName != openingElement)
+            if (state.readFrom.LocalName != openingElement)
                 state.Error("custom element provider left XML parser on an unexpected end element");
             // The depth level must be the same:
-            if (state.xr.Depth != openingDepth)
+            if (state.readFrom.Depth != openingDepth)
                 state.Error("custom element provider left XML parser at an unexpected depth level");
 
             return true;
         }
 
+        #region Warning and Error reporting
+
         public void Warning(string message)
         {
-            var warn = new SemanticWarning(message, item, xr.LineNumber, xr.LinePosition);
+            var warn = new SemanticWarning(message, item, readFrom.LineNumber, readFrom.LinePosition);
             engine.ReportWarning(warn);
 
             if (engine.InjectWarningComments)
-                sb.AppendFormat("<!-- IVOCMS warning in '{0}' ({1}:{2}): {3} -->", warn.Item.TreeBlobPath.Path, warn.LineNumber, warn.LinePosition, warn.Message);
+                writeTo.AppendFormat("<!-- IVOCMS warning in '{0}' ({1}:{2}): {3} -->", warn.Item.TreeBlobPath.Path, warn.LineNumber, warn.LinePosition, warn.Message);
         }
 
         public void Warning(string format, params object[] args)
@@ -301,7 +314,7 @@ namespace IVO.CMS.Providers
 
         public void WarningSuppressComment(string message)
         {
-            var warn = new SemanticWarning(message, item, xr.LineNumber, xr.LinePosition);
+            var warn = new SemanticWarning(message, item, readFrom.LineNumber, readFrom.LinePosition);
             engine.ReportWarning(warn);
         }
 
@@ -312,77 +325,83 @@ namespace IVO.CMS.Providers
 
         public void Error(string message)
         {
-            var err = new SemanticError(message, item, xr.LineNumber, xr.LinePosition);
+            var err = new SemanticError(message, item, readFrom.LineNumber, readFrom.LinePosition);
             engine.ReportError(err);
 
             // Inject an HTML comment describing the error:
             if (engine.InjectErrorComments)
-                sb.AppendFormat("<!-- IVOCMS error in '{0}' ({1}:{2}): {3} -->", err.Item.TreeBlobPath.Path, err.LineNumber, err.LinePosition, err.Message);
+                writeTo.AppendFormat("<!-- IVOCMS error in '{0}' ({1}:{2}): {3} -->", err.Item.TreeBlobPath.Path, err.LineNumber, err.LinePosition, err.Message);
         }
 
         public void Error(string format, params object[] args)
         {
-            var err = new SemanticError(String.Format(format, args), item, xr.LineNumber, xr.LinePosition);
+            var err = new SemanticError(String.Format(format, args), item, readFrom.LineNumber, readFrom.LinePosition);
             engine.ReportError(err);
 
             // Inject an HTML comment describing the error:
             if (engine.InjectErrorComments)
-                sb.AppendFormat("<!-- IVOCMS error in '{0}' ({1}:{2}): {3} -->", err.Item.TreeBlobPath.Path, err.LineNumber, err.LinePosition, err.Message);
+                writeTo.AppendFormat("<!-- IVOCMS error in '{0}' ({1}:{2}): {3} -->", err.Item.TreeBlobPath.Path, err.LineNumber, err.LinePosition, err.Message);
         }
 
         public void ErrorSuppressComment(string message)
         {
-            var err = new SemanticError(message, item, xr.LineNumber, xr.LinePosition);
+            var err = new SemanticError(message, item, readFrom.LineNumber, readFrom.LinePosition);
             engine.ReportError(err);
         }
 
         public void ErrorSuppressComment(string format, params object[] args)
         {
-            var err = new SemanticError(String.Format(format, args), item, xr.LineNumber, xr.LinePosition);
+            var err = new SemanticError(String.Format(format, args), item, readFrom.LineNumber, readFrom.LinePosition);
             engine.ReportError(err);
         }
+
+        #endregion
 
         #region Public utility methods
 
         public void SkipElementAndChildren(string elementName)
         {
-            if (xr == null) throw new InvalidOperationException();
-            if (sb == null) throw new InvalidOperationException();
+            if (readFrom == null) throw new InvalidOperationException();
+            if (writeTo == null) throw new InvalidOperationException();
 
-            if (xr.NodeType != XmlNodeType.Element) Error("expected start <{0}> element", elementName);
-            if (xr.LocalName != elementName) Error("expected start <{0}> element", elementName);
-            if (xr.IsEmptyElement)
+            if (readFrom.NodeType != XmlNodeType.Element) Error("expected start <{0}> element", elementName);
+            if (readFrom.LocalName != elementName) Error("expected start <{0}> element", elementName);
+            if (readFrom.IsEmptyElement)
                 return;
 
             // Read until we get back to the current depth:
-            int knownDepth = xr.Depth;
-            while (xr.Read() && xr.Depth > knownDepth) { }
+            int knownDepth = readFrom.Depth;
+            while (readFrom.Read() && readFrom.Depth > knownDepth) { }
 
-            if (xr.NodeType != XmlNodeType.EndElement) Error("expected end </{0}> element", elementName);
-            if (xr.LocalName != elementName) Error("expected end </{0}> element", elementName);
+            if (readFrom.NodeType != XmlNodeType.EndElement) Error("expected end </{0}> element", elementName);
+            if (readFrom.LocalName != elementName) Error("expected end </{0}> element", elementName);
         }
 
-        public async Task CopyElementChildren(string elementName)
+        public async Task CopyElementChildren(string elementName, Func<RenderState, bool> earlyExit = null, Func<RenderState, Task<bool>> processElements = null)
         {
-            if (xr == null) throw new InvalidOperationException();
-            if (sb == null) throw new InvalidOperationException();
+            if (readFrom == null) throw new InvalidOperationException();
+            if (writeTo == null) throw new InvalidOperationException();
 
-            if (xr.NodeType != XmlNodeType.Element) Error("expected start <{0}> element", elementName);
-            if (xr.LocalName != elementName) Error("expected start <{0}> element", elementName);
+            if (readFrom.NodeType != XmlNodeType.Element) Error("expected start <{0}> element", elementName);
+            if (readFrom.LocalName != elementName) Error("expected start <{0}> element", elementName);
             // Nothing to do:
-            if (xr.IsEmptyElement)
+            if (readFrom.IsEmptyElement)
                 return;
 
-            int knownDepth = xr.Depth;
+            int knownDepth = readFrom.Depth;
 
             // Shouldn't return false:
-            if (!xr.Read()) Error("could not read content after <content> start element");
+            if (!readFrom.Read()) Error("could not read content after <content> start element");
 
             // Stream-copy and process inner custom cms- elements until we get back to the current depth:
-            await new RenderState(this).StreamContent(DefaultProcessElements, () => xr.Depth == knownDepth);
+            await new RenderState(this)
+                .StreamContent(
+                    earlyExit ?? (st => st.Reader.Depth == knownDepth),
+                    processElements ?? DefaultProcessElements
+                ).ConfigureAwait(continueOnCapturedContext: false);
 
-            if (xr.NodeType != XmlNodeType.EndElement) Error("expected end </{0}> element", elementName);
-            if (xr.LocalName != elementName) Error("expected end </{0}> element", elementName);
+            if (readFrom.NodeType != XmlNodeType.EndElement) Error("expected end </{0}> element", elementName);
+            if (readFrom.LocalName != elementName) Error("expected end </{0}> element", elementName);
         }
 
         #endregion

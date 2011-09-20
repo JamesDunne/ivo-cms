@@ -24,8 +24,8 @@ namespace IVO.CMS.Providers.CustomElements
         public async Task<bool> ProcessCustomElement(string elementName, RenderState state)
         {
             if (elementName != "cms-conditional") return false;
-            
-            await processConditionalElement(state);
+
+            await processConditionalElement(state).ConfigureAwait(continueOnCapturedContext: false);
 
             return true;
         }
@@ -150,7 +150,7 @@ namespace IVO.CMS.Providers.CustomElements
                         {
                             satisfied = true;
                             // Copy inner contents:
-                            await st.CopyElementChildren(st.Reader.LocalName);
+                            await st.CopyElementChildren(st.Reader.LocalName).ConfigureAwait(continueOnCapturedContext: false);
                         }
                         else
                         {
@@ -174,7 +174,7 @@ namespace IVO.CMS.Providers.CustomElements
                         }
 
                         // Copy inner contents:
-                        await st.CopyElementChildren(st.Reader.LocalName);
+                        await st.CopyElementChildren(st.Reader.LocalName).ConfigureAwait(continueOnCapturedContext: false);
                         break;
                 }
             }

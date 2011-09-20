@@ -56,6 +56,13 @@ namespace IVO.CMS.API.Controllers
             trees.Add((Tree)null);
             for (int i = 0; i < treeCount; ++i)
             {
+                // If we have a `treeid` then skip recursion:
+                if (!String.IsNullOrEmpty(tm.trees[i].treeid))
+                {
+                    tb.Trees.Add(new TreeTreeReference.Builder(tm.trees[i].name, new TreeID(tm.trees[i].treeid)));
+                    continue;
+                }
+
                 // Convert the child trees:
                 Tree[] childTrees = convertRecursively(tm.trees[i].tree);
                 // Add them to the output list:

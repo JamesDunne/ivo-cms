@@ -43,7 +43,6 @@ namespace TestCMS
         {
             TaskEx.RunEx(async () =>
             {
-                output((HTMLFragment)"-----------------------------------------");
                 output((HTMLFragment)(item.TreeBlobPath.Path.ToString() + ":"));
                 output((HTMLFragment)Encoding.UTF8.GetString(await item.StreamedBlob.ReadStreamAsync((Func<System.IO.Stream, Task<byte[]>>) async sr =>
                 {

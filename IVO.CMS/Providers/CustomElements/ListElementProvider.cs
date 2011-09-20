@@ -17,10 +17,10 @@ namespace IVO.CMS.Providers.CustomElements
 
         public ICustomElementProvider Next { get; private set; }
 
-        public async Task<bool> ProcessCustomElement(string elementName, RenderState state)
+        public Task<bool> ProcessCustomElement(string elementName, RenderState state)
         {
             // TODO: design and implement a 'cms-list' element handler.
-            return false;
+            return TaskEx.FromResult(false);
         }
 
         #endregion

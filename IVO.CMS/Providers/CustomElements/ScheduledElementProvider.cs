@@ -19,7 +19,7 @@ namespace IVO.CMS.Providers.CustomElements
         {
             if (elementName != "cms-scheduled") return false;
 
-            await processScheduledElement(state);
+            await processScheduledElement(state).ConfigureAwait(continueOnCapturedContext: false);
 
             return true;
         }
@@ -135,7 +135,7 @@ namespace IVO.CMS.Providers.CustomElements
                     if (displayContent)
                     {
                         // Stream the inner content into the StringBuilder until we get back to the end </content> element.
-                        await st.CopyElementChildren("content");
+                        await st.CopyElementChildren("content").ConfigureAwait(continueOnCapturedContext: false);
                         if (!xr.IsEmptyElement)
                             xr.ReadEndElement(/* "content" */);
                     }
@@ -170,7 +170,7 @@ namespace IVO.CMS.Providers.CustomElements
                     if (!displayContent)
                     {
                         // Stream the inner content into the StringBuilder until we get back to the end </content> element.
-                        await st.CopyElementChildren("else");
+                        await st.CopyElementChildren("else").ConfigureAwait(continueOnCapturedContext: false);
                         if (!xr.IsEmptyElement)
                             xr.ReadEndElement(/* "else" */);
                     }

@@ -9,6 +9,7 @@ namespace IVO.CMS.API.Models
     public sealed class TreeReferenceModel
     {
         public string name { get; set; }
+        public string treeid { get; set; }
         public TreeModel tree { get; set; }
     }
 }
