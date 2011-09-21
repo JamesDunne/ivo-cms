@@ -81,8 +81,11 @@
     <Compile Include="Controllers\CommitController.cs" />
     <Compile Include="Controllers\TreeController.cs" />
     <Compile Include="Models\JSONTranslateExtensions.cs" />
+    <Compile Include="Models\OrderByModel.cs" />
+    <Compile Include="Models\OrderByDirModel.cs" />
     <Compile Include="Models\RefModel.cs" />
     <Compile Include="Models\TagModel.cs" />
+    <Compile Include="Models\TagQueryModel.cs" />
     <Compile Include="Models\TreeModel.cs" />
     <Compile Include="Models\TreeReferenceModel.cs" />
     <Compile Include="Global.asax.cs">
