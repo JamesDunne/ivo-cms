@@ -23,6 +23,27 @@ namespace IVO.CMS.API.Controllers
             base.OnActionExecuting(filterContext);
         }
 
+        protected override void OnException(ExceptionContext filterContext)
+        {
+            filterContext.ExceptionHandled = true;
+            filterContext.HttpContext.Response.StatusCode = 500;
+
+            if (filterContext.Exception is AggregateException)
+            {
+                // For an AggregateException, send the array of InnerExceptions:
+                AggregateException ag = (AggregateException)filterContext.Exception;
+                string[] exs = ag.InnerExceptions.ToArray(ag.InnerExceptions.Count).SelectAsArray(ex => ex.ToString());
+
+                filterContext.Result = Json(new { success = false, exceptions = exs }, JsonRequestBehavior.AllowGet);
+            }
+            else
+            {
+                filterContext.Result = Json(new { success = false, exceptions = new string[] { filterContext.Exception.ToString() } }, JsonRequestBehavior.AllowGet);
+            }
+
+            base.OnException(filterContext);
+        }
+
         #endregion
 
         [HttpGet]
@@ -38,7 +59,7 @@ namespace IVO.CMS.API.Controllers
         [ActionName("getByRef")]
         public async Task<ActionResult> GetCommitByRefName(RefName refName)
         {
-            if (refName == null) return new EmptyResult();
+            if (refName == null) return Json(new { success = false });
 
             var cm = await cms.cmrepo.GetCommitByRefName(refName);
 
@@ -49,7 +70,7 @@ namespace IVO.CMS.API.Controllers
         [ActionName("getByTag")]
         public async Task<ActionResult> GetCommitByTagName(TagName tagName)
         {
-            if (tagName == null) return new EmptyResult();
+            if (tagName == null) return Json(new { success = false });
 
             var cm = await cms.cmrepo.GetCommitByTagName(tagName);
 
@@ -74,6 +95,8 @@ namespace IVO.CMS.API.Controllers
         [ActionName("getTreeByTag")]
         public async Task<ActionResult> GetCommitTree(TagName tagName, int depth = 10)
         {
+            if (tagName == null) return Json(new { success = false });
+
             var cmtr = await cms.cmrepo.GetCommitTreeByTagName(tagName, depth);
 
             return Json(new
@@ -90,6 +113,8 @@ namespace IVO.CMS.API.Controllers
         [ActionName("getTreeByRef")]
         public async Task<ActionResult> GetCommitTree(RefName refName, int depth = 10)
         {
+            if (refName == null) return Json(new { success = false });
+
             var cmtr = await cms.cmrepo.GetCommitTreeByRefName(refName, depth);
 
             return Json(new
@@ -104,18 +129,32 @@ namespace IVO.CMS.API.Controllers
 
         [HttpPost]
         [ActionName("create")]
-        public async Task<ActionResult> Create(CommitModel cmj)
+        public async Task<ActionResult> Create(RefName refName, CommitModel cmj)
         {
-            if (cmj == null) return new EmptyResult();
+            if (cmj == null) return Json(new { success = false });
+            if (refName == null) return Json(new { success = false });
+
+            // First get the ref and its CommitID, if it exists:
+            var rf = await cms.rfrepo.GetRefByName(refName);
 
             // Map from the JSON CommitModel:
-            Commit cm = cmj.FromJSON();
+            Commit.Builder cb = cmj.FromJSON();
+            
+            // Add the ref's CommitID as the parent, if the ref exists:
+            if ((rf != null) && (cb.Parents.Count == 0))
+            {
+                cb.Parents.Add(rf.CommitID);
+            }
 
             // Persist the commit:
-            var pcm = await cms.cmrepo.PersistCommit(cm);
+            var pcm = await cms.cmrepo.PersistCommit(cb);
+
+            // Persist the ref with this new CommitID:
+            Ref.Builder rfb = new Ref.Builder(refName, pcm.ID);
+            rf = await cms.rfrepo.PersistRef(rfb);
 
             // Return the commit model as JSON again:
-            return Json(new { commit = pcm.ToJSON() }, JsonRequestBehavior.AllowGet);
+            return Json(new { @ref = rf.ToJSON(), commit = pcm.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
     }
 }

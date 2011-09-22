@@ -10,9 +10,9 @@ namespace IVO.CMS.API.Models
     {
         #region Commit
 
-        public static Commit FromJSON(this CommitModel cmj)
+        public static Commit.Builder FromJSON(this CommitModel cmj)
         {
-            Commit cm = new Commit.Builder(
+            Commit.Builder cm = new Commit.Builder(
                 pParents:       cmj.parents == null ? new List<CommitID>(0) : cmj.parents.Select(s => new CommitID(s)).ToList(cmj.parents.Length),
                 pTreeID:        new TreeID(cmj.treeid),
                 pCommitter:     cmj.committer,
@@ -41,9 +41,9 @@ namespace IVO.CMS.API.Models
 
         #region Ref
 
-        public static Ref FromJSON(this RefModel rfm)
+        public static Ref.Builder FromJSON(this RefModel rfm)
         {
-            Ref rf = new Ref.Builder(
+            Ref.Builder rf = new Ref.Builder(
                 pName:      (RefName)rfm.name,
                 pCommitID:  new CommitID(rfm.commitid)
             );
@@ -64,9 +64,9 @@ namespace IVO.CMS.API.Models
 
         #region Tag
 
-        public static Tag FromJSON(this TagModel tgm)
+        public static Tag.Builder FromJSON(this TagModel tgm)
         {
-            Tag tg = new Tag.Builder(
+            Tag.Builder tg = new Tag.Builder(
                 pName:          (TagName)tgm.name,
                 pCommitID:      new CommitID(tgm.commitid),
                 pTagger:        tgm.tagger,

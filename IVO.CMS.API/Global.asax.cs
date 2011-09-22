@@ -57,6 +57,30 @@ namespace IVO.CMS.API
                 new { controller = "Commit", action = "getByRef" }
             );
 
+            routes.MapRoute(
+                "CommitTreeGet",
+                "commit/tree/id/{id}",
+                new { controller = "Commit", action = "getTree" }
+            );
+
+            routes.MapRoute(
+                "CommitTreeGetByTag",
+                "commit/tree/tag/{*tagName}",
+                new { controller = "Commit", action = "getTreeByTag" }
+            );
+
+            routes.MapRoute(
+                "CommitTreeGetByRef",
+                "commit/tree/ref/{*refName}",
+                new { controller = "Commit", action = "getTreeByRef" }
+            );
+
+            routes.MapRoute(
+                "CommitCreate",
+                "commit/create/{*refName}",
+                new { controller = "Commit", action = "create" }
+            );
+
             // TagController
             routes.MapRoute(
                 "TagGetByID",
