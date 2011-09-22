@@ -22,11 +22,12 @@ namespace IVO.CMS.API.Models
             return cm;
         }
 
-        public static CommitModel ToJSON(this Commit cm)
+        public static CommitModel ToJSON(this ICommit cm)
         {
             CommitModel cmj = new CommitModel()
             {
                 id              = cm.ID.ToString(),
+                is_complete     = cm.IsComplete,
                 parents         = cm.Parents.SelectAsArray(s => s.ToString()),
                 treeid          = cm.TreeID.ToString(),
                 committer       = cm.Committer,

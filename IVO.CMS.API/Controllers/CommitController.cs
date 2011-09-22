@@ -4,9 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Mvc;
 using IVO.CMS.API.Code;
+using IVO.CMS.API.Models;
 using IVO.CMS.Web.Mvc;
 using IVO.Definition.Models;
-using IVO.CMS.API.Models;
 
 namespace IVO.CMS.API.Controllers
 {
@@ -54,6 +54,52 @@ namespace IVO.CMS.API.Controllers
             var cm = await cms.cmrepo.GetCommitByTagName(tagName);
 
             return Json(new { tag = cm.Item1.ToJSON(), commit = cm.Item2.ToJSON() }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        [ActionName("getTree")]
+        public async Task<ActionResult> GetCommitTree(CommitID id, int depth = 10)
+        {
+            var cmtr = await cms.cmrepo.GetCommitTree(id, depth);
+
+            return Json(new {
+                rootid = cmtr.Item1.ToString(),
+                commits = cmtr.Item2.Values
+                    .Select(cm => cm.ToJSON())
+                    .ToArray(cmtr.Item2.Count)
+            });
+        }
+
+        [HttpGet]
+        [ActionName("getTreeByTag")]
+        public async Task<ActionResult> GetCommitTree(TagName tagName, int depth = 10)
+        {
+            var cmtr = await cms.cmrepo.GetCommitTreeByTagName(tagName, depth);
+
+            return Json(new
+            {
+                tag = cmtr.Item1.ToJSON(),
+                root_commitid = cmtr.Item2.ToString(),
+                commits = cmtr.Item3.Values
+                    .Select(cm => cm.ToJSON())
+                    .ToArray(cmtr.Item3.Count)
+            });
+        }
+
+        [HttpGet]
+        [ActionName("getTreeByRef")]
+        public async Task<ActionResult> GetCommitTree(RefName refName, int depth = 10)
+        {
+            var cmtr = await cms.cmrepo.GetCommitTreeByRefName(refName, depth);
+
+            return Json(new
+            {
+                @ref = cmtr.Item1.ToJSON(),
+                root_commitid = cmtr.Item2.ToString(),
+                commits = cmtr.Item3.Values
+                    .Select(cm => cm.ToJSON())
+                    .ToArray(cmtr.Item3.Count)
+            });
         }
 
         [HttpPost]

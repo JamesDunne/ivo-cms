@@ -9,6 +9,7 @@ namespace IVO.CMS.API.Models
     public sealed class CommitModel
     {
         public string id { get; set; }
+        public bool is_complete { get; set; }
         public string treeid { get; set; }
         public string[] parents { get; set; }
         public string committer { get; set; }
