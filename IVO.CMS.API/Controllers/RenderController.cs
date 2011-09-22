@@ -31,7 +31,7 @@ namespace IVO.CMS.API.Controllers
         {
             // Get the stream for the blob by its path:
             var blob = await cms.tpsbrepo.GetBlobByTreePath(rootedPath);
-            if (blob == null) return new EmptyResult();
+            if (blob == null) return new HttpNotFoundResult(String.Format("A blob could not be found off tree {0} by path '{0}'", rootedPath.RootTreeID.ToString(), rootedPath.Path.ToString()));
 
             // TODO: streaming output!
             var html = await cms.GetContentEngine(viewDate).RenderBlob(blob);

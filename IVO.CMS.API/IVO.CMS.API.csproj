@@ -71,6 +71,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Code\CMSContext.cs" />
+    <Compile Include="Code\JsonHandleError.cs" />
     <Compile Include="Controllers\BlobController.cs" />
     <Compile Include="Code\StreamedBlobResult.cs" />
     <Compile Include="Controllers\RefController.cs" />

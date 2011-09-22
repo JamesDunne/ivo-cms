@@ -11,6 +11,7 @@ using System.Collections.ObjectModel;
 
 namespace IVO.CMS.API.Controllers
 {
+    [JsonHandleError]
     public class TagController : TaskAsyncController
     {
         #region Private implementation
@@ -31,6 +32,7 @@ namespace IVO.CMS.API.Controllers
         public async Task<ActionResult> GetTagByID(TagID id)
         {
             var tg = await cms.tgrepo.GetTag(id);
+            if (tg == null) return Json(new { success = false }, JsonRequestBehavior.AllowGet);
 
             return Json(new { tag = tg.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
@@ -39,9 +41,10 @@ namespace IVO.CMS.API.Controllers
         [ActionName("getByName")]
         public async Task<ActionResult> GetTagByName(TagName tagName)
         {
-            if (tagName == null) return new EmptyResult();
+            if (tagName == null) return Json(new { success = false }, JsonRequestBehavior.AllowGet);
 
             var tg = await cms.tgrepo.GetTagByName(tagName);
+            if (tg == null) return Json(new { success = false }, JsonRequestBehavior.AllowGet);
 
             return Json(new { tag = tg.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
@@ -111,7 +114,7 @@ namespace IVO.CMS.API.Controllers
         [ActionName("create")]
         public async Task<ActionResult> Create(TagModel tgj)
         {
-            if (tgj == null) return new EmptyResult();
+            if (tgj == null) return Json(new { success = false }, JsonRequestBehavior.AllowGet);
 
             // Map from the JSON TagModel:
             Tag tg = tgj.FromJSON();

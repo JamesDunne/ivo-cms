@@ -33,7 +33,7 @@ namespace IVO.CMS.API.Controllers
         public async Task<ActionResult> GetBlob(BlobID id)
         {
             var blobs = await cms.blrepo.GetBlobs(id);
-            if (blobs.Length == 0) return new EmptyResult();
+            if (blobs.Length == 0) return new HttpNotFoundResult(String.Format("A blob could not be found by id {0}", id.ToString()));
 
             return new StreamedBlobResult(blobs[0]);
         }
@@ -43,13 +43,14 @@ namespace IVO.CMS.API.Controllers
         public async Task<ActionResult> GetBlobByPath(TreeBlobPath rootedPath)
         {
             var blob = await cms.tpsbrepo.GetBlobByTreePath(rootedPath);
-            if (blob == null) return new EmptyResult();
+            if (blob == null) return new HttpNotFoundResult(String.Format("A blob could not be found off tree {0} by path '{0}'", rootedPath.RootTreeID.ToString(), rootedPath.Path.ToString()));
 
             return new StreamedBlobResult(blob.StreamedBlob);
         }
 
         [HttpPost]
         [ActionName("create")]
+        [JsonHandleError]
         public async Task<ActionResult> CreateBlob()
         {
             PersistingBlob pbl = new PersistingBlob(Request.InputStream);
@@ -63,6 +64,7 @@ namespace IVO.CMS.API.Controllers
 
         [HttpPost]
         [ActionName("validate")]
+        [JsonHandleError]
         public ActionResult ValidateBlob()
         {
             // Validate the blob's contents:

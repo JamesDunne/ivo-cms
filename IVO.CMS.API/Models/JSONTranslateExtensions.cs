@@ -13,8 +13,8 @@ namespace IVO.CMS.API.Models
         public static Commit.Builder FromJSON(this CommitModel cmj)
         {
             Commit.Builder cm = new Commit.Builder(
-                pParents:       cmj.parents == null ? new List<CommitID>(0) : cmj.parents.Select(s => new CommitID(s)).ToList(cmj.parents.Length),
-                pTreeID:        new TreeID(cmj.treeid),
+                pParents:       cmj.parents == null ? new List<CommitID>(0) : cmj.parents.Select(s => CommitID.Parse(s ?? String.Empty).Value).ToList(cmj.parents.Length),
+                pTreeID:        TreeID.Parse(cmj.treeid ?? String.Empty).Value,
                 pCommitter:     cmj.committer,
                 pDateCommitted: cmj.date_committed,
                 pMessage:       cmj.message
@@ -45,7 +45,7 @@ namespace IVO.CMS.API.Models
         {
             Ref.Builder rf = new Ref.Builder(
                 pName:      (RefName)rfm.name,
-                pCommitID:  new CommitID(rfm.commitid)
+                pCommitID:  CommitID.Parse(rfm.commitid ?? String.Empty).Value
             );
             return rf;
         }
@@ -68,7 +68,7 @@ namespace IVO.CMS.API.Models
         {
             Tag.Builder tg = new Tag.Builder(
                 pName:          (TagName)tgm.name,
-                pCommitID:      new CommitID(tgm.commitid),
+                pCommitID:      CommitID.Parse(tgm.commitid ?? String.Empty).Value,
                 pTagger:        tgm.tagger,
                 pDateTagged:    tgm.date_tagged,
                 pMessage:       tgm.message

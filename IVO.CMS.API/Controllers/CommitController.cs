@@ -10,6 +10,7 @@ using IVO.Definition.Models;
 
 namespace IVO.CMS.API.Controllers
 {
+    [JsonHandleError]
     public class CommitController : TaskAsyncController
     {
         #region Private implementation
@@ -21,27 +22,6 @@ namespace IVO.CMS.API.Controllers
             this.cms = new CMSContext(new DirectoryInfo(Server.MapPath("~/ivo/")));
 
             base.OnActionExecuting(filterContext);
-        }
-
-        protected override void OnException(ExceptionContext filterContext)
-        {
-            filterContext.ExceptionHandled = true;
-            filterContext.HttpContext.Response.StatusCode = 500;
-
-            if (filterContext.Exception is AggregateException)
-            {
-                // For an AggregateException, send the array of InnerExceptions:
-                AggregateException ag = (AggregateException)filterContext.Exception;
-                string[] exs = ag.InnerExceptions.ToArray(ag.InnerExceptions.Count).SelectAsArray(ex => ex.ToString());
-
-                filterContext.Result = Json(new { success = false, exceptions = exs }, JsonRequestBehavior.AllowGet);
-            }
-            else
-            {
-                filterContext.Result = Json(new { success = false, exceptions = new string[] { filterContext.Exception.ToString() } }, JsonRequestBehavior.AllowGet);
-            }
-
-            base.OnException(filterContext);
         }
 
         #endregion
