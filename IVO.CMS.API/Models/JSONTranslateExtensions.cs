@@ -8,16 +8,42 @@ namespace IVO.CMS.API.Models
 {
     public static class JSONTranslateExtensions
     {
+        #region Date/Time handling
+
+        private static string FromDate(DateTimeOffset value)
+        {
+            return value.ToString("s");
+        }
+
+        private static DateTimeOffset ToDate(string value)
+        {
+            return DateTimeOffset.ParseExact(value, "s", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        #endregion
+
         #region Commit
 
         public static Commit.Builder FromJSON(this CommitModel cmj)
         {
+            // Do conversions on the strings and detect any errors:
+            cmj.parents = cmj.parents ?? new string[0];
+            var maybeparentids = cmj.parents.SelectAsArray(s => CommitID.TryParse(s ?? String.Empty));
+            var maybetreeid = TreeID.TryParse(cmj.treeid ?? String.Empty);
+
+            // Which ones failed?
+            var exceptions = (from m in maybeparentids where m.IsRight select m.Right)
+                .Concat(from m in new[] { maybetreeid } where m.IsRight select m.Right);
+
+            // Throw an exception if any conversions failed:
+            if (exceptions.Any()) throw new AggregateException(exceptions);
+
             Commit.Builder cm = new Commit.Builder(
-                pParents:       cmj.parents == null ? new List<CommitID>(0) : cmj.parents.Select(s => CommitID.Parse(s ?? String.Empty).Value).ToList(cmj.parents.Length),
-                pTreeID:        TreeID.Parse(cmj.treeid ?? String.Empty).Value,
-                pCommitter:     cmj.committer,
-                pDateCommitted: cmj.date_committed,
-                pMessage:       cmj.message
+                pParents:       maybeparentids.SelectAsArray(id => id.Left).ToList(maybeparentids.Length),
+                pTreeID:        maybetreeid.Left,
+                pCommitter:     cmj.committer ?? String.Empty,
+                pDateCommitted: String.IsNullOrWhiteSpace(cmj.date_committed) ? DateTimeOffset.Now : ToDate(cmj.date_committed),
+                pMessage:       cmj.message ?? String.Empty
             );
             return cm;
         }
@@ -31,7 +57,7 @@ namespace IVO.CMS.API.Models
                 parents         = cm.Parents.SelectAsArray(s => s.ToString()),
                 treeid          = cm.TreeID.ToString(),
                 committer       = cm.Committer,
-                date_committed  = cm.DateCommitted,
+                date_committed  = FromDate(cm.DateCommitted),
                 message         = cm.Message
             };
             return cmj;
@@ -43,9 +69,18 @@ namespace IVO.CMS.API.Models
 
         public static Ref.Builder FromJSON(this RefModel rfm)
         {
+            // Do conversions on the strings and detect any errors:
+            var maybecommitid = CommitID.TryParse(rfm.commitid ?? String.Empty);
+
+            // Which ones failed?
+            var exceptions = (from m in new[] { maybecommitid } where m.IsRight select m.Right);
+
+            // Throw an exception if any conversions failed:
+            if (exceptions.Any()) throw new AggregateException(exceptions);
+
             Ref.Builder rf = new Ref.Builder(
                 pName:      (RefName)rfm.name,
-                pCommitID:  CommitID.Parse(rfm.commitid ?? String.Empty).Value
+                pCommitID:  maybecommitid.Left
             );
             return rf;
         }
@@ -66,12 +101,21 @@ namespace IVO.CMS.API.Models
 
         public static Tag.Builder FromJSON(this TagModel tgm)
         {
+            // Do conversions on the strings and detect any errors:
+            var maybecommitid = CommitID.TryParse(tgm.commitid ?? String.Empty);
+
+            // Which ones failed?
+            var exceptions = (from m in new[] { maybecommitid } where m.IsRight select m.Right);
+
+            // Throw an exception if any conversions failed:
+            if (exceptions.Any()) throw new AggregateException(exceptions);
+
             Tag.Builder tg = new Tag.Builder(
                 pName:          (TagName)tgm.name,
-                pCommitID:      CommitID.Parse(tgm.commitid ?? String.Empty).Value,
-                pTagger:        tgm.tagger,
-                pDateTagged:    tgm.date_tagged,
-                pMessage:       tgm.message
+                pCommitID:      maybecommitid.Left,
+                pTagger:        tgm.tagger ?? String.Empty,
+                pDateTagged:    String.IsNullOrWhiteSpace(tgm.date_tagged) ? DateTimeOffset.Now : ToDate(tgm.date_tagged),
+                pMessage:       tgm.message ?? String.Empty
             );
             return tg;
         }
@@ -84,7 +128,7 @@ namespace IVO.CMS.API.Models
                 name            = tg.Name.ToString(),
                 commitid        = tg.CommitID.ToString(),
                 tagger          = tg.Tagger,
-                date_tagged     = tg.DateTagged,
+                date_tagged     = FromDate(tg.DateTagged),
                 message         = tg.Message
             };
             return tgm;

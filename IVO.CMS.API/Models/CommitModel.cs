@@ -13,7 +13,7 @@ namespace IVO.CMS.API.Models
         public string treeid { get; set; }
         public string[] parents { get; set; }
         public string committer { get; set; }
-        public DateTimeOffset date_committed { get; set; }
+        public string date_committed { get; set; }
         public string message { get; set; }
     }
 }

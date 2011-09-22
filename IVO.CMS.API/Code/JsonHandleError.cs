@@ -16,23 +16,10 @@ namespace IVO.CMS.API.Code
             filterContext.ExceptionHandled = true;
             filterContext.HttpContext.Response.StatusCode = 500;
 
-            object[] exs;
-            if (filterContext.Exception is AggregateException)
-            {
-                // For an AggregateException, send the array of InnerExceptions:
-                AggregateException ag = (AggregateException)filterContext.Exception;
-                exs = ag.InnerExceptions.ToArray(ag.InnerExceptions.Count).SelectAsArray(ex => ToJSON(ex));
-            }
-            else
-            {
-                // Any other exception type:
-                Exception ex = filterContext.Exception;
-                exs = new[] { ToJSON(ex) };
-            }
-
             // Set the result to render JSON:
-            filterContext.Result = new JsonResult() {
-                Data = new { success = false, exceptions = exs },
+            filterContext.Result = new JsonResult()
+            {
+                Data = new { success = false, exceptions = ToJSON(filterContext.Exception) },
                 JsonRequestBehavior = JsonRequestBehavior.AllowGet,
                 ContentType = "application/json"
             };
@@ -40,9 +27,24 @@ namespace IVO.CMS.API.Code
             base.OnException(filterContext);
         }
 
-        private static object ToJSON(Exception ex)
+        private static object[] ToJSON(Exception ex)
         {
-            return new { type = ex.GetType().FullName, message = ex.Message, stackTrace = ex.StackTrace, ex.Source };
+            AggregateException ag = ex as AggregateException;
+            if (ag != null)
+            {
+                // For an AggregateException, send the array of InnerExceptions:
+                object[][] nested = ag.InnerExceptions.ToArray(ag.InnerExceptions.Count).SelectAsArray(ix => ToJSON(ix));
+                return (
+                    from exs in nested
+                    from cex in exs
+                    select cex
+                ).ToArray(nested.Sum(a => a.Length));
+            }
+            else
+            {
+                // Any other exception type:
+                return new[] { new { type = ex.GetType().FullName, message = ex.Message, stackTrace = ex.StackTrace, ex.Source } };
+            }
         }
     }
 }

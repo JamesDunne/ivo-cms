@@ -13,7 +13,7 @@ namespace IVO.CMS.API.Models
         public string name { get; set; }
         public string commitid { get; set; }
         public string tagger { get; set; }
-        public DateTimeOffset date_tagged { get; set; }
+        public string date_tagged { get; set; }
         public string message { get; set; }
     }
 }
