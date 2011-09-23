@@ -7,6 +7,7 @@ using IVO.CMS.API.Code;
 using IVO.CMS.API.Models;
 using IVO.CMS.Web.Mvc;
 using IVO.Definition.Models;
+using IVO.Definition.Containers;
 
 namespace IVO.CMS.API.Controllers
 {
@@ -57,18 +58,30 @@ namespace IVO.CMS.API.Controllers
             return Json(new { tag = cm.Item1.ToJSON(), commit = cm.Item2.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
 
+        private CommitTreeResponse toJSON(CommitID id, ImmutableContainer<CommitID, ICommit> commits)
+        {
+            ICommit cm;
+            if (!commits.TryGetValue(id, out cm)) return null;
+
+            return new CommitTreeResponse()
+            {
+                id = cm.ID.ToString(),
+                treeid = cm.TreeID.ToString(),
+                committer = cm.Committer.ToString(),
+                date_committed = JSONTranslateExtensions.FromDate(cm.DateCommitted),
+                parents_retrieved = cm.IsComplete,
+                message = cm.Message,
+                parents = cm.Parents.SelectAsArray(cmid => toJSON(cmid, commits))
+            };
+        }
+
         [HttpGet]
         [ActionName("getTree")]
         public async Task<ActionResult> GetCommitTree(CommitID id, int depth = 10)
         {
             var cmtr = await cms.cmrepo.GetCommitTree(id, depth);
 
-            return Json(new {
-                rootid = cmtr.Item1.ToString(),
-                commits = cmtr.Item2.Values
-                    .Select(cm => cm.ToJSON())
-                    .ToArray(cmtr.Item2.Count)
-            });
+            return Json(new { commit_tree = toJSON(cmtr.Item1, cmtr.Item2) }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
@@ -79,14 +92,7 @@ namespace IVO.CMS.API.Controllers
 
             var cmtr = await cms.cmrepo.GetCommitTreeByTagName(tagName, depth);
 
-            return Json(new
-            {
-                tag = cmtr.Item1.ToJSON(),
-                root_commitid = cmtr.Item2.ToString(),
-                commits = cmtr.Item3.Values
-                    .Select(cm => cm.ToJSON())
-                    .ToArray(cmtr.Item3.Count)
-            });
+            return Json(new { tag = cmtr.Item1.ToJSON(), commit_tree = toJSON(cmtr.Item2, cmtr.Item3) }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
@@ -97,19 +103,12 @@ namespace IVO.CMS.API.Controllers
 
             var cmtr = await cms.cmrepo.GetCommitTreeByRefName(refName, depth);
 
-            return Json(new
-            {
-                @ref = cmtr.Item1.ToJSON(),
-                root_commitid = cmtr.Item2.ToString(),
-                commits = cmtr.Item3.Values
-                    .Select(cm => cm.ToJSON())
-                    .ToArray(cmtr.Item3.Count)
-            });
+            return Json(new { @ref = cmtr.Item1.ToJSON(), commit_tree = toJSON(cmtr.Item2, cmtr.Item3) }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpPost]
         [ActionName("create")]
-        public async Task<ActionResult> Create(RefName refName, CommitModel cmj)
+        public async Task<ActionResult> Create(RefName refName, CommitRequest cmj)
         {
             if (cmj == null) return Json(new { success = false });
             if (refName == null) return Json(new { success = false });

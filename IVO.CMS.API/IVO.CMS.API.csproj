@@ -76,16 +76,23 @@
     <Compile Include="Code\StreamedBlobResult.cs" />
     <Compile Include="Controllers\RefController.cs" />
     <Compile Include="Controllers\TagController.cs" />
-    <Compile Include="Models\CommitModel.cs" />
+    <Compile Include="Models\CommitTreeResponse.cs" />
+    <Compile Include="Models\TreeTreeRefResponse.cs" />
+    <Compile Include="Models\TreeBlobRefResponse.cs" />
+    <Compile Include="Models\TreeResponse.cs" />
+    <Compile Include="Models\CommitResponse.cs" />
     <Compile Include="Controllers\RenderController.cs" />
-    <Compile Include="Models\BlobReferenceModel.cs" />
+    <Compile Include="Models\CommitRequest.cs" />
+    <Compile Include="Models\RefRequest.cs" />
+    <Compile Include="Models\TagRequest.cs" />
+    <Compile Include="Models\TreeBlobRefRequest.cs" />
     <Compile Include="Controllers\CommitController.cs" />
     <Compile Include="Controllers\TreeController.cs" />
     <Compile Include="Models\JSONTranslateExtensions.cs" />
-    <Compile Include="Models\RefModel.cs" />
-    <Compile Include="Models\TagModel.cs" />
-    <Compile Include="Models\TreeModel.cs" />
-    <Compile Include="Models\TreeReferenceModel.cs" />
+    <Compile Include="Models\RefResponse.cs" />
+    <Compile Include="Models\TagResponse.cs" />
+    <Compile Include="Models\TreeRequest.cs" />
+    <Compile Include="Models\TreeTreeRefRequest.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>

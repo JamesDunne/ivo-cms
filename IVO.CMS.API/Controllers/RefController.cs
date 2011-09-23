@@ -46,7 +46,7 @@ namespace IVO.CMS.API.Controllers
 
         [HttpPost]
         [ActionName("create")]
-        public async Task<ActionResult> Create(RefModel rfj)
+        public async Task<ActionResult> Create(RefRequest rfj)
         {
             if (rfj == null) return Json(new { success = false }, JsonRequestBehavior.AllowGet);
 

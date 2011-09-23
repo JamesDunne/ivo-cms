@@ -8,9 +8,9 @@ using IVO.Definition.Containers;
 namespace IVO.CMS.API.Models
 {
     [Serializable]
-    public sealed class TreeModel
+    public sealed class TreeRequest
     {
-        public BlobReferenceModel[] blobs { get; set; }
-        public TreeReferenceModel[] trees { get; set; }
+        public TreeBlobRefRequest[] blobs { get; set; }
+        public TreeTreeRefRequest[] trees { get; set; }
     }
 }

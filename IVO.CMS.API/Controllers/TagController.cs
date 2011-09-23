@@ -59,9 +59,15 @@ namespace IVO.CMS.API.Controllers
             // Is ordering desired? Possibly paging?
             if (ob != null)
             {
-                // Convert the JSON model of ordering:
+                // Convert the ordering instructions "column:asc,column:desc,...":
                 var orderBy = new ReadOnlyCollection<OrderByApplication<TagOrderBy>>(
-                    ob.SelectAsArray(e => e.Split(':').With(spl => new OrderByApplication<TagOrderBy>(convertTagOrderBy(spl[0]), convertDirection(spl[1]))))
+                    (
+                        from o in ob
+                        let spl = o.Split(':')
+                        let tgob = convertTagOrderBy(spl[0])
+                        let dir = spl.Length > 1 ? convertDirection(spl[1]) : defaultOrderBy(tgob)
+                        select new OrderByApplication<TagOrderBy>(tgob, dir)
+                    ).ToArray(ob.Length)
                 );
 
                 // Determine if paging is requested and is valid:
@@ -70,14 +76,35 @@ namespace IVO.CMS.API.Controllers
                     // Paging looks valid:
                     var results = await cms.tgrepo.SearchTags(tq, orderBy, new PagingRequest(pn.Value, ps.Value));
 
-                    return Json(new { results = results }, JsonRequestBehavior.AllowGet);
+                    return Json(new
+                    {
+                        results = new
+                        {
+                            count = results.TotalCount,
+                            pageCount = results.PageCount,
+                            pageNumber = results.Paging.PageNumber,
+                            pageSize = results.Paging.PageSize,
+                            isFirstPage = results.IsFirstPage,
+                            isLastPage = results.IsLastPage,
+                            orderedBy = results.OrderedBy.SelectAsArray(x => new { dir = convertDirection(x.Direction), by = convertTagOrderBy(x.OrderBy) }),
+                            page = results.Collection.SelectAsArray(tg => tg.ToJSON())
+                        }
+                    }, JsonRequestBehavior.AllowGet);
                 }
                 else
                 {
                     // No paging or invalid paging parameters:
                     var results = await cms.tgrepo.SearchTags(tq, orderBy);
 
-                    return Json(new { results = results }, JsonRequestBehavior.AllowGet);
+                    return Json(new
+                    {
+                        results = new
+                        {
+                            count = results.Collection.Count,
+                            orderedBy = results.OrderedBy.SelectAsArray(x => new { dir = convertDirection(x.Direction), by = convertTagOrderBy(x.OrderBy) }),
+                            items = results.Collection.SelectAsArray(tg => tg.ToJSON())
+                        }
+                    }, JsonRequestBehavior.AllowGet);
                 }
             }
             else
@@ -85,7 +112,35 @@ namespace IVO.CMS.API.Controllers
                 // No ordering or paging:
                 var results = await cms.tgrepo.SearchTags(tq);
 
-                return Json(new { results = results }, JsonRequestBehavior.AllowGet);
+                return Json(new
+                {
+                    results = new
+                    {
+                        count = results.Count,
+                        items = results.SelectAsArray(tg => tg.ToJSON())
+                    }
+                }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        private OrderByDirection defaultOrderBy(TagOrderBy tgob)
+        {
+            switch (tgob)
+            {
+                case TagOrderBy.DateTagged: return OrderByDirection.Descending;
+                case TagOrderBy.Name: return OrderByDirection.Ascending;
+                case TagOrderBy.Tagger: return OrderByDirection.Ascending;
+                default: return OrderByDirection.Ascending;
+            }
+        }
+
+        private string convertDirection(OrderByDirection dir)
+        {
+            switch (dir)
+            {
+                case OrderByDirection.Ascending: return "asc";
+                case OrderByDirection.Descending: return "desc";
+                default: return "asc";
             }
         }
 
@@ -96,6 +151,17 @@ namespace IVO.CMS.API.Controllers
                 case "asc": return Definition.Models.OrderByDirection.Ascending;
                 case "desc": return Definition.Models.OrderByDirection.Descending;
                 default: return Definition.Models.OrderByDirection.Ascending;
+            }
+        }
+
+        private string convertTagOrderBy(TagOrderBy ob)
+        {
+            switch (ob)
+            {
+                case TagOrderBy.DateTagged: return "date_tagged";
+                case TagOrderBy.Name: return "name";
+                case TagOrderBy.Tagger: return "tagger";
+                default: return String.Empty;
             }
         }
 
@@ -112,7 +178,7 @@ namespace IVO.CMS.API.Controllers
 
         [HttpPost]
         [ActionName("create")]
-        public async Task<ActionResult> Create(TagModel tgj)
+        public async Task<ActionResult> Create(TagRequest tgj)
         {
             if (tgj == null) return Json(new { success = false }, JsonRequestBehavior.AllowGet);
 

@@ -10,12 +10,12 @@ namespace IVO.CMS.API.Models
     {
         #region Date/Time handling
 
-        private static string FromDate(DateTimeOffset value)
+        internal static string FromDate(DateTimeOffset value)
         {
             return value.ToString("s");
         }
 
-        private static DateTimeOffset ToDate(string value)
+        internal static DateTimeOffset ToDate(string value)
         {
             return DateTimeOffset.ParseExact(value, "s", System.Globalization.CultureInfo.InvariantCulture);
         }
@@ -24,7 +24,7 @@ namespace IVO.CMS.API.Models
 
         #region Commit
 
-        public static Commit.Builder FromJSON(this CommitModel cmj)
+        public static Commit.Builder FromJSON(this CommitRequest cmj)
         {
             // Do conversions on the strings and detect any errors:
             cmj.parents = cmj.parents ?? new string[0];
@@ -48,17 +48,17 @@ namespace IVO.CMS.API.Models
             return cm;
         }
 
-        public static CommitModel ToJSON(this ICommit cm)
+        public static CommitResponse ToJSON(this ICommit cm)
         {
-            CommitModel cmj = new CommitModel()
+            CommitResponse cmj = new CommitResponse()
             {
-                id              = cm.ID.ToString(),
-                is_complete     = cm.IsComplete,
-                parents         = cm.Parents.SelectAsArray(s => s.ToString()),
-                treeid          = cm.TreeID.ToString(),
-                committer       = cm.Committer,
-                date_committed  = FromDate(cm.DateCommitted),
-                message         = cm.Message
+                id                  = cm.ID.ToString(),
+                parents_retrieved   = cm.IsComplete,
+                parents             = cm.Parents.SelectAsArray(s => s.ToString()),
+                treeid              = cm.TreeID.ToString(),
+                committer           = cm.Committer,
+                date_committed      = FromDate(cm.DateCommitted),
+                message             = cm.Message
             };
             return cmj;
         }
@@ -67,7 +67,7 @@ namespace IVO.CMS.API.Models
 
         #region Ref
 
-        public static Ref.Builder FromJSON(this RefModel rfm)
+        public static Ref.Builder FromJSON(this RefRequest rfm)
         {
             // Do conversions on the strings and detect any errors:
             var maybecommitid = CommitID.TryParse(rfm.commitid ?? String.Empty);
@@ -85,9 +85,9 @@ namespace IVO.CMS.API.Models
             return rf;
         }
 
-        public static RefModel ToJSON(this Ref rf)
+        public static RefResponse ToJSON(this Ref rf)
         {
-            RefModel rfm = new RefModel()
+            RefResponse rfm = new RefResponse()
             {
                 name        = rf.Name.ToString(),
                 commitid    = rf.CommitID.ToString()
@@ -99,7 +99,7 @@ namespace IVO.CMS.API.Models
 
         #region Tag
 
-        public static Tag.Builder FromJSON(this TagModel tgm)
+        public static Tag.Builder FromJSON(this TagRequest tgm)
         {
             // Do conversions on the strings and detect any errors:
             var maybecommitid = CommitID.TryParse(tgm.commitid ?? String.Empty);
@@ -120,9 +120,9 @@ namespace IVO.CMS.API.Models
             return tg;
         }
 
-        public static TagModel ToJSON(this Tag tg)
+        public static TagResponse ToJSON(this Tag tg)
         {
-            TagModel tgm = new TagModel()
+            TagResponse tgm = new TagResponse()
             {
                 id              = tg.ID.ToString(),
                 name            = tg.Name.ToString(),

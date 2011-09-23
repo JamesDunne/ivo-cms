@@ -25,17 +25,30 @@ namespace IVO.CMS.API.Controllers
             base.OnActionExecuting(filterContext);
         }
 
-        private static object projectTreeJSON(Tree tree)
+        private static TreeResponse projectTreeJSON(Tree tree)
         {
-            return new
+            return new TreeResponse
             {
                 id = tree.ID.ToString(),
-                blobs = tree.Blobs.SelectAsArray(bl => new { name = bl.Name, id = bl.BlobID.ToString() }),
-                trees = tree.Trees.SelectAsArray(tr => new { name = tr.Name, id = tr.TreeID.ToString() })
+                blobs = tree.Blobs.SelectAsArray(bl => new TreeBlobRefResponse { name = bl.Name, blobid = bl.BlobID.ToString() }),
+                trees = tree.Trees.SelectAsArray(tr => new TreeTreeRefResponse { name = tr.Name, treeid = tr.TreeID.ToString() })
             };
         }
 
-        private static Tree[] convertRecursively(TreeModel tm)
+        private static TreeResponse projectTreeJSON(TreeID rootid, ImmutableContainer<TreeID, Tree> trees)
+        {
+            Tree tree;
+            if (!trees.TryGetValue(rootid, out tree)) return null;
+
+            return new TreeResponse
+            {
+                id = tree.ID.ToString(),
+                blobs = tree.Blobs.SelectAsArray(bl => new TreeBlobRefResponse { name = bl.Name, blobid = bl.BlobID.ToString() }),
+                trees = tree.Trees.SelectAsArray(tr => new TreeTreeRefResponse { name = tr.Name, treeid = tr.TreeID.ToString(), tree = projectTreeJSON(tr.TreeID, trees) })
+            };
+        }
+
+        private static Tree[] convertRecursively(TreeRequest tm)
         {
             int treeCount = tm.trees != null ? tm.trees.Length : 0;
             int blobCount = tm.blobs != null ? tm.blobs.Length : 0;
@@ -89,7 +102,7 @@ namespace IVO.CMS.API.Controllers
 
         [HttpPost]
         [ActionName("create")]
-        public async Task<ActionResult> CreateTree(TreeModel tm)
+        public async Task<ActionResult> CreateTree(TreeRequest tm)
         {
             TreeID root;
             ImmutableContainer<TreeID, Tree> trees;
@@ -103,8 +116,8 @@ namespace IVO.CMS.API.Controllers
             // Persist the tree:
             var tree = await cms.trrepo.PersistTree(root, trees);
 
-            // Return the array of `Tree` models we persisted:
-            return Json(new { trees = treeArr.SelectAsArray(projectTreeJSON) });
+            // Return the `Tree` recursive model we persisted:
+            return Json(new { tree = projectTreeJSON(root, trees) });
         }
     }
 }
