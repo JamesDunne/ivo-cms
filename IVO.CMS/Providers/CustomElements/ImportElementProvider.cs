@@ -68,8 +68,15 @@ namespace IVO.CMS.Providers.CustomElements
 
                     // Fetch the Blob given the absolute path constructed:
                     TreeBlobPath tbp = new TreeBlobPath(st.Item.TreeBlobPath.RootTreeID, path);
-                    tpsBlob = await st.Engine.TreePathStreamedBlobs.GetBlobByTreePath(tbp).ConfigureAwait(continueOnCapturedContext: false);
+                    var etpsBlob = await st.Engine.TreePathStreamedBlobs.GetBlobByTreePath(tbp).ConfigureAwait(continueOnCapturedContext: false);
+                    if (etpsBlob.HasErrors)
+                    {
+                        foreach (var err in etpsBlob.Errors.Errors)
+                            st.Error(err.Message);
+                        return;
+                    }
 
+                    tpsBlob = etpsBlob.Value;
 #if false
                     if (tpsBlob != null)
                         Console.WriteLine("Found blob for '{0}'", path.ToString());

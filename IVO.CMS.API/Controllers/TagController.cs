@@ -8,6 +8,7 @@ using IVO.CMS.Web.Mvc;
 using IVO.Definition.Models;
 using IVO.CMS.API.Models;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace IVO.CMS.API.Controllers
 {
@@ -34,7 +35,10 @@ namespace IVO.CMS.API.Controllers
             var etg = await cms.tgrepo.GetTag(id);
             if (etg.IsRight) return Json(new { error = etg.Right.ToJSON() }, JsonRequestBehavior.AllowGet);
 
-            return Json(new { tag = etg.Left.ToJSON() }, JsonRequestBehavior.AllowGet);
+            Tag tg = etg.Left;
+            Debug.Assert(tg != null);
+
+            return Json(new { tag = tg.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
@@ -43,8 +47,11 @@ namespace IVO.CMS.API.Controllers
         {
             if (tagName == null) return Json(new { success = false }, JsonRequestBehavior.AllowGet);
 
-            var tg = await cms.tgrepo.GetTagByName(tagName);
-            if (tg == null) return Json(new { success = false }, JsonRequestBehavior.AllowGet);
+            var etg = await cms.tgrepo.GetTagByName(tagName);
+            if (etg.IsRight) return Json(new { error = etg.Right.ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            Tag tg = etg.Left;
+            Debug.Assert(tg != null);
 
             return Json(new { tag = tg.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
@@ -116,8 +123,8 @@ namespace IVO.CMS.API.Controllers
                 {
                     results = new
                     {
-                        count = results.Count,
-                        items = results.SelectAsArray(tg => tg.ToJSON())
+                        count = results.Collection.Count,
+                        items = results.Collection.SelectAsArray(tg => tg.ToJSON())
                     }
                 }, JsonRequestBehavior.AllowGet);
             }

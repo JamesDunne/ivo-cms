@@ -25,7 +25,7 @@ namespace IVO.CMS.API.Models
 
         #region Commit
 
-        public static Commit.Builder FromJSON(this CommitRequest cmj)
+        public static Either<Commit.Builder, ErrorBase[]> FromJSON(this CommitRequest cmj)
         {
             // Do conversions on the strings and detect any errors:
             cmj.parents = cmj.parents ?? new string[0];
@@ -37,7 +37,7 @@ namespace IVO.CMS.API.Models
                 .Concat(from m in new[] { maybetreeid } where m.IsRight select m.Right);
 
             // Throw an exception if any conversions failed:
-            if (exceptions.Any()) throw new AggregateException(exceptions);
+            if (exceptions.Any()) return exceptions.ToArray();
 
             Commit.Builder cm = new Commit.Builder(
                 pParents:       maybeparentids.SelectAsArray(id => id.Left).ToList(maybeparentids.Length),
@@ -68,7 +68,7 @@ namespace IVO.CMS.API.Models
 
         #region Ref
 
-        public static Ref.Builder FromJSON(this RefRequest rfm)
+        public static Either<Ref.Builder, ErrorBase[]> FromJSON(this RefRequest rfm)
         {
             // Do conversions on the strings and detect any errors:
             var maybecommitid = CommitID.TryParse(rfm.commitid ?? String.Empty);
@@ -133,6 +133,15 @@ namespace IVO.CMS.API.Models
                 message         = tg.Message
             };
             return tgm;
+        }
+
+        #endregion
+
+        #region Errors
+
+        public static object ToJSON(this GetTagError err)
+        {
+            return new { message = err.Message };
         }
 
         #endregion
