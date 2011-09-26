@@ -25,7 +25,7 @@ namespace IVO.CMS.API.Controllers
             base.OnActionExecuting(filterContext);
         }
 
-        private static TreeResponse projectTreeJSON(Tree tree)
+        private static TreeResponse projectTreeJSON(TreeNode tree)
         {
             return new TreeResponse
             {
@@ -35,9 +35,9 @@ namespace IVO.CMS.API.Controllers
             };
         }
 
-        private static TreeResponse projectTreeJSON(TreeID rootid, ImmutableContainer<TreeID, Tree> trees)
+        private static TreeResponse projectTreeJSON(TreeID rootid, ImmutableContainer<TreeID, TreeNode> trees)
         {
-            Tree tree;
+            TreeNode tree;
             if (!trees.TryGetValue(rootid, out tree)) return null;
 
             return new TreeResponse
@@ -48,12 +48,12 @@ namespace IVO.CMS.API.Controllers
             };
         }
 
-        private static Tree[] convertRecursively(TreeRequest tm)
+        private static TreeNode[] convertRecursively(TreeRequest tm)
         {
             int treeCount = tm.trees != null ? tm.trees.Length : 0;
             int blobCount = tm.blobs != null ? tm.blobs.Length : 0;
 
-            Tree.Builder tb = new Tree.Builder(
+            TreeNode.Builder tb = new TreeNode.Builder(
                 new List<TreeTreeReference>(treeCount),
                 new List<TreeBlobReference>(blobCount)
             );
@@ -63,10 +63,10 @@ namespace IVO.CMS.API.Controllers
                 tb.Blobs.AddRange(from bl in tm.blobs select (TreeBlobReference)new TreeBlobReference.Builder(bl.name, BlobID.Parse(bl.blobid).Value));
 
             // Create our output list:
-            List<Tree> trees = new List<Tree>(1 + treeCount /* + more, could calculate recursively but why bother */);
+            List<TreeNode> trees = new List<TreeNode>(1 + treeCount /* + more, could calculate recursively but why bother */);
 
             // Dummy placeholder for this Tree:
-            trees.Add((Tree)null);
+            trees.Add((TreeNode)null);
             for (int i = 0; i < treeCount; ++i)
             {
                 // If we have a `treeid` then skip recursion:
@@ -77,7 +77,7 @@ namespace IVO.CMS.API.Controllers
                 }
 
                 // Convert the child trees:
-                Tree[] childTrees = convertRecursively(tm.trees[i].tree);
+                TreeNode[] childTrees = convertRecursively(tm.trees[i].tree);
                 // Add them to the output list:
                 trees.AddRange(childTrees);
                 // Add the child TreeTreeReference to this Tree.Builder:
@@ -108,13 +108,13 @@ namespace IVO.CMS.API.Controllers
         public async Task<ActionResult> CreateTree(TreeRequest tm)
         {
             TreeID root;
-            ImmutableContainer<TreeID, Tree> trees;
+            ImmutableContainer<TreeID, TreeNode> trees;
             
             // Recursively convert the JSON-friendly `TreeModel` into our domain-friendly `Tree`s:
-            Tree[] treeArr = convertRecursively(tm);
+            TreeNode[] treeArr = convertRecursively(tm);
 
             root = treeArr[0].ID;
-            trees = new ImmutableContainer<TreeID, Tree>(tr => tr.ID, treeArr);
+            trees = new ImmutableContainer<TreeID, TreeNode>(tr => tr.ID, treeArr);
 
             // Persist the tree:
             var etree = await cms.trrepo.PersistTree(root, trees);
