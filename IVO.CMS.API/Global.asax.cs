@@ -19,8 +19,8 @@ namespace IVO.CMS.API
             // RenderController
             routes.MapRoute(
                 "Render",
-                "render/{*rootedPath}",
-                new { controller = "Render", action = "render" },
+                "render/tree/{*rootedPath}",
+                new { controller = "Render", action = "renderByTree" },
                 new { rootedPath = @"[\w\d]{40}/.*" }
             );
 

@@ -26,7 +26,7 @@ namespace IVO.CMS.API.Controllers
         #endregion
 
         [HttpGet]
-        [ActionName("render")]
+        [ActionName("renderByTree")]
         [ValidateInput(false)]
         public async Task<ActionResult> RenderBlob(TreeBlobPath rootedPath, DateTimeOffset? viewDate)
         {
