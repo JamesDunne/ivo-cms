@@ -25,23 +25,25 @@ namespace IVO.CMS.API.Models
 
         #region Commit
 
-        public static Either<Commit.Builder, ErrorBase[]> FromJSON(this CommitRequest cmj)
+        public static Errorable<Commit.Builder> FromJSON(this CommitRequest cmj)
         {
             // Do conversions on the strings and detect any errors:
             cmj.parents = cmj.parents ?? new string[0];
-            var maybeparentids = cmj.parents.SelectAsArray(s => CommitID.TryParse(s ?? String.Empty).CastRight(err => (ErrorBase)err));
+            var maybeparentids = cmj.parents.SelectAsArray(s => CommitID.TryParse(s ?? String.Empty));
             var maybetreeid = TreeID.TryParse(cmj.treeid ?? String.Empty);
 
             // Which ones failed?
-            var exceptions = (from m in maybeparentids where m.IsRight select m.Right)
-                .Concat(from m in new[] { maybetreeid } where m.IsRight select m.Right);
+            var errors =
+                (from m in maybeparentids where m.HasErrors select m.Errors)
+                .Concat(from m in new[] { maybetreeid } where m.HasErrors select m.Errors)
+                .Aggregate(new ErrorContainer(), (acc, err) => acc + err);
 
-            // Throw an exception if any conversions failed:
-            if (exceptions.Any()) return exceptions.ToArray();
+            // Return any errors encountered:
+            if (errors.HasAny) return errors;
 
             Commit.Builder cm = new Commit.Builder(
-                pParents:       maybeparentids.SelectAsArray(id => id.Left).ToList(maybeparentids.Length),
-                pTreeID:        maybetreeid.Left,
+                pParents:       maybeparentids.SelectAsArray(id => id.Value).ToList(maybeparentids.Length),
+                pTreeID:        maybetreeid.Value,
                 pCommitter:     cmj.committer ?? String.Empty,
                 pDateCommitted: String.IsNullOrWhiteSpace(cmj.date_committed) ? DateTimeOffset.Now : ToDate(cmj.date_committed),
                 pMessage:       cmj.message ?? String.Empty
@@ -68,20 +70,15 @@ namespace IVO.CMS.API.Models
 
         #region Ref
 
-        public static Either<Ref.Builder, ErrorBase[]> FromJSON(this RefRequest rfm)
+        public static Errorable<Ref.Builder> FromJSON(this RefRequest rfm)
         {
             // Do conversions on the strings and detect any errors:
             var maybecommitid = CommitID.TryParse(rfm.commitid ?? String.Empty);
-
-            // Which ones failed?
-            var exceptions = (from m in new[] { maybecommitid } where m.IsRight select m.Right);
-
-            // Throw an exception if any conversions failed:
-            if (exceptions.Any()) throw new AggregateException(exceptions);
+            if (maybecommitid.HasErrors) return maybecommitid.Errors;
 
             Ref.Builder rf = new Ref.Builder(
                 pName:      (RefName)rfm.name,
-                pCommitID:  maybecommitid.Left
+                pCommitID:  maybecommitid.Value
             );
             return rf;
         }
@@ -100,20 +97,15 @@ namespace IVO.CMS.API.Models
 
         #region Tag
 
-        public static Tag.Builder FromJSON(this TagRequest tgm)
+        public static Errorable<Tag.Builder> FromJSON(this TagRequest tgm)
         {
             // Do conversions on the strings and detect any errors:
             var maybecommitid = CommitID.TryParse(tgm.commitid ?? String.Empty);
-
-            // Which ones failed?
-            var exceptions = (from m in new[] { maybecommitid } where m.IsRight select m.Right);
-
-            // Throw an exception if any conversions failed:
-            if (exceptions.Any()) throw new AggregateException(exceptions);
+            if (maybecommitid.HasErrors) return maybecommitid.Errors;
 
             Tag.Builder tg = new Tag.Builder(
                 pName:          (TagName)tgm.name,
-                pCommitID:      maybecommitid.Left,
+                pCommitID:      maybecommitid.Value,
                 pTagger:        tgm.tagger ?? String.Empty,
                 pDateTagged:    String.IsNullOrWhiteSpace(tgm.date_tagged) ? DateTimeOffset.Now : ToDate(tgm.date_tagged),
                 pMessage:       tgm.message ?? String.Empty
@@ -139,7 +131,7 @@ namespace IVO.CMS.API.Models
 
         #region Errors
 
-        public static object ToJSON(this GetTagError err)
+        public static object ToJSON(this ErrorBase err)
         {
             return new { message = err.Message };
         }
