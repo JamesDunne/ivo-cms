@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using IVO.Definition.Models;
+using IVO.Definition.Errors;
 
 namespace IVO.CMS.API.Models
 {
@@ -28,7 +29,7 @@ namespace IVO.CMS.API.Models
         {
             // Do conversions on the strings and detect any errors:
             cmj.parents = cmj.parents ?? new string[0];
-            var maybeparentids = cmj.parents.SelectAsArray(s => CommitID.TryParse(s ?? String.Empty));
+            var maybeparentids = cmj.parents.SelectAsArray(s => CommitID.TryParse(s ?? String.Empty).CastRight(err => (ErrorBase)err));
             var maybetreeid = TreeID.TryParse(cmj.treeid ?? String.Empty);
 
             // Which ones failed?

@@ -81,7 +81,7 @@ namespace IVO.CMS.API.Controllers
         {
             var cmtr = await cms.cmrepo.GetCommitTree(id, depth);
 
-            return Json(new { commit_tree = toJSON(cmtr.Item1, cmtr.Item2) }, JsonRequestBehavior.AllowGet);
+            return Json(new { depth = depth, commit_tree = toJSON(cmtr.Item1, cmtr.Item2) }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
@@ -92,7 +92,7 @@ namespace IVO.CMS.API.Controllers
 
             var cmtr = await cms.cmrepo.GetCommitTreeByTagName(tagName, depth);
 
-            return Json(new { tag = cmtr.Item1.ToJSON(), commit_tree = toJSON(cmtr.Item2, cmtr.Item3) }, JsonRequestBehavior.AllowGet);
+            return Json(new { tag = cmtr.Item1.ToJSON(), depth = depth, commit_tree = toJSON(cmtr.Item2, cmtr.Item3) }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
@@ -103,7 +103,7 @@ namespace IVO.CMS.API.Controllers
 
             var cmtr = await cms.cmrepo.GetCommitTreeByRefName(refName, depth);
 
-            return Json(new { @ref = cmtr.Item1.ToJSON(), commit_tree = toJSON(cmtr.Item2, cmtr.Item3) }, JsonRequestBehavior.AllowGet);
+            return Json(new { @ref = cmtr.Item1.ToJSON(), depth = depth, commit_tree = toJSON(cmtr.Item2, cmtr.Item3) }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpPost]

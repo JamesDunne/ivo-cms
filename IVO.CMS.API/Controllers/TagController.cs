@@ -31,10 +31,10 @@ namespace IVO.CMS.API.Controllers
         [ActionName("getByID")]
         public async Task<ActionResult> GetTagByID(TagID id)
         {
-            var tg = await cms.tgrepo.GetTag(id);
-            if (tg == null) return Json(new { success = false }, JsonRequestBehavior.AllowGet);
+            var etg = await cms.tgrepo.GetTag(id);
+            if (etg.IsRight) return Json(new { error = etg.Right.ToJSON() }, JsonRequestBehavior.AllowGet);
 
-            return Json(new { tag = tg.ToJSON() }, JsonRequestBehavior.AllowGet);
+            return Json(new { tag = etg.Left.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
