@@ -31,7 +31,10 @@ namespace IVO.CMS.API.Controllers
         [ActionName("getByID")]
         public async Task<ActionResult> GetCommitByID(CommitID id)
         {
-            var cm = await cms.cmrepo.GetCommit(id);
+            var ecm = await cms.cmrepo.GetCommit(id);
+            if (ecm.HasErrors) return Json(new { errors = ecm.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            Commit cm = ecm.Value;
 
             return Json(new { commit = cm.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
@@ -42,7 +45,10 @@ namespace IVO.CMS.API.Controllers
         {
             if (refName == null) return Json(new { success = false });
 
-            var cm = await cms.cmrepo.GetCommitByRefName(refName);
+            var ecm = await cms.cmrepo.GetCommitByRefName(refName);
+            if (ecm.HasErrors) return Json(new { errors = ecm.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            var cm = ecm.Value;
 
             return Json(new { @ref = cm.Item1.ToJSON(), commit = cm.Item2.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
@@ -53,7 +59,10 @@ namespace IVO.CMS.API.Controllers
         {
             if (tagName == null) return Json(new { success = false });
 
-            var cm = await cms.cmrepo.GetCommitByTagName(tagName);
+            var ecm = await cms.cmrepo.GetCommitByTagName(tagName);
+            if (ecm.HasErrors) return Json(new { errors = ecm.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            var cm = ecm.Value;
 
             return Json(new { tag = cm.Item1.ToJSON(), commit = cm.Item2.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
@@ -79,9 +88,12 @@ namespace IVO.CMS.API.Controllers
         [ActionName("getTree")]
         public async Task<ActionResult> GetCommitTree(CommitID id, int depth = 10)
         {
-            var cmtr = await cms.cmrepo.GetCommitTree(id, depth);
+            var ecmtr = await cms.cmrepo.GetCommitTree(id, depth);
+            if (ecmtr.HasErrors) return Json(new { errors = ecmtr.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
 
-            return Json(new { depth = depth, commit_tree = toJSON(cmtr.Item1, cmtr.Item2) }, JsonRequestBehavior.AllowGet);
+            CommitTree cmtr = ecmtr.Value;
+
+            return Json(new { depth = depth, commit_tree = toJSON(cmtr.RootID, cmtr.Commits) }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
@@ -90,9 +102,12 @@ namespace IVO.CMS.API.Controllers
         {
             if (tagName == null) return Json(new { success = false });
 
-            var cmtr = await cms.cmrepo.GetCommitTreeByTagName(tagName, depth);
+            var ecmtr = await cms.cmrepo.GetCommitTreeByTagName(tagName, depth);
+            if (ecmtr.HasErrors) return Json(new { errors = ecmtr.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
 
-            return Json(new { tag = cmtr.Item1.ToJSON(), depth = depth, commit_tree = toJSON(cmtr.Item2, cmtr.Item3) }, JsonRequestBehavior.AllowGet);
+            Tuple<Tag, CommitTree> cmtr = ecmtr.Value;
+
+            return Json(new { tag = cmtr.Item1.ToJSON(), depth = depth, commit_tree = toJSON(cmtr.Item2.RootID, cmtr.Item2.Commits) }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
@@ -101,9 +116,12 @@ namespace IVO.CMS.API.Controllers
         {
             if (refName == null) return Json(new { success = false });
 
-            var cmtr = await cms.cmrepo.GetCommitTreeByRefName(refName, depth);
+            var ecmtr = await cms.cmrepo.GetCommitTreeByRefName(refName, depth);
+            if (ecmtr.HasErrors) return Json(new { errors = ecmtr.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
 
-            return Json(new { @ref = cmtr.Item1.ToJSON(), depth = depth, commit_tree = toJSON(cmtr.Item2, cmtr.Item3) }, JsonRequestBehavior.AllowGet);
+            Tuple<Ref, CommitTree> cmtr = ecmtr.Value;
+
+            return Json(new { @ref = cmtr.Item1.ToJSON(), depth = depth, commit_tree = toJSON(cmtr.Item2.RootID, cmtr.Item2.Commits) }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpPost]
@@ -114,10 +132,15 @@ namespace IVO.CMS.API.Controllers
             if (refName == null) return Json(new { success = false });
 
             // First get the ref and its CommitID, if it exists:
-            var rf = await cms.rfrepo.GetRefByName(refName);
+            var erf = await cms.rfrepo.GetRefByName(refName);
+            if (erf.HasErrors) return Json(new { errors = erf.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
 
             // Map from the JSON CommitModel:
-            Commit.Builder cb = cmj.FromJSON();
+            var ecb = cmj.FromJSON();
+            if (ecb.HasErrors) return Json(new { errors = ecb.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            Commit.Builder cb = ecb.Value;
+            Ref rf = erf.Value;
             
             // Add the ref's CommitID as the parent, if the ref exists:
             if ((rf != null) && (cb.Parents.Count == 0))
@@ -126,11 +149,15 @@ namespace IVO.CMS.API.Controllers
             }
 
             // Persist the commit:
-            var pcm = await cms.cmrepo.PersistCommit(cb);
+            var epcm = await cms.cmrepo.PersistCommit(cb);
+            if (epcm.HasErrors) return Json(new { errors = epcm.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            Commit pcm = epcm.Value;
 
             // Persist the ref with this new CommitID:
             Ref.Builder rfb = new Ref.Builder(refName, pcm.ID);
-            rf = await cms.rfrepo.PersistRef(rfb);
+            erf = await cms.rfrepo.PersistRef(rfb);
+            if (erf.HasErrors) return Json(new { errors = erf.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
 
             // Return the commit model as JSON again:
             return Json(new { @ref = rf.ToJSON(), commit = pcm.ToJSON() }, JsonRequestBehavior.AllowGet);

@@ -33,9 +33,9 @@ namespace IVO.CMS.API.Controllers
         public async Task<ActionResult> GetTagByID(TagID id)
         {
             var etg = await cms.tgrepo.GetTag(id);
-            if (etg.IsRight) return Json(new { error = etg.Right.ToJSON() }, JsonRequestBehavior.AllowGet);
+            if (etg.HasErrors) return Json(new { errors = etg.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
 
-            Tag tg = etg.Left;
+            Tag tg = etg.Value;
             Debug.Assert(tg != null);
 
             return Json(new { tag = tg.ToJSON() }, JsonRequestBehavior.AllowGet);
@@ -48,9 +48,9 @@ namespace IVO.CMS.API.Controllers
             if (tagName == null) return Json(new { success = false }, JsonRequestBehavior.AllowGet);
 
             var etg = await cms.tgrepo.GetTagByName(tagName);
-            if (etg.IsRight) return Json(new { error = etg.Right.ToJSON() }, JsonRequestBehavior.AllowGet);
+            if (etg.HasErrors) return Json(new { errors = etg.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
 
-            Tag tg = etg.Left;
+            Tag tg = etg.Value;
             Debug.Assert(tg != null);
 
             return Json(new { tag = tg.ToJSON() }, JsonRequestBehavior.AllowGet);
@@ -190,13 +190,17 @@ namespace IVO.CMS.API.Controllers
             if (tgj == null) return Json(new { success = false }, JsonRequestBehavior.AllowGet);
 
             // Map from the JSON TagModel:
-            Tag tg = tgj.FromJSON();
+            var etgb = tgj.FromJSON();
+            if (etgb.HasErrors) return Json(new { errors = etgb.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            Tag tg = etgb.Value;
 
             // Persist the commit:
-            var ptg = await cms.tgrepo.PersistTag(tg);
+            var eptg = await cms.tgrepo.PersistTag(tg);
+            if (eptg.HasErrors) return Json(new { errors = eptg.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
 
             // Return the tag model as JSON again:
-            return Json(new { tag = ptg.ToJSON() }, JsonRequestBehavior.AllowGet);
+            return Json(new { tag = eptg.Value.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
     }
 }

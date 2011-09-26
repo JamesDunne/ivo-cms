@@ -32,8 +32,10 @@ namespace IVO.CMS.API.Controllers
         {
             if (refName == null) return Json(new { success = false }, JsonRequestBehavior.AllowGet);
 
-            var rf = await cms.rfrepo.GetRefByName(refName);
+            var erf = await cms.rfrepo.GetRefByName(refName);
+            if (erf.HasErrors) return Json(new { errors = erf.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
 
+            Ref rf = erf.Value;
             return Json(new { @ref = rf.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
 
@@ -51,13 +53,19 @@ namespace IVO.CMS.API.Controllers
             if (rfj == null) return Json(new { success = false }, JsonRequestBehavior.AllowGet);
 
             // Map from the JSON RefModel:
-            Ref tg = rfj.FromJSON();
+            var erf = rfj.FromJSON();
+            if (erf.HasErrors) return Json(new { errors = erf.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            Ref rf = erf.Value;
 
             // Persist the commit:
-            var ptg = await cms.rfrepo.PersistRef(tg);
+            var eprf = await cms.rfrepo.PersistRef(rf);
+            if (eprf.HasErrors) return Json(new { errors = eprf.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            Ref prf = eprf.Value;
 
             // Return the ref model as JSON again:
-            return Json(new { @ref = ptg.ToJSON() }, JsonRequestBehavior.AllowGet);
+            return Json(new { @ref = prf.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
     }
 }

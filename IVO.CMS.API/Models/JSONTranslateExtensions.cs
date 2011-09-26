@@ -133,7 +133,14 @@ namespace IVO.CMS.API.Models
 
         public static object ToJSON(this ErrorBase err)
         {
-            return new { message = err.Message };
+            if (err == null) return null;
+
+            return new { type = err.GetType().FullName, message = err.Message };
+        }
+
+        public static object[] ToJSON(this ErrorContainer errors)
+        {
+            return errors.Errors.SelectAsArray(err => err.ToJSON());
         }
 
         #endregion

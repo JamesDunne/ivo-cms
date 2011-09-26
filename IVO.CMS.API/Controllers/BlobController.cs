@@ -30,6 +30,7 @@ namespace IVO.CMS.API.Controllers
 
         [HttpGet]
         [ActionName("get")]
+        [JsonHandleError]
         public async Task<ActionResult> GetBlob(BlobID id)
         {
             var blobs = await cms.blrepo.GetBlobs(id);
@@ -40,9 +41,13 @@ namespace IVO.CMS.API.Controllers
 
         [HttpGet]
         [ActionName("getByPath")]
+        [JsonHandleError]
         public async Task<ActionResult> GetBlobByPath(TreeBlobPath rootedPath)
         {
-            var blob = await cms.tpsbrepo.GetBlobByTreePath(rootedPath);
+            var eblob = await cms.tpsbrepo.GetBlobByTreePath(rootedPath);
+            if (eblob.HasErrors) return Json(new { errors = eblob.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            TreePathStreamedBlob blob = eblob.Value;
             if (blob == null) return new HttpNotFoundResult(String.Format("A blob could not be found off tree {0} by path '{0}'", rootedPath.RootTreeID.ToString(), rootedPath.Path.ToString()));
 
             return new StreamedBlobResult(blob.StreamedBlob);

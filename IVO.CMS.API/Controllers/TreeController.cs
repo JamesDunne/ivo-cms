@@ -95,7 +95,10 @@ namespace IVO.CMS.API.Controllers
         [ActionName("get")]
         public async Task<ActionResult> GetTreeByID(TreeID id)
         {
-            var tree = await cms.trrepo.GetTree(id);
+            var etree = await cms.trrepo.GetTree(id);
+            if (etree.HasErrors) return Json(new { errors = etree.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            var tree = etree.Value;
 
             return Json(new { tree = projectTreeJSON(tree) }, JsonRequestBehavior.AllowGet);
         }
@@ -114,7 +117,8 @@ namespace IVO.CMS.API.Controllers
             trees = new ImmutableContainer<TreeID, Tree>(tr => tr.ID, treeArr);
 
             // Persist the tree:
-            var tree = await cms.trrepo.PersistTree(root, trees);
+            var etree = await cms.trrepo.PersistTree(root, trees);
+            if (etree.HasErrors) return Json(new { errors = etree.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
 
             // Return the `Tree` recursive model we persisted:
             return Json(new { tree = projectTreeJSON(root, trees) });
