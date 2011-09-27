@@ -18,8 +18,8 @@ namespace PerformanceTestHost
 
         private async Task Requests()
         {
-            const int count = 32;
-            const int per = 512;
+            const int count = 16;
+            const int per = 1024;
 
             HttpWebRequest[] rq = new HttpWebRequest[per];
             Task[] rspt = new Task[per];
@@ -33,7 +33,7 @@ namespace PerformanceTestHost
             {
                 for (int j = 0; j < per; ++j)
                 {
-                    rq[j] = (HttpWebRequest)HttpWebRequest.Create("http://localhost:52729/blob/get/a2c85c6c7be6fcd752ac6f55c1f078bd242c23ff");
+                    rq[j] = (HttpWebRequest)HttpWebRequest.Create("http://localhost/blob/get/a2c85c6c7be6fcd752ac6f55c1f078bd242c23ff");
                     rq[j].Accept = "application/json";
                     rq[j].Method = "GET";
                     rq[j].Pipelined = false;
