@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Web.Mvc;
 using IVO.Definition.Models;
+using IVO.Definition.Errors;
 
 namespace IVO.CMS.API.Code
 {
@@ -29,7 +30,7 @@ namespace IVO.CMS.API.Code
             rsp.ContentType = "application/xhtml+xml";
 
             // TODO: this kinda sucks; I'd like to see truly async streaming via MVC.
-            blob.ReadStream(sr => { sr.CopyTo(rsp.OutputStream); });
+            blob.ReadStream(sr => { sr.CopyTo(rsp.OutputStream); return Errorable.NoErrors; });
         }
     }
 }

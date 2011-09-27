@@ -7,6 +7,7 @@ using IVO.CMS.Providers.CustomElements;
 using IVO.Definition.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using IVO.Definition.Errors;
 
 namespace IVO.CMS.Providers
 {
@@ -101,10 +102,10 @@ namespace IVO.CMS.Providers
             this.previous = previous;
         }
 
-        public async Task<StringBuilder> Render()
+        public async Task<Errorable<StringBuilder>> Render()
         {
             // Begin to stream contents from the blob:
-            await
+            var err = await
                 item.StreamedBlob.ReadStreamAsync(async sr =>
                 {
                     // Create a string builder used to build the output polyglot HTML5 document fragment:
@@ -121,8 +122,12 @@ namespace IVO.CMS.Providers
                             this.StreamContent()
                             .ConfigureAwait(continueOnCapturedContext: false);
                     }
+
+                    return Errorable.NoErrors;
                 })
                 .ConfigureAwait(continueOnCapturedContext: false);
+
+            if (err.HasErrors) return err.Errors;
 
             return this.writeTo;
         }

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using IVO.Definition.Models;
 using IVO.TestSupport;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using IVO.Definition.Errors;
 
 namespace TestCMS
 {
@@ -41,17 +42,16 @@ namespace TestCMS
 
         protected void output(TreePathStreamedBlob item)
         {
-            TaskEx.RunEx(async () =>
-            {
-                output((HTMLFragment)(item.TreeBlobPath.Path.ToString() + ":"));
-                output((HTMLFragment)Encoding.UTF8.GetString(await item.StreamedBlob.ReadStreamAsync((Func<System.IO.Stream, Task<byte[]>>) async sr =>
+            output((HTMLFragment)(item.TreeBlobPath.Path.ToString() + ":"));
+            output((HTMLFragment)Encoding.UTF8.GetString(
+                item.StreamedBlob.ReadStream( (Func<System.IO.Stream, Errorable<byte[]>>) (sr =>
                 {
                     byte[] tmp = new byte[sr.Length];
                     sr.Read(tmp, 0, (int)sr.Length);
                     return tmp;
-                })));
-                output((HTMLFragment)"-----------------------------------------");
-            }).Wait();
+                })).Value
+            ));
+            output((HTMLFragment)"-----------------------------------------");
         }
 
         protected void assertTranslated(string blob, string expected, params SemanticWarning[] expectedWarnings)
@@ -78,7 +78,11 @@ namespace TestCMS
 
             var fragTask = tc.ce.RenderBlob(item);
             fragTask.Wait();
-            var frag = fragTask.Result;
+            
+            var efrag = fragTask.Result;
+            Assert.IsFalse(efrag.HasErrors);
+
+            var frag = efrag.Value;
             output(frag);
 
             var errors = tc.ce.GetErrors();
@@ -107,31 +111,35 @@ namespace TestCMS
             CollectionAssert.AreEqual(expectedWarnings, warns, new SemanticWarningMessageComparer());
         }
 
-        protected void assumeFail(string blob, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
+        protected void assumeFail(string blob, IVO.CMS.SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
         {
             var tc = getTestContext();
             assumeFail(tc, blob, expectedErrors, expectedWarnings);
         }
 
-        protected void assumeFail(TestContext tc, string blob, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
+        protected void assumeFail(TestContext tc, string blob, IVO.CMS.SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
         {
             var bl = new MemoryStreamedBlob(blob);
             assumeFail(tc, bl, new TreeID(), expectedErrors, expectedWarnings);
         }
 
-        protected void assumeFail(TestContext tc, IStreamedBlob bl, TreeID rootid, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
+        protected void assumeFail(TestContext tc, IStreamedBlob bl, TreeID rootid, IVO.CMS.SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
         {
             var item = new TreePathStreamedBlob(rootid, (CanonicalBlobPath)"/test", bl);
             assumeFail(tc, item, expectedErrors, expectedWarnings);
         }
 
-        protected void assumeFail(TestContext tc, TreePathStreamedBlob item, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
+        protected void assumeFail(TestContext tc, TreePathStreamedBlob item, IVO.CMS.SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
         {
             output(item);
 
             var fragTask = tc.ce.RenderBlob(item);
             fragTask.Wait();
-            var frag = fragTask.Result;
+
+            var efrag = fragTask.Result;
+            Assert.IsFalse(efrag.HasErrors);
+
+            var frag = efrag.Value;
             output(frag);
 
             var errors = tc.ce.GetErrors();

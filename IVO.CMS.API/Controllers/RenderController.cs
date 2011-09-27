@@ -38,7 +38,10 @@ namespace IVO.CMS.API.Controllers
             if (blob == null) return new HttpNotFoundResult(String.Format("A blob could not be found off tree {0} by path '{0}'", rootedPath.RootTreeID.ToString(), rootedPath.Path.ToString()));
 
             // TODO: streaming output!
-            var html = await cms.GetContentEngine(viewDate).RenderBlob(blob);
+            var ehtml = await cms.GetContentEngine(viewDate).RenderBlob(blob);
+            if (ehtml.HasErrors) return Json(new { errors = ehtml.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            var html = ehtml.Value;
 
             // HTML5 output:
             return Content((string)html, "application/xhtml+xml", Encoding.UTF8);

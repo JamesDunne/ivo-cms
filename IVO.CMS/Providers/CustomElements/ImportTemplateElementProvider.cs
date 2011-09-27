@@ -213,7 +213,15 @@ namespace IVO.CMS.Providers.CustomElements
             );
 
             // Render the template:
-            StringBuilder sbResult = await importedTemplate.Render().ConfigureAwait(continueOnCapturedContext: false);
+            var esbResult = await importedTemplate.Render().ConfigureAwait(continueOnCapturedContext: false);
+            if (esbResult.HasErrors)
+            {
+                foreach (var err in esbResult.Errors)
+                    st.Error(err.Message);
+                return;
+            }
+
+            StringBuilder sbResult = esbResult.Value;
             string blob = sbResult.ToString();
 
             // Write the template to our current writer:

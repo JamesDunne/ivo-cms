@@ -71,7 +71,7 @@ namespace IVO.CMS.Providers.CustomElements
                     var etpsBlob = await st.Engine.TreePathStreamedBlobs.GetBlobByTreePath(tbp).ConfigureAwait(continueOnCapturedContext: false);
                     if (etpsBlob.HasErrors)
                     {
-                        foreach (var err in etpsBlob.Errors.Errors)
+                        foreach (var err in etpsBlob.Errors)
                             st.Error(err.Message);
                         return;
                     }
@@ -109,9 +109,15 @@ namespace IVO.CMS.Providers.CustomElements
 
                     // Render the blob inline:
                     RenderState rsInner = new RenderState(st.Engine, tpsBlob);
-                    var innerSb = await rsInner.Render().ConfigureAwait(continueOnCapturedContext: false);
+                    var einnerSb = await rsInner.Render().ConfigureAwait(continueOnCapturedContext: false);
+                    if (einnerSb.HasErrors)
+                    {
+                        foreach (var err in einnerSb.Errors)
+                            st.Error(err.Message);
+                        return;
+                    }
 
-                    blob = innerSb.ToString();
+                    blob = einnerSb.Value.ToString();
 #if ImportCache
 
                     // Cache the rendered blob:
