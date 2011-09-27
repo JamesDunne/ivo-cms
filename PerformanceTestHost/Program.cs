@@ -16,10 +16,14 @@ namespace PerformanceTestHost
         {
             var pr = new Program();
 
-            pr.TimeRequests(createPOSTRequest, count: 4).Wait();
-            pr.TimeRequests(createPOST2Request, count: 4).Wait();
-            pr.TimeRequests(createGETRequest1).Wait();
-            pr.TimeRequests(createGETRequest2).Wait();
+            pr.TimeRequests(createPOSTRequest, count: 10, per: 1).Wait();
+            Console.ReadKey();
+            pr.TimeRequests(createPOST2Request, count: 10, per: 1).Wait();
+            Console.ReadKey();
+            pr.TimeRequests(createGETRequest1, count: 10, per: 1).Wait();
+            Console.ReadKey();
+            pr.TimeRequests(createGETRequest2, count: 10, per: 1).Wait();
+            Console.ReadKey();
         }
 
         private static async Task readResponse(HttpWebRequest rq)
@@ -42,7 +46,7 @@ namespace PerformanceTestHost
                 string line;
                 while ((line = await tr.ReadLineAsync()) != null)
                 {
-                    //await Console.Out.WriteAsync(line + Environment.NewLine);
+                    await Console.Out.WriteAsync(line + Environment.NewLine);
                 }
             }
         }

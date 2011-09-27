@@ -17,6 +17,12 @@ namespace IVO.CMS.API.Code
 
         public override void ExecuteResult(ControllerContext context)
         {
+            if (blob == null)
+            {
+                context.HttpContext.Response.End();
+                return;
+            }
+
             var rsp = context.HttpContext.Response;
             rsp.BufferOutput = false;
             rsp.ContentEncoding = Encoding.UTF8;

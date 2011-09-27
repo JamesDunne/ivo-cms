@@ -33,10 +33,10 @@ namespace IVO.CMS.API.Controllers
         [JsonHandleError]
         public async Task<ActionResult> GetBlob(BlobID id)
         {
-            var blobs = await cms.blrepo.GetBlobs(id);
-            if (blobs.Length == 0) return new HttpNotFoundResult(String.Format("A blob could not be found by id {0}", id.ToString()));
+            var eblob = await cms.blrepo.GetBlob(id);
+            if (eblob.HasErrors) return Json(new { errors = eblob.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
 
-            return new StreamedBlobResult(blobs[0]);
+            return new StreamedBlobResult(eblob.Value);
         }
 
         [HttpGet]
@@ -61,10 +61,11 @@ namespace IVO.CMS.API.Controllers
             PersistingBlob pbl = new PersistingBlob(Request.InputStream);
 
             // Persist the blob from the input stream:
-            var blobs = await cms.blrepo.PersistBlobs(pbl);
+            var eblob = await cms.blrepo.PersistBlob(pbl);
+            if (eblob.HasErrors) return Json(new { errors = eblob.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
 
             // Return the BlobID:
-            return Json(new { id = blobs[0].ID.ToString() });
+            return Json(new { id = eblob.Value.ID.ToString() });
         }
 
         [HttpPost]

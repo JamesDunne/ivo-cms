@@ -69,14 +69,14 @@ namespace TestCMS.CommonTest
             TreeNode trTemplate = new TreeNode.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                        new TreeBlobReference.Builder("header", sblobs[0].ID),
-                        new TreeBlobReference.Builder("footer", sblobs[1].ID)
+                        new TreeBlobReference.Builder("header", sblobs[0].Value.ID),
+                        new TreeBlobReference.Builder("footer", sblobs[1].Value.ID)
                     }
             );
             TreeNode trPages = new TreeNode.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                        new TreeBlobReference.Builder("test", sblobs[2].ID)
+                        new TreeBlobReference.Builder("test", sblobs[2].Value.ID)
                     }
             );
             TreeNode trRoot = new TreeNode.Builder(
@@ -92,7 +92,7 @@ namespace TestCMS.CommonTest
 
             assertTranslated(
                 tc,
-                sblobs[2],   // aka blTest
+                sblobs[2].Value,   // aka blTest
                 trRoot.ID,
                 "<div><div>Header</div><div>Footer</div></div>"
             );
@@ -112,14 +112,14 @@ namespace TestCMS.CommonTest
             TreeNode trTemplate = new TreeNode.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("header", sblobs[0].ID),
-                    new TreeBlobReference.Builder("footer", sblobs[1].ID)
+                    new TreeBlobReference.Builder("header", sblobs[0].Value.ID),
+                    new TreeBlobReference.Builder("footer", sblobs[1].Value.ID)
                 }
             );
             TreeNode trPages = new TreeNode.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("test", sblobs[2].ID)
+                    new TreeBlobReference.Builder("test", sblobs[2].Value.ID)
                 }
             );
             TreeNode trRoot = new TreeNode.Builder(
@@ -133,11 +133,11 @@ namespace TestCMS.CommonTest
             // Persist the trees:
             var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, TreeNode>(tr => tr.ID, trTemplate, trPages, trRoot));
 
-            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", sblobs[0]));
-            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", sblobs[1]));
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", sblobs[0].Value));
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", sblobs[1].Value));
             assertTranslated(
                 tc,
-                new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/pages/test", sblobs[2]),
+                new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/pages/test", sblobs[2].Value),
                 "<div><div>Header</div><div>Footer</div></div>"
             );
         }
@@ -155,13 +155,13 @@ namespace TestCMS.CommonTest
             TreeNode trTemplate = new TreeNode.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("main", sblobs[0].ID),
+                    new TreeBlobReference.Builder("main", sblobs[0].Value.ID),
                 }
             );
             TreeNode trPages = new TreeNode.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("test", sblobs[1].ID)
+                    new TreeBlobReference.Builder("test", sblobs[1].Value.ID)
                 }
             );
             TreeNode trRoot = new TreeNode.Builder(
@@ -175,8 +175,8 @@ namespace TestCMS.CommonTest
             // Persist the trees:
             var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, TreeNode>(tr => tr.ID, trTemplate, trPages, trRoot));
 
-            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/templates/main", sblobs[0]));
-            assertTranslated(tc, new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/pages/test", sblobs[1]), expected, expectedWarnings);
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/templates/main", sblobs[0].Value));
+            assertTranslated(tc, new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/pages/test", sblobs[1].Value), expected, expectedWarnings);
         }
 
         private async Task testImportTemplateFail(string templateMain, string pagesTest, SemanticError[] expectedErrors, SemanticWarning[] expectedWarnings)
@@ -192,13 +192,13 @@ namespace TestCMS.CommonTest
             TreeNode trTemplate = new TreeNode.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("main", sblobs[0].ID),
+                    new TreeBlobReference.Builder("main", sblobs[0].Value.ID),
                 }
             );
             TreeNode trPages = new TreeNode.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("test", sblobs[1].ID)
+                    new TreeBlobReference.Builder("test", sblobs[1].Value.ID)
                 }
             );
             TreeNode trRoot = new TreeNode.Builder(
@@ -212,8 +212,8 @@ namespace TestCMS.CommonTest
             // Persist the trees:
             var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, TreeNode>(tr => tr.ID, trTemplate, trPages, trRoot));
 
-            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/templates/main", sblobs[0]));
-            assumeFail(tc, new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/pages/test", sblobs[1]), expectedErrors, expectedWarnings);
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/templates/main", sblobs[0].Value));
+            assumeFail(tc, new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/pages/test", sblobs[1].Value), expectedErrors, expectedWarnings);
         }
 
         public Task TestImportTemplateAbsolute()
@@ -1158,14 +1158,14 @@ Well that was fun!
             TreeNode trTemplate = new TreeNode.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("header", sblobs[0].ID),
-                    new TreeBlobReference.Builder("footer", sblobs[1].ID)
+                    new TreeBlobReference.Builder("header", sblobs[0].Value.ID),
+                    new TreeBlobReference.Builder("footer", sblobs[1].Value.ID)
                 }
             );
             TreeNode trPages = new TreeNode.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("test", sblobs[2].ID)
+                    new TreeBlobReference.Builder("test", sblobs[2].Value.ID)
                 }
             );
             TreeNode trRoot = new TreeNode.Builder(
@@ -1179,11 +1179,11 @@ Well that was fun!
             // Persist the trees:
             var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, TreeNode>(tr => tr.ID, trTemplate, trPages, trRoot));
 
-            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", sblobs[0]));
-            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", sblobs[1]));
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", sblobs[0].Value));
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", sblobs[1].Value));
             assertTranslated(
                 tc,
-                sblobs[2],
+                sblobs[2].Value,
                 trRoot.ID,
 @"<div>
   <div>Header</div>In between content.<div>Footer</div>
@@ -1221,14 +1221,14 @@ Well that was fun!
             TreeNode trTemplate = new TreeNode.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("header", sblobs[0].ID),
-                    new TreeBlobReference.Builder("footer", sblobs[1].ID)
+                    new TreeBlobReference.Builder("header", sblobs[0].Value.ID),
+                    new TreeBlobReference.Builder("footer", sblobs[1].Value.ID)
                 }
             );
             TreeNode trPages = new TreeNode.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("test", sblobs[2].ID)
+                    new TreeBlobReference.Builder("test", sblobs[2].Value.ID)
                 }
             );
             TreeNode trRoot = new TreeNode.Builder(
@@ -1242,11 +1242,11 @@ Well that was fun!
             // Persist the trees:
             var trTask = await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, TreeNode>(tr => tr.ID, trTemplate, trPages, trRoot));
 
-            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", sblobs[0]));
-            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", sblobs[1]));
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/header", sblobs[0].Value));
+            output(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/template/footer", sblobs[1].Value));
             assertTranslated(
                 tc,
-                sblobs[2],
+                sblobs[2].Value,
                 trRoot.ID,
 @"<div>
   Else here?
@@ -1304,19 +1304,19 @@ Well that was fun!
             TreeNode trTmpl = new TreeNode.Builder(
                 new List<TreeTreeReference>(0),
                 new List<TreeBlobReference> {
-                    new TreeBlobReference.Builder("header", bls[0].ID),
-                    new TreeBlobReference.Builder("footer", bls[1].ID)
+                    new TreeBlobReference.Builder("header", bls[0].Value.ID),
+                    new TreeBlobReference.Builder("footer", bls[1].Value.ID)
                 }
             );
             TreeNode trRoot = new TreeNode.Builder(
                 new List<TreeTreeReference> { new TreeTreeReference.Builder("template", trTmpl.ID) },
-                new List<TreeBlobReference> { new TreeBlobReference.Builder("test", bls[2].ID) }
+                new List<TreeBlobReference> { new TreeBlobReference.Builder("test", bls[2].Value.ID) }
             );
 
             await tc.trrepo.PersistTree(trRoot.ID, new ImmutableContainer<TreeID, TreeNode>(tr => tr.ID, trRoot, trTmpl));
 
             Stopwatch stpw = Stopwatch.StartNew();
-            await tc.ce.RenderBlob(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/test", bls[2]));
+            await tc.ce.RenderBlob(new TreePathStreamedBlob(trRoot.ID, (CanonicalBlobPath)"/test", bls[2].Value));
             stpw.Stop();
 
             var errs = tc.ce.GetErrors();
