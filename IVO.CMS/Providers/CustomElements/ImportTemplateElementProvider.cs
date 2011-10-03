@@ -5,6 +5,7 @@ using System.Text;
 using IVO.Definition.Models;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Diagnostics;
 
 namespace IVO.CMS.Providers.CustomElements
 {
@@ -79,17 +80,18 @@ namespace IVO.CMS.Providers.CustomElements
             {
                 foreach (var err in etmplBlob.Errors.Errors)
                     st.Error(err.Message);
+#if false
                 tmplBlob = null;
+#else
+                st.SkipElementAndChildren("cms-import-template");
+                return;
+#endif
             }
             else tmplBlob = etmplBlob.Value;
 
-#if false
-            if (tpsBlob != null)
-                Console.WriteLine("Found blob for '{0}'", path.ToString());
-            else
-                Console.WriteLine("No blob found for '{0}'", path.ToString());
-#endif
+            Debug.Assert(tmplBlob != null);
 
+#if false
             // No blob? Put up an error:
             if (tmplBlob == null)
             {
@@ -97,11 +99,10 @@ namespace IVO.CMS.Providers.CustomElements
                 st.SkipElementAndChildren("cms-import-template");
                 return;
             }
+#endif
 
             // This lambda processes the entire imported template:
-            Func<RenderState, Task<bool>> processElements = null;
-            
-            processElements = (Func<RenderState, Task<bool>>)(async sst =>
+            Func<RenderState, Task<bool>> processElements = (Func<RenderState, Task<bool>>)(async sst =>
             {
                 // Make sure cms-template is the first element from the imported template blob:
                 if (sst.Reader.LocalName != "cms-template")
@@ -119,6 +120,7 @@ namespace IVO.CMS.Providers.CustomElements
                 // Create a new RenderState that reads from the parent blob and writes to the template's renderer:
                 var stWriter = new RenderState(st.Engine, st.Item, st.Reader, sst.Writer);
 
+                // This lambda is called recursively to handle cms-template-area elements found within parent cms-template-area elements in the template:
                 Func<RenderState, Task<bool>> processTemplateAreaElements = null;
                 processTemplateAreaElements = (Func<RenderState, Task<bool>>)(async tst =>
                 {

@@ -16,16 +16,16 @@ namespace PerformanceTestHost
         {
             var pr = new Program();
 
-#if false
-            pr.TimeRequests(createPOSTRequest, count: 10, per: 1).Wait();
-            Console.ReadKey();
-            pr.TimeRequests(createPOST2Request, count: 10, per: 1).Wait();
-            Console.ReadKey();
-            pr.TimeRequests(createGETRequest1, count: 10, per: 1).Wait();
-            Console.ReadKey();
+#if true
+            pr.TimeRequests(createPOSTRequest, count: 2, per: 100).Wait();
+            //Console.ReadKey();
+            pr.TimeRequests(createPOST2Request, count: 2, per: 100).Wait();
+            //Console.ReadKey();
+            pr.TimeRequests(createGETRequest1, count: 2, per: 100).Wait();
+            //Console.ReadKey();
 #endif
-            pr.TimeRequests(createGETRequest2, count: 10, per: 1).Wait();
-            Console.ReadKey();
+            pr.TimeRequests(createGETRequest2, count: 2, per: 100).Wait();
+            //Console.ReadKey();
         }
 
         private static async Task readResponse(HttpWebRequest rq)

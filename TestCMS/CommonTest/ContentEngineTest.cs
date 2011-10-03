@@ -351,7 +351,7 @@ namespace TestCMS.CommonTest
     <area id=""head""></area>
     <area id=""body"">Body.</area>
 </cms-import-template>",
-                new SemanticError[] { new SemanticError("cms-import-template path '/pages/fail' not found", null, 0, 0) },
+                new SemanticError[] { new SemanticError("A blob was not found given path 'af1436c34cd2493f9efce21f71efe8ee70a5ab76/pages/fail'", null, 0, 0) },
                 new SemanticWarning[] { }
             );
         }
@@ -1276,7 +1276,7 @@ Well that was fun!
             using (var fs = new FileStream(tmp, FileMode.Open, FileAccess.Write, FileShare.None))
             using (var sw = new StreamWriter(fs))
             {
-                for (int i = 0; i < 16000; ++i)
+                for (int i = 0; i < 160; ++i)
                 {
                     //<cms-import path=""/template/header"" />In between content.<cms-import path=""/template/footer"" />
                     sw.WriteLine(String.Format(
