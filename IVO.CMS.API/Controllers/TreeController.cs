@@ -9,6 +9,7 @@ using IVO.CMS.API.Models;
 using IVO.CMS.Web.Mvc;
 using IVO.Definition.Containers;
 using IVO.Definition.Models;
+using IVO.Definition.Errors;
 
 namespace IVO.CMS.API.Controllers
 {
@@ -23,6 +24,11 @@ namespace IVO.CMS.API.Controllers
             this.cms = new CMSContext(new DirectoryInfo(Server.MapPath("~/ivo/")));
 
             base.OnActionExecuting(filterContext);
+        }
+
+        private JsonResult ErrorJson<T>(Errorable<T> errored)
+        {
+            return Json(new { errors = errored.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
 
         private static TreeResponse projectTreeJSON(TreeNode tree)
@@ -93,10 +99,15 @@ namespace IVO.CMS.API.Controllers
 
         [HttpGet]
         [ActionName("get")]
-        public async Task<ActionResult> GetTreeByID(TreeID id)
+        public async Task<ActionResult> GetTreeByID(Errorable<TreeID.Partial> id)
         {
-            var etree = await cms.trrepo.GetTree(id);
-            if (etree.HasErrors) return Json(new { errors = etree.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+            if (id.HasErrors) return ErrorJson(id);
+
+            var eid = await cms.trrepo.ResolvePartialID(id.Value);
+            if (eid.HasErrors) return ErrorJson(eid);
+
+            var etree = await cms.trrepo.GetTree(eid.Value);
+            if (etree.HasErrors) return ErrorJson(etree);
 
             var tree = etree.Value;
 
@@ -118,7 +129,7 @@ namespace IVO.CMS.API.Controllers
 
             // Persist the tree:
             var etree = await cms.trrepo.PersistTree(root, trees);
-            if (etree.HasErrors) return Json(new { errors = etree.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+            if (etree.HasErrors) return ErrorJson(etree);
 
             // Return the `Tree` recursive model we persisted:
             return Json(new { tree = projectTreeJSON(root, trees) });
