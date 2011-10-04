@@ -1,14 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Asynq;
-using IVO.Definition.Repositories;
+using System.IO;
 using IVO.CMS;
 using IVO.CMS.Providers.CustomElements;
 using IVO.Implementation.FileSystem;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.IO;
 
 namespace TestCMS
 {

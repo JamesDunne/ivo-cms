@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Asynq;
-using IVO.Definition.Repositories;
 using IVO.CMS;
 using IVO.CMS.Providers.CustomElements;
 using IVO.Implementation.SQL;

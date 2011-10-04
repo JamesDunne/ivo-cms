@@ -7,6 +7,7 @@ using IVO.CMS.API.Code;
 using IVO.CMS.API.Models;
 using IVO.Definition.Models;
 using IVO.CMS.Web.Mvc;
+using IVO.Definition.Errors;
 
 namespace IVO.CMS.API.Controllers
 {
@@ -23,6 +24,11 @@ namespace IVO.CMS.API.Controllers
             base.OnActionExecuting(filterContext);
         }
 
+        private JsonResult ErrorJson<T>(Errorable<T> errored)
+        {
+            return Json(new { errors = errored.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+        }
+
         #endregion
 
         [HttpGet]
@@ -32,14 +38,14 @@ namespace IVO.CMS.API.Controllers
         {
             // Get the stream for the blob by its path:
             var eblob = await cms.tpsbrepo.GetBlobByTreePath(rootedPath);
-            if (eblob.HasErrors) return Json(new { errors = eblob.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+            if (eblob.HasErrors) return ErrorJson(eblob);
 
             TreePathStreamedBlob blob = eblob.Value;
             if (blob == null) return new HttpNotFoundResult(String.Format("A blob could not be found off tree {0} by path '{0}'", rootedPath.RootTreeID.ToString(), rootedPath.Path.ToString()));
 
-            // TODO: streaming output!
+            // Render the blob:
             var ehtml = await cms.GetContentEngine(viewDate).RenderBlob(blob);
-            if (ehtml.HasErrors) return Json(new { errors = ehtml.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+            if (ehtml.HasErrors) return ErrorJson(ehtml);
 
             var html = ehtml.Value;
 

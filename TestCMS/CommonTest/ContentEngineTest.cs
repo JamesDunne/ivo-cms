@@ -1,18 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
-using Asynq;
 using IVO.CMS;
 using IVO.CMS.Providers.CustomElements;
 using IVO.Definition.Containers;
 using IVO.Definition.Models;
-using IVO.Definition.Repositories;
-using IVO.Implementation.SQL;
-using IVO.TestSupport;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Diagnostics;
 
 namespace TestCMS.CommonTest
 {
@@ -351,7 +345,7 @@ namespace TestCMS.CommonTest
     <area id=""head""></area>
     <area id=""body"">Body.</area>
 </cms-import-template>",
-                new SemanticError[] { new SemanticError("A blob was not found given path 'af1436c34cd2493f9efce21f71efe8ee70a5ab76/pages/fail'", null, 0, 0) },
+                new SemanticError[] { new SemanticError("cms-import-template could not find blob by path '/pages/fail' off tree 'af1436c34cd2493f9efce21f71efe8ee70a5ab76'", null, 0, 0) },
                 new SemanticWarning[] { }
             );
         }

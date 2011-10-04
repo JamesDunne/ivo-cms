@@ -61,9 +61,19 @@ namespace IVO.CMS.Providers.CustomElements
                 var etpsBlob = await st.Engine.TreePathStreamedBlobs.GetBlobByTreePath(tbp).ConfigureAwait(continueOnCapturedContext: false);
                 if (etpsBlob.HasErrors)
                 {
+                    st.SkipElementAndChildren("cms-import");
+
+                    // Check if the error is a simple blob not found error:
+                    bool notFound = etpsBlob.Errors.Any(er => er is BlobNotFoundByPathError);
+                    if (notFound)
+                    {
+                        st.Error("cms-import could not find blob by path '{0]' off tree '{1}'", tbp.Path, tbp.RootTreeID);
+                        return Errorable.NoErrors;
+                    }
+
+                    // Error was more serious:
                     foreach (var err in etpsBlob.Errors)
                         st.Error(err.Message);
-                    // FIXME: should not-found error cause a hard stop?
                     return etpsBlob.Errors;
                 }
                 else tpsBlob = etpsBlob.Value;

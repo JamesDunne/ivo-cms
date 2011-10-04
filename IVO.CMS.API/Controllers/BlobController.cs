@@ -26,6 +26,11 @@ namespace IVO.CMS.API.Controllers
             base.OnActionExecuting(filterContext);
         }
 
+        private JsonResult ErrorJson<T>(Errorable<T> errored)
+        {
+            return Json(new { errors = errored.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+        }
+
         #endregion
 
         [HttpGet]
@@ -33,13 +38,13 @@ namespace IVO.CMS.API.Controllers
         [JsonHandleError]
         public async Task<ActionResult> GetBlob(Errorable<BlobID.Partial> id)
         {
-            if (id.HasErrors) return Json(new { errors = id.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+            if (id.HasErrors) return ErrorJson(id);
 
             var eid = await cms.blrepo.ResolvePartialID(id.Value);
-            if (eid.HasErrors) return Json(new { errors = eid.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+            if (eid.HasErrors) return ErrorJson(eid);
 
             var eblob = await cms.blrepo.GetBlob(eid.Value);
-            if (eblob.HasErrors) return Json(new { errors = eblob.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+            if (eblob.HasErrors) return ErrorJson(eblob);
 
             return new StreamedBlobResult(eblob.Value);
         }
@@ -50,10 +55,10 @@ namespace IVO.CMS.API.Controllers
         public async Task<ActionResult> GetBlobByPath(TreeBlobPath rootedPath)
         {
             var eblob = await cms.tpsbrepo.GetBlobByTreePath(rootedPath);
-            if (eblob.HasErrors) return Json(new { errors = eblob.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+            if (eblob.HasErrors) return ErrorJson(eblob);
 
             TreePathStreamedBlob blob = eblob.Value;
-            if (blob == null) return new HttpNotFoundResult(String.Format("A blob could not be found off tree {0} by path '{0}'", rootedPath.RootTreeID.ToString(), rootedPath.Path.ToString()));
+            //if (blob == null) return new HttpNotFoundResult(String.Format("A blob could not be found off tree {0} by path '{0}'", rootedPath.RootTreeID.ToString(), rootedPath.Path.ToString()));
 
             return new StreamedBlobResult(blob.StreamedBlob);
         }
@@ -67,7 +72,7 @@ namespace IVO.CMS.API.Controllers
 
             // Persist the blob from the input stream:
             var eblob = await cms.blrepo.PersistBlob(pbl);
-            if (eblob.HasErrors) return Json(new { errors = eblob.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+            if (eblob.HasErrors) return ErrorJson(eblob);
 
             // Return the BlobID:
             return Json(new { id = eblob.Value.ID.ToString() });
@@ -109,9 +114,12 @@ namespace IVO.CMS.API.Controllers
 
             IStreamedBlob blA = ebls[0].Value, blB = ebls[1].Value;
 
-            // Stream in both blobs' contents to two string values:
+            // Stream in both blobs' contents to string values:
             var etextA = await blA.ReadStreamAsync<string>(async st => { using (var sr = new StreamReader(st, Encoding.UTF8)) return (Errorable<string>)await sr.ReadToEndAsync(); });
+            if (etextA.HasErrors) return ErrorJson(etextA);
+            
             var etextB = await blB.ReadStreamAsync<string>(async st => { using (var sr = new StreamReader(st, Encoding.UTF8)) return (Errorable<string>)await sr.ReadToEndAsync(); });
+            if (etextB.HasErrors) return ErrorJson(etextB);
 
             // Create a diff engine:
             IDiffer differ = new Differ();

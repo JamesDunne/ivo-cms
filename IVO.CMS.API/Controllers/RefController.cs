@@ -1,12 +1,12 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Mvc;
 using IVO.CMS.API.Code;
-using IVO.CMS.Web.Mvc;
-using IVO.Definition.Models;
 using IVO.CMS.API.Models;
+using IVO.CMS.Web.Mvc;
+using IVO.Definition.Errors;
+using IVO.Definition.Models;
 
 namespace IVO.CMS.API.Controllers
 {
@@ -24,16 +24,21 @@ namespace IVO.CMS.API.Controllers
             base.OnActionExecuting(filterContext);
         }
 
+        private JsonResult ErrorJson<T>(Errorable<T> errored)
+        {
+            return Json(new { errors = errored.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+        }
+
         #endregion
 
         [HttpGet]
         [ActionName("getByName")]
-        public async Task<ActionResult> GetRefByName(RefName refName)
+        public async Task<ActionResult> GetRefByName(Errorable<RefName> refName)
         {
-            if (refName == null) return Json(new { success = false }, JsonRequestBehavior.AllowGet);
+            if (refName.HasErrors) return ErrorJson(refName);
 
-            var erf = await cms.rfrepo.GetRefByName(refName);
-            if (erf.HasErrors) return Json(new { errors = erf.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+            var erf = await cms.rfrepo.GetRefByName(refName.Value);
+            if (erf.HasErrors) return ErrorJson(erf);
 
             Ref rf = erf.Value;
             return Json(new { @ref = rf.ToJSON() }, JsonRequestBehavior.AllowGet);
@@ -54,13 +59,13 @@ namespace IVO.CMS.API.Controllers
 
             // Map from the JSON RefModel:
             var erf = rfj.FromJSON();
-            if (erf.HasErrors) return Json(new { errors = erf.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+            if (erf.HasErrors) return ErrorJson(erf);
 
             Ref rf = erf.Value;
 
             // Persist the commit:
             var eprf = await cms.rfrepo.PersistRef(rf);
-            if (eprf.HasErrors) return Json(new { errors = eprf.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+            if (eprf.HasErrors) return ErrorJson(eprf);
 
             Ref prf = eprf.Value;
 
