@@ -15,21 +15,34 @@ namespace PerformanceTestHost
     {
         const string getURL1 = "http://localhost/blob/get/91a97f8a57480e24f710cabc675636d4b9c3a197";
         const string getURL2 = "http://localhost/render/tree/56d4d6806f048c304fc68303c90955de6115f256/pages/home";
+        static bool displayResponse = false;
 
         static void Main(string[] args)
         {
             var pr = new Program();
 
+#if true
+            int count = 3, per = 250;
+            displayResponse = false;
+#else
+            int count = 1, per = 1;
+            displayResponse = true;
+#endif
+
             Console.WriteLine("POST blob/create");
-            pr.TimeRequests(createPOSTRequest1, count: 3, per: 250).Wait();
+            pr.TimeRequests(createPOSTRequest1, count, per).Wait();
+
             Console.WriteLine("POST blob/create");
-            pr.TimeRequests(createPOSTRequest2, count: 3, per: 250).Wait();
+            pr.TimeRequests(createPOSTRequest2, count, per).Wait();
+
             Console.WriteLine("POST tree/create");
-            pr.TimeRequests(createPOSTRequest3, count: 3, per: 250).Wait();
+            pr.TimeRequests(createPOSTRequest3, count, per).Wait();
+
             Console.WriteLine("GET {0}", getURL1.Remove(0, "http://localhost/".Length));
-            pr.TimeRequests(createGETRequest1, count: 3, per: 250).Wait();
+            pr.TimeRequests(createGETRequest1, count, per).Wait();
+
             Console.WriteLine("GET {0}", getURL2.Remove(0, "http://localhost/".Length));
-            pr.TimeRequests(createGETRequest2, count: 3, per: 250).Wait();
+            pr.TimeRequests(createGETRequest2, count, per).Wait();
         }
 
         private static async Task readResponse(HttpWebRequest rq)
@@ -47,18 +60,17 @@ namespace PerformanceTestHost
             if (rsp.StatusCode != HttpStatusCode.OK) Console.Error.WriteLine(rsp.StatusCode.ToString());
 
             using (var st = rsp.GetResponseStream())
-#if false
-            using (var tr = new StreamReader(st, Encoding.UTF8))
-            {
-                string line;
-                while ((line = await tr.ReadLineAsync()) != null)
-                {
-                    await Console.Out.WriteAsync(line + Environment.NewLine);
-                }
-            }
-#else
-                st.Close();
-#endif
+                if (displayResponse)
+                    using (var tr = new StreamReader(st, Encoding.UTF8))
+                    {
+                        string line;
+                        while ((line = await tr.ReadLineAsync()) != null)
+                        {
+                            await Console.Out.WriteAsync(line + Environment.NewLine);
+                        }
+                    }
+                else
+                    st.Close();
         }
 
         private static async Task createPOSTRequest1()
