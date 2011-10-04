@@ -60,7 +60,7 @@ namespace IVO.CMS.API.Controllers
 
             // Add the blobs to the Tree.Builder:
             if ((tm.blobs != null) && (blobCount > 0))
-                tb.Blobs.AddRange(from bl in tm.blobs select (TreeBlobReference)new TreeBlobReference.Builder(bl.name, BlobID.Parse(bl.blobid).Value));
+                tb.Blobs.AddRange(from bl in tm.blobs select (TreeBlobReference)new TreeBlobReference.Builder(bl.name, BlobID.TryParse(bl.blobid).Value));
 
             // Create our output list:
             List<TreeNode> trees = new List<TreeNode>(1 + treeCount /* + more, could calculate recursively but why bother */);
@@ -72,7 +72,7 @@ namespace IVO.CMS.API.Controllers
                 // If we have a `treeid` then skip recursion:
                 if (!String.IsNullOrEmpty(tm.trees[i].treeid))
                 {
-                    tb.Trees.Add(new TreeTreeReference.Builder(tm.trees[i].name, TreeID.Parse(tm.trees[i].treeid).Value));
+                    tb.Trees.Add(new TreeTreeReference.Builder(tm.trees[i].name, TreeID.TryParse(tm.trees[i].treeid).Value));
                     continue;
                 }
 

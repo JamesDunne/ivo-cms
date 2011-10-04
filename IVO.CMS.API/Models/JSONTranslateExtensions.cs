@@ -144,5 +144,20 @@ namespace IVO.CMS.API.Models
         }
 
         #endregion
+
+        public static object ToJSON(this DiffPlex.DiffBuilder.Model.SideBySideDiffModel sxs)
+        {
+            return new { a = sxs.OldText.Lines.SelectAsArray(o => o.ToJSON()), b = sxs.NewText.Lines.SelectAsArray(o => o.ToJSON()) };
+        }
+
+        public static object ToJSON(this DiffPlex.DiffBuilder.Model.DiffPiece piece)
+        {
+            return new {
+                pos = piece.Position,
+                type = piece.Type.ToString().ToLowerInvariant(),
+                text = piece.Text,
+                sub = piece.SubPieces.SelectAsArray(sub => sub.ToJSON())
+            };
+        }
     }
 }

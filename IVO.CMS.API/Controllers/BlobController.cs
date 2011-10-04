@@ -1,15 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web.Mvc;
+using DiffPlex;
+using DiffPlex.DiffBuilder;
 using IVO.CMS.API.Code;
 using IVO.CMS.API.Models;
 using IVO.CMS.Web.Mvc;
-using IVO.Definition.Containers;
+using IVO.Definition.Errors;
 using IVO.Definition.Models;
-using System.Text;
 
 namespace IVO.CMS.API.Controllers
 {
@@ -31,9 +31,14 @@ namespace IVO.CMS.API.Controllers
         [HttpGet]
         [ActionName("get")]
         [JsonHandleError]
-        public async Task<ActionResult> GetBlob(BlobID id)
+        public async Task<ActionResult> GetBlob(Errorable<BlobID.Partial> id)
         {
-            var eblob = await cms.blrepo.GetBlob(id);
+            if (id.HasErrors) return Json(new { errors = id.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            var eid = await cms.blrepo.ResolvePartialID(id.Value);
+            if (eid.HasErrors) return Json(new { errors = eid.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            var eblob = await cms.blrepo.GetBlob(eid.Value);
             if (eblob.HasErrors) return Json(new { errors = eblob.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
 
             return new StreamedBlobResult(eblob.Value);
@@ -77,10 +82,47 @@ namespace IVO.CMS.API.Controllers
             var vr = cms.GetContentEngine().ValidateBlob(Request.InputStream);
 
             // Return the validation results:
-            return Json(new {
+            return Json(new
+            {
                 successful = (vr == null),
                 error = (vr == null) ? (object)null : new { message = vr.Message, lineNumber = vr.LineNumber, linePosition = vr.LinePosition }
             });
+        }
+
+        [HttpGet]
+        [ActionName("compare")]
+        [JsonHandleError]
+        public async Task<ActionResult> CompareBlobs(Errorable<BlobID.Partial> id, Errorable<BlobID.Partial> against)
+        {
+            if (id.HasErrors || against.HasErrors) return Json(new { errors = (id.Errors + against.Errors).ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            // Resolve the partial IDs:
+            var eids = await cms.blrepo.ResolvePartialIDs(id.Value, against.Value);
+            if (eids[0].HasErrors || eids[1].HasErrors) return Json(new { errors = (eids[0].Errors + eids[1].Errors).ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            BlobID idA = eids[0].Value;
+            BlobID idB = eids[1].Value;
+
+            // Get the Blobs:
+            var ebls = await cms.blrepo.GetBlobs(idA, idB);
+            if (ebls[0].HasErrors || ebls[1].HasErrors) return Json(new { errors = (ebls[0].Errors + ebls[1].Errors).ToJSON() }, JsonRequestBehavior.AllowGet);
+
+            IStreamedBlob blA = ebls[0].Value, blB = ebls[1].Value;
+
+            // Stream in both blobs' contents to two string values:
+            var etextA = await blA.ReadStreamAsync<string>(async st => { using (var sr = new StreamReader(st, Encoding.UTF8)) return (Errorable<string>)await sr.ReadToEndAsync(); });
+            var etextB = await blB.ReadStreamAsync<string>(async st => { using (var sr = new StreamReader(st, Encoding.UTF8)) return (Errorable<string>)await sr.ReadToEndAsync(); });
+
+            // Create a diff engine:
+            IDiffer differ = new Differ();
+            ISideBySideDiffBuilder builder = new SideBySideDiffBuilder(differ);
+
+            // Run the diff engine to get the output model:
+            // NOTE: I would prefer it to read in via a Stream but perhaps that is not possible given the algorithm implemented.
+            var sxs = builder.BuildDiffModel(etextA.Value, etextB.Value);
+
+            // Return the result as JSON:
+            return Json(sxs.ToJSON(), JsonRequestBehavior.AllowGet);
         }
     }
 }
