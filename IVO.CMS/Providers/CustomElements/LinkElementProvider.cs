@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using IVO.Definition.Models;
 using System.Threading.Tasks;
+using IVO.Definition.Errors;
 
 namespace IVO.CMS.Providers.CustomElements
 {
@@ -18,18 +19,19 @@ namespace IVO.CMS.Providers.CustomElements
 
         public ICustomElementProvider Next { get; private set; }
 
-        public async Task<bool> ProcessCustomElement(string elementName, RenderState state)
+        public async Task<Errorable<bool>> ProcessCustomElement(string elementName, RenderState state)
         {
             if (elementName != "cms-link") return false;
 
-            await processLinkElement(state).ConfigureAwait(continueOnCapturedContext: false);
+            var err = await processLinkElement(state).ConfigureAwait(continueOnCapturedContext: false);
+            if (err.HasErrors) return err.Errors;
 
             return true;
         }
 
         #endregion
 
-        private async Task processLinkElement(RenderState st)
+        private async Task<Errorable> processLinkElement(RenderState st)
         {
             // A 'cms-link' is translated directly into an anchor tag with the 'path' attribute
             // translated and canonicalized into an absolute 'href' attribute, per system
@@ -97,20 +99,21 @@ namespace IVO.CMS.Providers.CustomElements
             if (isEmpty)
             {
                 st.Writer.Append(" />");
-                return;
+                return Errorable.NoErrors;
             }
 
             // Copy the inner contents and close out the </a>.
             st.Writer.Append(">");
-            await st.CopyElementChildren("cms-link").ConfigureAwait(continueOnCapturedContext: false);
+            var err = await st.CopyElementChildren("cms-link").ConfigureAwait(continueOnCapturedContext: false);
+            if (err.HasErrors) return err.Errors;
             st.Writer.Append("</a>");
-            return;
+            return Errorable.NoErrors;
 
         errored:
             // Skip to the end of the cms-link element:
             if (!isEmpty)
                 while (st.Reader.Read() && st.Reader.Depth > knownDepth) { }
-            return;
+            return Errorable.NoErrors;
         }
     }
 }

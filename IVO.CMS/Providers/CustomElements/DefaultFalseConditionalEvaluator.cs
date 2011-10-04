@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using IVO.Definition.Errors;
+using System.Threading.Tasks;
 
 namespace IVO.CMS.Providers.CustomElements
 {
@@ -18,9 +20,9 @@ namespace IVO.CMS.Providers.CustomElements
         public IConditionalEvaluator Next { get; private set; }
         public EitherAndOr AndOr { get; private set; }
 
-        public bool EvaluateConditional(Dictionary<string, string> attributes)
+        public Task<Errorable<bool>> EvaluateConditional(Dictionary<string, string> attributes)
         {
-            return false;
+            return TaskEx.FromResult((Errorable<bool>) false);
         }
 
         #endregion

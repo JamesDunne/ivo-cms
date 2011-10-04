@@ -69,7 +69,7 @@ namespace IVO.CMS.Providers
 
         private RenderState previous;
         private Func<RenderState, bool> earlyExit;
-        private Func<RenderState, Task<bool>> processElements;
+        private Func<RenderState, Task<Errorable<bool>>> processElements;
         /// <summary>
         /// Gets the previous `RenderState`, i.e. the parser/writer state of the parent blob, if this
         /// blob is being rendered as an import.
@@ -89,7 +89,7 @@ namespace IVO.CMS.Providers
             this.previous = copy;
         }
 
-        public RenderState(ContentEngine engine, TreePathStreamedBlob item, XmlTextReader readFrom = null, StringBuilder writeTo = null, Func<RenderState, bool> earlyExit = null, Func<RenderState, Task<bool>> processElements = null, RenderState previous = null)
+        public RenderState(ContentEngine engine, TreePathStreamedBlob item, XmlTextReader readFrom = null, StringBuilder writeTo = null, Func<RenderState, bool> earlyExit = null, Func<RenderState, Task<Errorable<bool>>> processElements = null, RenderState previous = null)
         {
             this.engine = engine;
 
@@ -118,12 +118,9 @@ namespace IVO.CMS.Providers
                         this.readFrom.Read();
 
                         // Stream in the content and output it to the StringBuilder:
-                        await
-                            this.StreamContent()
+                        return await this.StreamContent()
                             .ConfigureAwait(continueOnCapturedContext: false);
                     }
-
-                    return Errorable.NoErrors;
                 })
                 .ConfigureAwait(continueOnCapturedContext: false);
 
@@ -139,7 +136,7 @@ namespace IVO.CMS.Providers
         /// <param name="sb"></param>
         /// <param name="action"></param>
         /// <param name="exit"></param>
-        public async Task StreamContent(Func<RenderState, bool> earlyExit = null, Func<RenderState, Task<bool>> processElements = null)
+        public async Task<Errorable> StreamContent(Func<RenderState, bool> earlyExit = null, Func<RenderState, Task<Errorable<bool>>> processElements = null)
         {
             if (readFrom == null) throw new InvalidOperationException();
             if (writeTo == null) throw new InvalidOperationException();
@@ -147,7 +144,12 @@ namespace IVO.CMS.Providers
             do
             {
                 if ((earlyExit ?? this.earlyExit)(this)) break;
-                if (!await (processElements ?? this.processElements)(this).ConfigureAwait(continueOnCapturedContext: false)) continue;
+                
+                Errorable<bool> eoutputElement = await (processElements ?? this.processElements)(this)
+                    .ConfigureAwait(continueOnCapturedContext: false);
+                if (eoutputElement.HasErrors) return eoutputElement.Errors;
+                
+                if (!eoutputElement.Value) continue;
 
                 switch (readFrom.NodeType)
                 {
@@ -210,19 +212,21 @@ namespace IVO.CMS.Providers
 
                     case XmlNodeType.CDATA:
                         // No specific reason, just don't feel like dealing with it.
-                        throw new NotSupportedException("CDATA is not supported by this CMS.");
+                        return new IVO.Definition.Errors.ConsistencyError("CDATA is not supported by this CMS.");
 
                     case XmlNodeType.XmlDeclaration:
                         break;
 
                     default:
                         // Whatever else is unnecessary:
-                        throw new NotImplementedException(String.Format("Node type {0} not implemented!", readFrom.NodeType));
+                        return new IVO.Definition.Errors.ConsistencyError("Node type {0} not implemented!", readFrom.NodeType);
                 }
             } while (readFrom.Read());
+
+            return Errorable.NoErrors;
         }
 
-        public static async Task<bool> DefaultProcessElements(RenderState st)
+        public static async Task<Errorable<bool>> DefaultProcessElements(RenderState st)
         {
             if (st.Reader == null) throw new InvalidOperationException();
             if (st.Writer == null) throw new InvalidOperationException();
@@ -230,7 +234,8 @@ namespace IVO.CMS.Providers
             if (st.Reader.NodeType == XmlNodeType.Element && st.Reader.LocalName.StartsWith("cms-"))
             {
                 // Call out to the custom element handlers:
-                await ProcessCMSInstruction(st.Reader.LocalName, st).ConfigureAwait(continueOnCapturedContext: false);
+                var err = await ProcessCMSInstruction(st.Reader.LocalName, st).ConfigureAwait(continueOnCapturedContext: false);
+                if (err.HasErrors) return err.Errors;
 
                 // Skip normal copying behavior for this element:
                 return false;
@@ -244,7 +249,7 @@ namespace IVO.CMS.Providers
             return false;
         }
 
-        public static async Task<bool> ProcessCMSInstruction(string elementName, RenderState state)
+        public static async Task<Errorable> ProcessCMSInstruction(string elementName, RenderState state)
         {
             string openingElement = state.readFrom.LocalName;
             int openingDepth = state.readFrom.Depth;
@@ -257,8 +262,11 @@ namespace IVO.CMS.Providers
             bool processed = false;
             while (provider != null)
             {
-                if (true == (processed = await provider.ProcessCustomElement(elementName, state).ConfigureAwait(continueOnCapturedContext: false)))
-                    break;
+                Errorable<bool> eprocessed = await provider.ProcessCustomElement(elementName, state).ConfigureAwait(continueOnCapturedContext: false);
+                if (eprocessed.HasErrors) return eprocessed.Errors;
+
+                processed = eprocessed.Value;
+                if (processed) break;
 
                 provider = provider.Next;
             }
@@ -285,7 +293,7 @@ namespace IVO.CMS.Providers
                 state.WarningSuppressComment("No custom element providers processed unknown element, '{0}'; skipping its contents entirely.", openingElement);
                 state.SkipElementAndChildren(elementName);
                 
-                return false;
+                return Errorable.NoErrors;
             }
 
             // We must be at the end (or same, if empty) element of the custom instruction:
@@ -298,7 +306,7 @@ namespace IVO.CMS.Providers
             if (state.readFrom.Depth != openingDepth)
                 state.Error("custom element provider left XML parser at an unexpected depth level");
 
-            return true;
+            return Errorable.NoErrors;
         }
 
         #region Warning and Error reporting
@@ -382,7 +390,7 @@ namespace IVO.CMS.Providers
             if (readFrom.LocalName != elementName) Error("expected end </{0}> element", elementName);
         }
 
-        public async Task CopyElementChildren(string elementName, Func<RenderState, bool> earlyExit = null, Func<RenderState, Task<bool>> processElements = null)
+        public async Task<Errorable> CopyElementChildren(string elementName, Func<RenderState, bool> earlyExit = null, Func<RenderState, Task<Errorable<bool>>> processElements = null)
         {
             if (readFrom == null) throw new InvalidOperationException();
             if (writeTo == null) throw new InvalidOperationException();
@@ -391,7 +399,7 @@ namespace IVO.CMS.Providers
             if (readFrom.LocalName != elementName) Error("expected start <{0}> element", elementName);
             // Nothing to do:
             if (readFrom.IsEmptyElement)
-                return;
+                return Errorable.NoErrors;
 
             int knownDepth = readFrom.Depth;
 
@@ -399,14 +407,17 @@ namespace IVO.CMS.Providers
             if (!readFrom.Read()) Error("could not read content after <content> start element");
 
             // Stream-copy and process inner custom cms- elements until we get back to the current depth:
-            await new RenderState(this)
+            var err = await new RenderState(this)
                 .StreamContent(
                     earlyExit ?? (st => st.Reader.Depth == knownDepth),
                     processElements ?? DefaultProcessElements
                 ).ConfigureAwait(continueOnCapturedContext: false);
+            if (err.HasErrors) return err.Errors;
 
             if (readFrom.NodeType != XmlNodeType.EndElement) Error("expected end </{0}> element", elementName);
             if (readFrom.LocalName != elementName) Error("expected end </{0}> element", elementName);
+
+            return Errorable.NoErrors;
         }
 
         #endregion

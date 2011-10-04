@@ -762,32 +762,22 @@ namespace TestCMS.CommonTest
                 setA = a;
             }
 
-            #region IConditionalEvaluator Members
+            public IConditionalEvaluator Next { get { return null; } }
 
-            public IConditionalEvaluator Next
-            {
-                get { return null; }
-            }
+            public EitherAndOr AndOr { get { return EitherAndOr.And; } }
 
-            public EitherAndOr AndOr
-            {
-                get { return EitherAndOr.And; }
-            }
-
-            public bool EvaluateConditional(Dictionary<string, string> attributes)
+            public Task<IVO.Definition.Errors.Errorable<bool>> EvaluateConditional(Dictionary<string, string> attributes)
             {
                 string strA;
                 bool testA;
 
                 if (attributes.TryGetValue("a", out strA) && Boolean.TryParse(strA, out testA))
                 {
-                    return testA == setA;
+                    return TaskEx.FromResult((IVO.Definition.Errors.Errorable<bool>)(testA == setA));
                 }
 
-                return false;
+                return TaskEx.FromResult((IVO.Definition.Errors.Errorable<bool>)false);
             }
-
-            #endregion
         }
 
         public void TestConditionalIfElse_IfWins()

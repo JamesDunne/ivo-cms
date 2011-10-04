@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using IVO.Definition.Errors;
+using System.Threading.Tasks;
 
 namespace IVO.CMS.Providers.CustomElements
 {
@@ -22,7 +24,7 @@ namespace IVO.CMS.Providers.CustomElements
         /// </summary>
         /// <param name="attributes">The set of XML attributes pulled from a conditional element; dictionary keys are case-sensitive.</param>
         /// <returns></returns>
-        bool EvaluateConditional(Dictionary<string, string> attributes);
+        Task<Errorable<bool>> EvaluateConditional(Dictionary<string, string> attributes);
     }
 
     public enum EitherAndOr

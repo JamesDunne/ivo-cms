@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using IVO.Definition.Errors;
 
 namespace IVO.CMS.Providers.CustomElements
 {
@@ -17,10 +18,10 @@ namespace IVO.CMS.Providers.CustomElements
 
         public ICustomElementProvider Next { get; private set; }
 
-        public Task<bool> ProcessCustomElement(string elementName, RenderState state)
+        public Task<Errorable<bool>> ProcessCustomElement(string elementName, RenderState state)
         {
             // TODO: design and implement a 'cms-list' element handler.
-            return TaskEx.FromResult(false);
+            return TaskEx.FromResult((Errorable<bool>)false);
         }
 
         #endregion

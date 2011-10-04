@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Xml;
 using System.Threading.Tasks;
+using IVO.Definition.Errors;
 
 namespace IVO.CMS.Providers.CustomElements
 {
@@ -15,18 +16,19 @@ namespace IVO.CMS.Providers.CustomElements
 
         public ICustomElementProvider Next { get; private set; }
 
-        public async Task<bool> ProcessCustomElement(string elementName, RenderState state)
+        public async Task<Errorable<bool>> ProcessCustomElement(string elementName, RenderState state)
         {
             if (elementName != "cms-scheduled") return false;
 
-            await processScheduledElement(state).ConfigureAwait(continueOnCapturedContext: false);
+            var err = await processScheduledElement(state).ConfigureAwait(continueOnCapturedContext: false);
+            if (err.HasErrors) return err.Errors;
 
             return true;
         }
 
         #endregion
 
-        private async Task processScheduledElement(RenderState st)
+        private async Task<Errorable> processScheduledElement(RenderState st)
         {
             // Specifies that content should be scheduled for the entire month of August
             // and the entire month of October but NOT the month of September.
@@ -215,6 +217,7 @@ namespace IVO.CMS.Providers.CustomElements
 
             // Don't read this element because the next `xr.Read()` in the main loop will:
             //xr.ReadEndElement(/* "cms-scheduled" */);
+            return Errorable.NoErrors;
         }
     }
 }

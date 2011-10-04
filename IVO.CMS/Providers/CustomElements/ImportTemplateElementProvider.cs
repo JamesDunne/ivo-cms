@@ -6,6 +6,7 @@ using IVO.Definition.Models;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Diagnostics;
+using IVO.Definition.Errors;
 
 namespace IVO.CMS.Providers.CustomElements
 {
@@ -16,22 +17,19 @@ namespace IVO.CMS.Providers.CustomElements
             this.Next = next;
         }
 
-        #region ICustomElementProvider Members
-
         public ICustomElementProvider Next { get; private set; }
 
-        public async Task<bool> ProcessCustomElement(string elementName, RenderState state)
+        public async Task<Errorable<bool>> ProcessCustomElement(string elementName, RenderState state)
         {
             if (elementName != "cms-import-template") return false;
 
-            await processImportTemplateElement(state).ConfigureAwait(continueOnCapturedContext: false);
+            var err = await processImportTemplateElement(state).ConfigureAwait(continueOnCapturedContext: false);
+            if (err.HasErrors) return err.Errors;
 
             return true;
         }
 
-        #endregion
-
-        private async Task processImportTemplateElement(RenderState st)
+        private async Task<Errorable> processImportTemplateElement(RenderState st)
         {
             // Imports content directly from another blob, addressable by a relative path or an absolute path.
             // Relative path is always relative to the current blob's absolute path.
@@ -61,7 +59,7 @@ namespace IVO.CMS.Providers.CustomElements
             {
                 st.Error("cms-import-template requires a 'path' attribute");
                 st.SkipElementAndChildren("cms-import-template");
-                return;
+                return Errorable.NoErrors;
             }
 
             string ncpath = xr.Value;
@@ -84,25 +82,15 @@ namespace IVO.CMS.Providers.CustomElements
                 tmplBlob = null;
 #else
                 st.SkipElementAndChildren("cms-import-template");
-                return;
+                return etmplBlob.Errors;
 #endif
             }
             else tmplBlob = etmplBlob.Value;
 
             Debug.Assert(tmplBlob != null);
 
-#if false
-            // No blob? Put up an error:
-            if (tmplBlob == null)
-            {
-                st.Error("cms-import-template path '{0}' not found", path.ToString());
-                st.SkipElementAndChildren("cms-import-template");
-                return;
-            }
-#endif
-
             // This lambda processes the entire imported template:
-            Func<RenderState, Task<bool>> processElements = (Func<RenderState, Task<bool>>)(async sst =>
+            Func<RenderState, Task<Errorable<bool>>> processElements = (Func<RenderState, Task<Errorable<bool>>>)(async sst =>
             {
                 // Make sure cms-template is the first element from the imported template blob:
                 if (sst.Reader.LocalName != "cms-template")
@@ -121,8 +109,8 @@ namespace IVO.CMS.Providers.CustomElements
                 var stWriter = new RenderState(st.Engine, st.Item, st.Reader, sst.Writer);
 
                 // This lambda is called recursively to handle cms-template-area elements found within parent cms-template-area elements in the template:
-                Func<RenderState, Task<bool>> processTemplateAreaElements = null;
-                processTemplateAreaElements = (Func<RenderState, Task<bool>>)(async tst =>
+                Func<RenderState, Task<Errorable<bool>>> processTemplateAreaElements = null;
+                processTemplateAreaElements = (Func<RenderState, Task<Errorable<bool>>>)(async tst =>
                 {
                     // Only process cms-template-area elements:
                     if (tst.Reader.LocalName != "cms-template-area")
@@ -180,9 +168,9 @@ namespace IVO.CMS.Providers.CustomElements
                 });
 
                 // Now continue on stream-copying child elements until we find a cms-template-area:
-                await
-                    sst.CopyElementChildren("cms-template", null, processTemplateAreaElements)
+                var err = await sst.CopyElementChildren("cms-template", null, processTemplateAreaElements)
                     .ConfigureAwait(continueOnCapturedContext: false);
+                if (err.HasErrors) return err.Errors;
 
                 // We missed some <area />s in the cms-import-template:
                 while (!((st.Reader.NodeType == XmlNodeType.EndElement) && (st.Reader.LocalName == "cms-import-template")) &&
@@ -220,7 +208,7 @@ namespace IVO.CMS.Providers.CustomElements
             {
                 foreach (var err in esbResult.Errors)
                     st.Error(err.Message);
-                return;
+                return esbResult.Errors;
             }
 
             StringBuilder sbResult = esbResult.Value;
@@ -228,6 +216,8 @@ namespace IVO.CMS.Providers.CustomElements
 
             // Write the template to our current writer:
             st.Writer.Append(blob);
+
+            return Errorable.NoErrors;
         }
 
         private static string moveToNextAreaElement(RenderState st, bool suppressErrors = false)

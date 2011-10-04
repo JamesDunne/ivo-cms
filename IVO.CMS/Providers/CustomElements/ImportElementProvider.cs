@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using IVO.Definition.Models;
 using System.Threading.Tasks;
+using IVO.Definition.Errors;
+using System.Diagnostics;
 
 namespace IVO.CMS.Providers.CustomElements
 {
@@ -14,27 +16,19 @@ namespace IVO.CMS.Providers.CustomElements
             this.Next = next;
         }
 
-        #region ICustomElementProvider Members
-
         public ICustomElementProvider Next { get; private set; }
 
-        public async Task<bool> ProcessCustomElement(string elementName, RenderState state)
+        public async Task<Errorable<bool>> ProcessCustomElement(string elementName, RenderState state)
         {
             if (elementName != "cms-import") return false;
 
-            await processImportElement(state).ConfigureAwait(continueOnCapturedContext: false);
+            var err = await processImportElement(state).ConfigureAwait(continueOnCapturedContext: false);
+            if (err.HasErrors) return err.Errors;
 
             return true;
         }
 
-        #endregion
-
-#if ImportCache
-        private readonly Dictionary<string, TreePathStreamedBlob> tpsbByPath = new Dictionary<string, TreePathStreamedBlob>(8);
-        private readonly Dictionary<BlobID, string> blobContents = new Dictionary<BlobID, string>(8);
-#endif
-
-        private async Task processImportElement(RenderState st)
+        private async Task<Errorable> processImportElement(RenderState st)
         {
             // Imports content directly from another blob, addressable by a relative path or an absolute path.
             // Relative path is always relative to the current blob's absolute path.
@@ -58,89 +52,48 @@ namespace IVO.CMS.Providers.CustomElements
                 TreePathStreamedBlob tpsBlob;
 
                 // Fetch the TreePathStreamedBlob for the given path:
-#if ImportCache
-                if (!tpsbByPath.TryGetValue(ncpath, out tpsBlob))
-                {
-#endif
-                    // Canonicalize the absolute or relative path relative to the current item's path:
-                    var abspath = PathObjectModel.ParseBlobPath(ncpath);
-                    CanonicalBlobPath path = abspath.Collapse(abs => abs, rel => (st.Item.TreeBlobPath.Path.Tree + rel)).Canonicalize();
+                // Canonicalize the absolute or relative path relative to the current item's path:
+                var abspath = PathObjectModel.ParseBlobPath(ncpath);
+                CanonicalBlobPath path = abspath.Collapse(abs => abs, rel => (st.Item.TreeBlobPath.Path.Tree + rel)).Canonicalize();
 
-                    // Fetch the Blob given the absolute path constructed:
-                    TreeBlobPath tbp = new TreeBlobPath(st.Item.TreeBlobPath.RootTreeID, path);
-                    var etpsBlob = await st.Engine.TreePathStreamedBlobs.GetBlobByTreePath(tbp).ConfigureAwait(continueOnCapturedContext: false);
-                    if (etpsBlob.HasErrors)
-                    {
-                        foreach (var err in etpsBlob.Errors)
-                            st.Error(err.Message);
-                        return;
-                    }
-
-                    tpsBlob = etpsBlob.Value;
-#if false
-                    if (tpsBlob != null)
-                        Console.WriteLine("Found blob for '{0}'", path.ToString());
-                    else
-                        Console.WriteLine("No blob found for '{0}'", path.ToString());
-#endif
-#if ImportCache
-                    tpsbByPath.Add(ncpath, tpsBlob);
-                }
-#endif
-                // No blob? Put up an error:
-                if (tpsBlob == null)
+                // Fetch the Blob given the absolute path constructed:
+                TreeBlobPath tbp = new TreeBlobPath(st.Item.TreeBlobPath.RootTreeID, path);
+                var etpsBlob = await st.Engine.TreePathStreamedBlobs.GetBlobByTreePath(tbp).ConfigureAwait(continueOnCapturedContext: false);
+                if (etpsBlob.HasErrors)
                 {
-#if ImportCache
-                    blobContents.Add(tpsBlob.StreamedBlob.ID, (string)null);
-#endif
-                    st.Error("cms-import path '{0}' not found", ncpath);
-                    return;
+                    foreach (var err in etpsBlob.Errors)
+                        st.Error(err.Message);
+                    // FIXME: should not-found error cause a hard stop?
+                    return etpsBlob.Errors;
                 }
+                else tpsBlob = etpsBlob.Value;
+
+                Debug.Assert(tpsBlob != null);
 
                 // Fetch the contents for the given TreePathStreamedBlob:
-#if ImportCache
-                if (!blobContents.TryGetValue(tpsBlob.StreamedBlob.ID, out blob))
+                // TODO: we could probably asynchronously load blobs and render their contents
+                // then at a final sync point go in and inject their contents into the proper
+                // places in each imported blob's parent StringBuilder.
+
+                // Render the blob inline:
+                RenderState rsInner = new RenderState(st.Engine, tpsBlob);
+                var einnerSb = await rsInner.Render().ConfigureAwait(continueOnCapturedContext: false);
+                if (einnerSb.HasErrors)
                 {
-                    Console.WriteLine("Contents not cached for BlobID {0}", tpsBlob.StreamedBlob.ID);
-#endif
-                    // TODO: we could probably asynchronously load blobs and render their contents
-                    // then at a final sync point go in and inject their contents into the proper
-                    // places in each imported blob's parent StringBuilder.
-
-                    // Render the blob inline:
-                    RenderState rsInner = new RenderState(st.Engine, tpsBlob);
-                    var einnerSb = await rsInner.Render().ConfigureAwait(continueOnCapturedContext: false);
-                    if (einnerSb.HasErrors)
-                    {
-                        foreach (var err in einnerSb.Errors)
-                            st.Error(err.Message);
-                        return;
-                    }
-
-                    blob = einnerSb.Value.ToString();
-#if ImportCache
-
-                    // Cache the rendered blob:
-
-                    // TODO: is this dangerous? Perhaps we should build up some state during rendering that indicates whether or
-                    // not content caching per BlobID should be done.
-
-                    blobContents.Add(tpsBlob.StreamedBlob.ID, blob);
+                    foreach (var err in einnerSb.Errors)
+                        st.Error(err.Message);
+                    return einnerSb.Errors;
                 }
 
-                // FIXME: this should never occur.
-                if (blob == null)
-                {
-                    st.Error("cms-import path '{0}' not found", ncpath);
-                    return;
-                }
-#endif
+                blob = einnerSb.Value.ToString();
 
                 st.Writer.Append(blob);
 
                 // Move the reader back to the element node:
                 st.Reader.MoveToElement();
             }
+
+            return Errorable.NoErrors;
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Threading.Tasks;
+using IVO.Definition.Errors;
 
 namespace IVO.CMS.Providers.CustomElements
 {
@@ -21,11 +22,12 @@ namespace IVO.CMS.Providers.CustomElements
 
         public ICustomElementProvider Next { get; private set; }
 
-        public async Task<bool> ProcessCustomElement(string elementName, RenderState state)
+        public async Task<Errorable<bool>> ProcessCustomElement(string elementName, RenderState state)
         {
             if (elementName != "cms-conditional") return false;
 
-            await processConditionalElement(state).ConfigureAwait(continueOnCapturedContext: false);
+            var err = await processConditionalElement(state).ConfigureAwait(continueOnCapturedContext: false);
+            if (err.HasErrors) return err.Errors;
 
             return true;
         }
@@ -39,7 +41,7 @@ namespace IVO.CMS.Providers.CustomElements
             ExpectingEnd
         }
 
-        private async Task processConditionalElement(RenderState st)
+        private async Task<Errorable> processConditionalElement(RenderState st)
         {
             // <cms-conditional>
             //     <if department="Sales">Hello, Sales dept!</if>
@@ -50,6 +52,7 @@ namespace IVO.CMS.Providers.CustomElements
 
             //st.SkipElementAndChildren("cms-conditional");
 
+            Errorable err;
             ConditionalState c = ConditionalState.ExpectingIf;
             bool satisfied = false;
             bool condition = false;
@@ -129,7 +132,10 @@ namespace IVO.CMS.Providers.CustomElements
                         
                         while (eval != null)
                         {
-                            bool test = eval.EvaluateConditional(conditionVariables);
+                            Errorable<bool> etest = await eval.EvaluateConditional(conditionVariables);
+                            if (etest.HasErrors) return etest.Errors;
+                            
+                            bool test = etest.Value;
 
                             if (lastAndOr.HasValue)
                             {
@@ -150,7 +156,8 @@ namespace IVO.CMS.Providers.CustomElements
                         {
                             satisfied = true;
                             // Copy inner contents:
-                            await st.CopyElementChildren(st.Reader.LocalName).ConfigureAwait(continueOnCapturedContext: false);
+                            err = await st.CopyElementChildren(st.Reader.LocalName).ConfigureAwait(continueOnCapturedContext: false);
+                            if (err.HasErrors) return err.Errors;
                         }
                         else
                         {
@@ -174,16 +181,17 @@ namespace IVO.CMS.Providers.CustomElements
                         }
 
                         // Copy inner contents:
-                        await st.CopyElementChildren(st.Reader.LocalName).ConfigureAwait(continueOnCapturedContext: false);
+                        err = await st.CopyElementChildren(st.Reader.LocalName).ConfigureAwait(continueOnCapturedContext: false);
+                        if (err.HasErrors) return err.Errors;
                         break;
                 }
             }
-            return;
+            return Errorable.NoErrors;
 
         errored:
             // Keep reading to the end cms-conditional element:
             while (st.Reader.Read() && st.Reader.Depth > knownDepth) { }
-            return;
+            return Errorable.NoErrors;
         }
     }
 }

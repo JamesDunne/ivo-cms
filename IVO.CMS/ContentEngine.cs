@@ -63,7 +63,9 @@ namespace IVO.CMS
                         new ListElementProvider(
                             new LinkElementProvider(
                                 new ImportTemplateElementProvider(
-                                    new ConditionalElementProvider(evaluator, provider)
+                                    new DoctypeElementProvider(
+                                        new ConditionalElementProvider(evaluator, provider)
+                                    )
                                 )
                             )
                         )
@@ -150,7 +152,7 @@ namespace IVO.CMS
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        public async Task<Errorable<HTMLFragment>> RenderBlob(TreePathStreamedBlob item, StringBuilder writeTo = null, Func<RenderState, bool> earlyExit = null, Func<RenderState, Task<bool>> processElements = null)
+        public async Task<Errorable<HTMLFragment>> RenderBlob(TreePathStreamedBlob item, StringBuilder writeTo = null, Func<RenderState, bool> earlyExit = null, Func<RenderState, Task<Errorable<bool>>> processElements = null)
         {
             // Refresh the error and warning lists:
             errors = new List<SemanticError>( (int)((item.StreamedBlob.Length ?? 16384L) / 5L) );
