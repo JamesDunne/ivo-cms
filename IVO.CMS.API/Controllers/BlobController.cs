@@ -109,15 +109,22 @@ namespace IVO.CMS.API.Controllers
 
                 // Find the index of the blob reference with the blob name:
                 int blidx = tnb.Blobs.FindIndex(trbl => trbl.Name == tbp.Path.Name);
-                Debug.Assert(blidx != -1);
-
-                // Update the blob reference for our TreeNode builder:
-                var trblb = new TreeBlobReference.Builder(tnb.Blobs[blidx]);
-                trblb.BlobID = eblob.Value.ID;
-                tnb.Blobs[blidx] = trblb;
+                if (blidx != -1)
+                {
+                    // Update the blob reference for our TreeNode builder in-place over the existing blob reference:
+                    var trblb = new TreeBlobReference.Builder(tnb.Blobs[blidx]);
+                    trblb.BlobID = eblob.Value.ID;
+                    tnb.Blobs[blidx] = trblb;
+                }
+                else
+                {
+                    // Add the new blob reference:
+                    tnb.Blobs.Add(new TreeBlobReference.Builder(tbp.Path.Name, eblob.Value.ID));
+                }
 
                 // Now let's keep track of which new TreeNodes we will persist:
-                List<TreeNode> updateNodes = new List<TreeNode>(tbp.Path.Tree.Parts.Count);
+                List<TreeNode> updateNodes = new List<TreeNode>(tbp.Path.Tree.Parts.Count + 1);
+                
                 TreeNode lastNode = tnb;
                 updateNodes.Add(lastNode);
 
@@ -130,7 +137,7 @@ namespace IVO.CMS.API.Controllers
                     int tridx = tnb.Trees.FindIndex(trtr => trtr.Name == tbp.Path.Tree.Parts[i]);
                     Debug.Assert(tridx != -1);
 
-                    // Create a 
+                    // Create a builder to mutate the tree reference:
                     var trtrb = new TreeTreeReference.Builder(tnb.Trees[tridx]);
                     // Update the TreeID for the child TreeNode:
                     trtrb.TreeID = lastNode.ID;
