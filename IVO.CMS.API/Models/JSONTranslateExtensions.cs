@@ -95,6 +95,33 @@ namespace IVO.CMS.API.Models
 
         #endregion
 
+        #region Stage
+
+        public static Errorable<Stage.Builder> FromJSON(this StageRequest stm)
+        {
+            // Do conversions on the strings and detect any errors:
+            var maybetreeid = TreeID.TryParse(stm.treeid ?? String.Empty);
+            if (maybetreeid.HasErrors) return maybetreeid.Errors;
+
+            Stage.Builder st = new Stage.Builder(
+                pName:      (StageName)stm.name,
+                pTreeID:    maybetreeid.Value
+            );
+            return st;
+        }
+
+        public static StageResponse ToJSON(this Stage st)
+        {
+            StageResponse stm = new StageResponse()
+            {
+                name = st.Name.ToString(),
+                treeid = st.TreeID.ToString()
+            };
+            return stm;
+        }
+
+        #endregion
+
         #region Tag
 
         public static Errorable<Tag.Builder> FromJSON(this TagRequest tgm)

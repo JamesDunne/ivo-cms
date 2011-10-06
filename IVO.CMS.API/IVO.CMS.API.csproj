@@ -77,9 +77,12 @@
     <Compile Include="Code\JsonHandleError.cs" />
     <Compile Include="Controllers\BlobController.cs" />
     <Compile Include="Code\StreamedBlobResult.cs" />
+    <Compile Include="Controllers\StageController.cs" />
     <Compile Include="Controllers\RefController.cs" />
     <Compile Include="Controllers\TagController.cs" />
     <Compile Include="Models\CommitTreeResponse.cs" />
+    <Compile Include="Models\StageResponse.cs" />
+    <Compile Include="Models\StageRequest.cs" />
     <Compile Include="Models\TreeTreeRefResponse.cs" />
     <Compile Include="Models\TreeBlobRefResponse.cs" />
     <Compile Include="Models\TreeResponse.cs" />

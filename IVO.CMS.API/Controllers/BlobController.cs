@@ -10,6 +10,7 @@ using IVO.CMS.API.Models;
 using IVO.CMS.Web.Mvc;
 using IVO.Definition.Errors;
 using IVO.Definition.Models;
+using System.Diagnostics;
 
 namespace IVO.CMS.API.Controllers
 {
@@ -52,13 +53,15 @@ namespace IVO.CMS.API.Controllers
         [HttpGet]
         [ActionName("getByPath")]
         [JsonHandleError]
-        public async Task<ActionResult> GetBlobByPath(TreeBlobPath rootedPath)
+        public async Task<ActionResult> GetBlobByPath(Errorable<TreeBlobPath> rootedPath)
         {
-            var eblob = await cms.tpsbrepo.GetBlobByTreePath(rootedPath);
+            if (rootedPath.HasErrors) return ErrorJson(rootedPath);
+
+            var eblob = await cms.tpsbrepo.GetBlobByTreePath(rootedPath.Value);
             if (eblob.HasErrors) return ErrorJson(eblob);
 
             TreePathStreamedBlob blob = eblob.Value;
-            //if (blob == null) return new HttpNotFoundResult(String.Format("A blob could not be found off tree {0} by path '{0}'", rootedPath.RootTreeID.ToString(), rootedPath.Path.ToString()));
+            Debug.Assert(blob != null);
 
             return new StreamedBlobResult(blob.StreamedBlob);
         }
@@ -66,13 +69,27 @@ namespace IVO.CMS.API.Controllers
         [HttpPost]
         [ActionName("create")]
         [JsonHandleError]
-        public async Task<ActionResult> CreateBlob()
+        public async Task<ActionResult> CreateBlob(Errorable<TreeBlobPath> path, Errorable<StageName> stage = null)
         {
+            if (path.HasErrors) return ErrorJson(path);
+            if (stage != null && stage.HasErrors) return ErrorJson(stage);
+
             PersistingBlob pbl = new PersistingBlob(Request.InputStream);
 
             // Persist the blob from the input stream:
             var eblob = await cms.blrepo.PersistBlob(pbl);
             if (eblob.HasErrors) return ErrorJson(eblob);
+
+            // Now update the given root TreeID:
+            // TODO:
+            // 1) get minimal set of tree nodes recursively from root to leaf where the BlobID should be updated
+            // 2) update leaf tree node with new blob information
+            //    add or update blob
+            //    add new tree nodes as appropriate
+            // 3) update each parent node with new TreeID of child
+            // 4) persist all affected tree nodes
+            // optional 5) update stage with new root TreeID
+            // 6) return new root TreeID along with new BlobID
 
             // Return the BlobID:
             return Json(new { id = eblob.Value.ID.ToString() });

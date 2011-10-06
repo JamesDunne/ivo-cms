@@ -15,13 +15,14 @@ namespace PerformanceTestHost
     {
         const string getURL1 = "http://localhost/blob/get/91a97f8a57480e24f710cabc675636d4b9c3a197";
         const string getURL2 = "http://localhost/render/tree/56d4d6806f048c304fc68303c90955de6115f256/pages/home";
+        const string getURL3 = "http://localhost/blob/compare/91a97f8a57480e24f710cabc675636d4b9c3a197?against=e4ed960dead1600353ce2314df790ab376a9de7c";
         static bool displayResponse = false;
 
         static void Main(string[] args)
         {
             var pr = new Program();
 
-#if true
+#if false
             int count = 3, per = 250;
             displayResponse = false;
 #else
@@ -29,6 +30,7 @@ namespace PerformanceTestHost
             displayResponse = true;
 #endif
 
+#if false
             Console.WriteLine("POST blob/create");
             pr.TimeRequests(createPOSTRequest1, count, per).Wait();
 
@@ -43,6 +45,9 @@ namespace PerformanceTestHost
 
             Console.WriteLine("GET {0}", getURL2.Remove(0, "http://localhost/".Length));
             pr.TimeRequests(createGETRequest2, count, per).Wait();
+#endif
+            Console.WriteLine("GET {0}", getURL3.Remove(0, "http://localhost/".Length));
+            pr.TimeRequests(createGETRequest3, count, per).Wait();
         }
 
         private static async Task readResponse(HttpWebRequest rq)
@@ -163,6 +168,15 @@ namespace PerformanceTestHost
         private static async Task createGETRequest2()
         {
             HttpWebRequest rq = (HttpWebRequest)HttpWebRequest.Create(getURL2);
+            rq.Method = "GET";
+            rq.Accept = "*/*";
+
+            await readResponse(rq);
+        }
+
+        private static async Task createGETRequest3()
+        {
+            HttpWebRequest rq = (HttpWebRequest)HttpWebRequest.Create(getURL3);
             rq.Method = "GET";
             rq.Accept = "*/*";
 

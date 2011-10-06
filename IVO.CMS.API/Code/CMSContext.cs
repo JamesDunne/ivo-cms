@@ -17,6 +17,7 @@ namespace IVO.CMS.API.Code
         public readonly ITreePathStreamedBlobRepository tpsbrepo;
         public readonly ITagRepository tgrepo;
         public readonly IRefRepository rfrepo;
+        public readonly IStageRepository strepo;
         public readonly ICommitRepository cmrepo;
 
         public DirectoryInfo RootDirectory { get; private set; }
@@ -32,6 +33,7 @@ namespace IVO.CMS.API.Code
             TreePathStreamedBlobRepository tpsbrepo = new TreePathStreamedBlobRepository(system, trrepo, blrepo);
             TagRepository tgrepo = new TagRepository(system);
             RefRepository rfrepo = new RefRepository(system);
+            StageRepository strepo = new StageRepository(system);
             CommitRepository cmrepo = new CommitRepository(system, tgrepo, rfrepo);
 
             this.trrepo = trrepo;
@@ -39,6 +41,7 @@ namespace IVO.CMS.API.Code
             this.tpsbrepo = tpsbrepo;
             this.tgrepo = tgrepo;
             this.rfrepo = rfrepo;
+            this.strepo = strepo;
             this.cmrepo = cmrepo;
 
             this.system = system;
