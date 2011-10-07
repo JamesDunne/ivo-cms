@@ -86,79 +86,11 @@ namespace IVO.CMS.API.Controllers
             // Now update the given root TreeID:
             var tbp = path.Value;
 
-            // 1) get minimal set of tree nodes recursively from root to leaf where the BlobID should be updated
-            var etrnodes = await cms.trrepo.GetTreeNodesAlongPath(new TreeTreePath(tbp.RootTreeID, tbp.Path.Tree));
-            if (etrnodes.HasErrors) return ErrorJson(etrnodes);
-            var trnodes = etrnodes.Value;
-            // NOTE: trnodes[0] is the root TreeNode.
-            //       trnodes[1] is the first named path component.
+            // Persist the new blob's effect on the Tree:
+            var eptr = await cms.trrepo.PersistTreeNodesByBlobPaths(tbp.RootTreeID, new CanonicalBlobIDPath[] { new CanonicalBlobIDPath(tbp.Path, eblob.Value.ID) });
+            if (eptr.HasErrors) return ErrorJson(eptr);
 
-            // 2) update leaf tree node with new blob information
-            //    add or update blob
-            //    add new tree nodes as appropriate
-            TreeID newRootTreeID;
-
-            // Check if we have the full tree path already:
-            if (trnodes.Length == tbp.Path.Tree.Parts.Count + 1)
-            {
-                // Easy case - update blob info in-place and update TreeIDs on the way back up to root:
-                TreeNode.Builder tnb;
-
-                // Jump to the last tree node since that one contains the blob reference and make a builder from it:
-                tnb = new TreeNode.Builder(trnodes[trnodes.Length]);
-
-                // Find the index of the blob reference with the blob name:
-                int blidx = tnb.Blobs.FindIndex(trbl => trbl.Name == tbp.Path.Name);
-                if (blidx != -1)
-                {
-                    // Update the blob reference for our TreeNode builder in-place over the existing blob reference:
-                    var trblb = new TreeBlobReference.Builder(tnb.Blobs[blidx]);
-                    trblb.BlobID = eblob.Value.ID;
-                    tnb.Blobs[blidx] = trblb;
-                }
-                else
-                {
-                    // Add the new blob reference:
-                    tnb.Blobs.Add(new TreeBlobReference.Builder(tbp.Path.Name, eblob.Value.ID));
-                }
-
-                // Now let's keep track of which new TreeNodes we will persist:
-                List<TreeNode> updateNodes = new List<TreeNode>(tbp.Path.Tree.Parts.Count + 1);
-                
-                TreeNode lastNode = tnb;
-                updateNodes.Add(lastNode);
-
-                // 3) update each TreeNode with new TreeID of child TreeNode that was mutated
-                for (int i = tbp.Path.Tree.Parts.Count - 1; i >= 0; --i)
-                {
-                    tnb = new TreeNode.Builder(trnodes[i]);
-
-                    // Find the index of the tree reference for the current path component's name:
-                    int tridx = tnb.Trees.FindIndex(trtr => trtr.Name == tbp.Path.Tree.Parts[i]);
-                    Debug.Assert(tridx != -1);
-
-                    // Create a builder to mutate the tree reference:
-                    var trtrb = new TreeTreeReference.Builder(tnb.Trees[tridx]);
-                    // Update the TreeID for the child TreeNode:
-                    trtrb.TreeID = lastNode.ID;
-                    tnb.Trees[tridx] = trtrb;
-
-                    // Convert the builder to an immutable one (and compute its TreeID):
-                    lastNode = tnb;
-                    // Add this new TreeNode to the list of TreeNodes to create:
-                    updateNodes.Add(lastNode);
-                }
-
-                // 4) persist all new tree nodes
-                newRootTreeID = lastNode.ID;
-                var eptr = await cms.trrepo.PersistTree(newRootTreeID, new ImmutableContainer<TreeID, TreeNode>(tr => tr.ID, updateNodes));
-                if (eptr.HasErrors) return ErrorJson(eptr);
-            }
-            else
-            {
-                // Only part of the path exists:
-                throw new NotImplementedException();
-            }
+            TreeID newRootTreeID = eptr.Value.RootID;
 
             // optional 5) update stage with new root TreeID
             if (stage != null)
