@@ -33,11 +33,11 @@ namespace IVO.CMS.API.Controllers
 
         [HttpGet]
         [ActionName("getByName")]
-        public async Task<ActionResult> GetStageByName(Errorable<StageName> stageName)
+        public async Task<ActionResult> GetStageByName(Errorable<StageName> estageName)
         {
-            if (stageName.HasErrors) return ErrorJson(stageName);
+            if (estageName.HasErrors) return ErrorJson(estageName);
 
-            var est = await cms.strepo.GetStageByName(stageName.Value);
+            var est = await cms.strepo.GetStageByName(estageName.Value);
             if (est.HasErrors) return ErrorJson(est);
 
             Stage st = est.Value;

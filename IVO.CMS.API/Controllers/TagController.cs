@@ -36,11 +36,11 @@ namespace IVO.CMS.API.Controllers
 
         [HttpGet]
         [ActionName("getByID")]
-        public async Task<ActionResult> GetTagByID(Errorable<TagID.Partial> id)
+        public async Task<ActionResult> GetTagByID(Errorable<TagID.Partial> epid)
         {
-            if (id.HasErrors) return ErrorJson(id);
+            if (epid.HasErrors) return ErrorJson(epid);
 
-            var eid = await cms.tgrepo.ResolvePartialID(id.Value);
+            var eid = await cms.tgrepo.ResolvePartialID(epid.Value);
             if (eid.HasErrors) return ErrorJson(eid);
 
             var etg = await cms.tgrepo.GetTag(eid.Value);
@@ -54,11 +54,11 @@ namespace IVO.CMS.API.Controllers
 
         [HttpGet]
         [ActionName("getByName")]
-        public async Task<ActionResult> GetTagByName(Errorable<TagName> tagName)
+        public async Task<ActionResult> GetTagByName(Errorable<TagName> etagName)
         {
-            if (tagName.HasErrors) return ErrorJson(tagName);
+            if (etagName.HasErrors) return ErrorJson(etagName);
 
-            var etg = await cms.tgrepo.GetTagByName(tagName.Value);
+            var etg = await cms.tgrepo.GetTagByName(etagName.Value);
             if (etg.HasErrors) return Json(new { errors = etg.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
 
             Tag tg = etg.Value;

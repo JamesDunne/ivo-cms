@@ -21,7 +21,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UseFileSystem</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -74,12 +74,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Code\CMSContext.cs" />
+    <Compile Include="Code\ErrorableModelBinder.cs" />
     <Compile Include="Code\JsonHandleError.cs" />
     <Compile Include="Controllers\BlobController.cs" />
     <Compile Include="Code\StreamedBlobResult.cs" />
     <Compile Include="Controllers\StageController.cs" />
     <Compile Include="Controllers\RefController.cs" />
     <Compile Include="Controllers\TagController.cs" />
+    <Compile Include="Code\ErrorableModelBinderProvider.cs" />
     <Compile Include="Models\CommitTreeResponse.cs" />
     <Compile Include="Models\StageResponse.cs" />
     <Compile Include="Models\StageRequest.cs" />
@@ -137,6 +139,10 @@
     <ProjectReference Include="..\IVO\IVO\IVO.Implementation.FileSystem\IVO.Implementation.FileSystem.csproj">
       <Project>{8FE335EC-1E14-489F-A00D-1C56E2058DC9}</Project>
       <Name>IVO.Implementation.FileSystem</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\IVO\IVO\IVO.Implementation.SQL\IVO.Implementation.SQL.csproj">
+      <Project>{BCD16F4B-3915-43B7-B1C8-5A9132D97615}</Project>
+      <Name>IVO.Implementation.SQL</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

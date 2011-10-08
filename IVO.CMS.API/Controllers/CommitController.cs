@@ -31,53 +31,6 @@ namespace IVO.CMS.API.Controllers
             return Json(new { errors = errored.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
         }
 
-        #endregion
-
-        [HttpGet]
-        [ActionName("getByID")]
-        public async Task<ActionResult> GetCommitByID(Errorable<CommitID.Partial> id)
-        {
-            if (id.HasErrors) return ErrorJson(id);
-
-            var eid = await cms.cmrepo.ResolvePartialID(id.Value);
-            if (eid.HasErrors) return ErrorJson(eid);
-
-            var ecm = await cms.cmrepo.GetCommit(eid.Value);
-            if (ecm.HasErrors) return ErrorJson(ecm);
-
-            Commit cm = ecm.Value;
-
-            return Json(new { commit = cm.ToJSON() }, JsonRequestBehavior.AllowGet);
-        }
-
-        [HttpGet]
-        [ActionName("getByRef")]
-        public async Task<ActionResult> GetCommitByRefName(Errorable<RefName> refName)
-        {
-            if (refName.HasErrors) return ErrorJson(refName);
-
-            var ecm = await cms.cmrepo.GetCommitByRefName(refName.Value);
-            if (ecm.HasErrors) return ErrorJson(ecm);
-
-            var cm = ecm.Value;
-
-            return Json(new { @ref = cm.Item1.ToJSON(), commit = cm.Item2.ToJSON() }, JsonRequestBehavior.AllowGet);
-        }
-
-        [HttpGet]
-        [ActionName("getByTag")]
-        public async Task<ActionResult> GetCommitByTagName(Errorable<TagName> tagName)
-        {
-            if (tagName.HasErrors) return ErrorJson(tagName);
-
-            var ecm = await cms.cmrepo.GetCommitByTagName(tagName.Value);
-            if (ecm.HasErrors) return ErrorJson(ecm);
-
-            var cm = ecm.Value;
-
-            return Json(new { tag = cm.Item1.ToJSON(), commit = cm.Item2.ToJSON() }, JsonRequestBehavior.AllowGet);
-        }
-
         private CommitTreeResponse toJSON(CommitID id, ImmutableContainer<CommitID, ICommit> commits)
         {
             ICommit cm;
@@ -95,14 +48,61 @@ namespace IVO.CMS.API.Controllers
             };
         }
 
+        #endregion
+
+        [HttpGet]
+        [ActionName("getByID")]
+        public async Task<ActionResult> GetCommitByID(Errorable<CommitID.Partial> epid)
+        {
+            if (epid.HasErrors) return ErrorJson(epid);
+
+            var eid = await cms.cmrepo.ResolvePartialID(epid.Value);
+            if (eid.HasErrors) return ErrorJson(eid);
+
+            var ecm = await cms.cmrepo.GetCommit(eid.Value);
+            if (ecm.HasErrors) return ErrorJson(ecm);
+
+            Commit cm = ecm.Value;
+
+            return Json(new { commit = cm.ToJSON() }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        [ActionName("getByRef")]
+        public async Task<ActionResult> GetCommitByRefName(Errorable<RefName> erefName)
+        {
+            if (erefName.HasErrors) return ErrorJson(erefName);
+
+            var ecm = await cms.cmrepo.GetCommitByRefName(erefName.Value);
+            if (ecm.HasErrors) return ErrorJson(ecm);
+
+            var cm = ecm.Value;
+
+            return Json(new { @ref = cm.Item1.ToJSON(), commit = cm.Item2.ToJSON() }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        [ActionName("getByTag")]
+        public async Task<ActionResult> GetCommitByTagName(Errorable<TagName> etagName)
+        {
+            if (etagName.HasErrors) return ErrorJson(etagName);
+
+            var ecm = await cms.cmrepo.GetCommitByTagName(etagName.Value);
+            if (ecm.HasErrors) return ErrorJson(ecm);
+
+            var cm = ecm.Value;
+
+            return Json(new { tag = cm.Item1.ToJSON(), commit = cm.Item2.ToJSON() }, JsonRequestBehavior.AllowGet);
+        }
+
         [HttpGet]
         [ActionName("getTree")]
-        public async Task<ActionResult> GetCommitTree(Errorable<CommitID.Partial> id, int depth = 10)
+        public async Task<ActionResult> GetCommitTree(Errorable<CommitID.Partial> epid, int depth = 10)
         {
-            if (id.HasErrors) return ErrorJson(id);
+            if (epid.HasErrors) return ErrorJson(epid);
 
             // Attempt to resolve the partial ID:
-            var eid = await cms.cmrepo.ResolvePartialID(id.Value);
+            var eid = await cms.cmrepo.ResolvePartialID(epid.Value);
             if (eid.HasErrors) return ErrorJson(eid);
             
             var ecmtr = await cms.cmrepo.GetCommitTree(eid.Value, depth);
@@ -115,11 +115,11 @@ namespace IVO.CMS.API.Controllers
 
         [HttpGet]
         [ActionName("getTreeByTag")]
-        public async Task<ActionResult> GetCommitTree(Errorable<TagName> tagName, int depth = 10)
+        public async Task<ActionResult> GetCommitTree(Errorable<TagName> etagName, int depth = 10)
         {
-            if (tagName.HasErrors) return ErrorJson(tagName);
+            if (etagName.HasErrors) return ErrorJson(etagName);
 
-            var ecmtr = await cms.cmrepo.GetCommitTreeByTagName(tagName.Value, depth);
+            var ecmtr = await cms.cmrepo.GetCommitTreeByTagName(etagName.Value, depth);
             if (ecmtr.HasErrors) return ErrorJson(ecmtr);
 
             Tuple<Tag, CommitTree> cmtr = ecmtr.Value;
@@ -129,11 +129,11 @@ namespace IVO.CMS.API.Controllers
 
         [HttpGet]
         [ActionName("getTreeByRef")]
-        public async Task<ActionResult> GetCommitTree(Errorable<RefName> refName, int depth = 10)
+        public async Task<ActionResult> GetCommitTree(Errorable<RefName> erefName, int depth = 10)
         {
-            if (refName.HasErrors) return ErrorJson(refName);
+            if (erefName.HasErrors) return ErrorJson(erefName);
 
-            var ecmtr = await cms.cmrepo.GetCommitTreeByRefName(refName.Value, depth);
+            var ecmtr = await cms.cmrepo.GetCommitTreeByRefName(erefName.Value, depth);
             if (ecmtr.HasErrors) return ErrorJson(ecmtr);
 
             Tuple<Ref, CommitTree> cmtr = ecmtr.Value;
@@ -143,13 +143,13 @@ namespace IVO.CMS.API.Controllers
 
         [HttpPost]
         [ActionName("create")]
-        public async Task<ActionResult> Create(RefName refName, CommitRequest cmj)
+        public async Task<ActionResult> Create(Errorable<RefName> erefName, CommitRequest cmj)
         {
+            if (erefName.HasErrors) return ErrorJson(erefName);
             if (cmj == null) return Json(new { success = false });
-            if (refName == null) return Json(new { success = false });
 
             // First get the ref and its CommitID, if it exists:
-            var erf = await cms.rfrepo.GetRefByName(refName);
+            var erf = await cms.rfrepo.GetRefByName(erefName.Value);
             if (erf.HasErrors) return ErrorJson(erf);
 
             // Map from the JSON CommitModel:
@@ -172,7 +172,7 @@ namespace IVO.CMS.API.Controllers
             Commit pcm = epcm.Value;
 
             // Persist the ref with this new CommitID:
-            Ref.Builder rfb = new Ref.Builder(refName, pcm.ID);
+            Ref.Builder rfb = new Ref.Builder(erefName.Value, pcm.ID);
             erf = await cms.rfrepo.PersistRef(rfb);
             if (erf.HasErrors) return ErrorJson(erf);
 

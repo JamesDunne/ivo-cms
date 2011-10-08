@@ -33,11 +33,11 @@ namespace IVO.CMS.API.Controllers
 
         [HttpGet]
         [ActionName("getByName")]
-        public async Task<ActionResult> GetRefByName(Errorable<RefName> refName)
+        public async Task<ActionResult> GetRefByName(Errorable<RefName> erefName)
         {
-            if (refName.HasErrors) return ErrorJson(refName);
+            if (erefName.HasErrors) return ErrorJson(erefName);
 
-            var erf = await cms.rfrepo.GetRefByName(refName.Value);
+            var erf = await cms.rfrepo.GetRefByName(erefName.Value);
             if (erf.HasErrors) return ErrorJson(erf);
 
             Ref rf = erf.Value;
@@ -45,8 +45,8 @@ namespace IVO.CMS.API.Controllers
         }
 
         [HttpGet]
-        [ActionName("getRefs")]
-        public Task<ActionResult> GetRefs()
+        [ActionName("getAll")]
+        public Task<ActionResult> GetAllRefs()
         {
             throw new NotImplementedException();
         }

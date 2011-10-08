@@ -98,12 +98,12 @@ namespace IVO.CMS.API.Controllers
         #endregion
 
         [HttpGet]
-        [ActionName("get")]
-        public async Task<ActionResult> GetTreeByID(Errorable<TreeID.Partial> id)
+        [ActionName("getByID")]
+        public async Task<ActionResult> GetTreeByID(Errorable<TreeID.Partial> epid)
         {
-            if (id.HasErrors) return ErrorJson(id);
+            if (epid.HasErrors) return ErrorJson(epid);
 
-            var eid = await cms.trrepo.ResolvePartialID(id.Value);
+            var eid = await cms.trrepo.ResolvePartialID(epid.Value);
             if (eid.HasErrors) return ErrorJson(eid);
 
             var etree = await cms.trrepo.GetTree(eid.Value);

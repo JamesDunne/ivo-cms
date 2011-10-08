@@ -40,11 +40,11 @@ namespace IVO.CMS.API.Controllers
         [HttpGet]
         [ActionName("get")]
         [JsonHandleError]
-        public async Task<ActionResult> GetBlob(Errorable<BlobID.Partial> id)
+        public async Task<ActionResult> GetBlob(Errorable<BlobID.Partial> epid)
         {
-            if (id.HasErrors) return ErrorJson(id);
+            if (epid.HasErrors) return ErrorJson(epid);
 
-            var eid = await cms.blrepo.ResolvePartialID(id.Value);
+            var eid = await cms.blrepo.ResolvePartialID(epid.Value);
             if (eid.HasErrors) return ErrorJson(eid);
 
             var eblob = await cms.blrepo.GetBlob(eid.Value);
@@ -56,11 +56,11 @@ namespace IVO.CMS.API.Controllers
         [HttpGet]
         [ActionName("getByPath")]
         [JsonHandleError]
-        public async Task<ActionResult> GetBlobByPath(Errorable<TreeBlobPath> rootedPath)
+        public async Task<ActionResult> GetBlobByPath(Errorable<TreeBlobPath> epath)
         {
-            if (rootedPath.HasErrors) return ErrorJson(rootedPath);
+            if (epath.HasErrors) return ErrorJson(epath);
 
-            var eblob = await cms.tpsbrepo.GetBlobByTreePath(rootedPath.Value);
+            var eblob = await cms.tpsbrepo.GetBlobByTreePath(epath.Value);
             if (eblob.HasErrors) return ErrorJson(eblob);
 
             TreePathStreamedBlob blob = eblob.Value;
@@ -72,35 +72,38 @@ namespace IVO.CMS.API.Controllers
         [HttpPost]
         [ActionName("create")]
         [JsonHandleError]
-        public async Task<ActionResult> CreateBlob(Errorable<TreeBlobPath> path, Errorable<StageName> stage = null)
+        public async Task<ActionResult> CreateBlob(Errorable<TreeBlobPath> epath, Errorable<StageName> estage)
         {
-            if (path.HasErrors) return ErrorJson(path);
-            if (stage != null && stage.HasErrors) return ErrorJson(stage);
+            Debug.Assert(epath != null);
+            //if (path == null) return Json(new { errors = new[] { new { message = "path required" } } }, JsonRequestBehavior.AllowGet);
+            if (epath.HasErrors) return ErrorJson(epath);
+            if (estage != null && estage.HasErrors) return ErrorJson(estage);
 
             PersistingBlob pbl = new PersistingBlob(Request.InputStream);
 
             // Persist the blob from the input stream:
             var eblob = await cms.blrepo.PersistBlob(pbl);
             if (eblob.HasErrors) return ErrorJson(eblob);
+            var blob = eblob.Value;
 
             // Now update the given root TreeID:
-            var tbp = path.Value;
+            var path = epath.Value;
 
             // Persist the new blob's effect on the Tree:
-            var eptr = await cms.trrepo.PersistTreeNodesByBlobPaths(tbp.RootTreeID, new CanonicalBlobIDPath[] { new CanonicalBlobIDPath(tbp.Path, eblob.Value.ID) });
+            var eptr = await cms.trrepo.PersistTreeNodesByBlobPaths(path.RootTreeID, new CanonicalBlobIDPath[] { new CanonicalBlobIDPath(path.Path, blob.ID) });
             if (eptr.HasErrors) return ErrorJson(eptr);
 
             TreeID newRootTreeID = eptr.Value.RootID;
 
             // optional 5) update stage with new root TreeID
-            if (stage != null)
+            if (estage != null)
             {
-                var epst = await cms.strepo.PersistStage(new Stage.Builder(stage.Value, newRootTreeID));
+                var epst = await cms.strepo.PersistStage(new Stage.Builder(estage.Value, newRootTreeID));
                 if (epst.HasErrors) return ErrorJson(epst);
             }
 
             // Return the new information:
-            return Json(new { blobid = eblob.Value.ID.ToString(), treeid = newRootTreeID.ToString() });
+            return Json(new { blobid = blob.ID.ToString(), treeid = newRootTreeID.ToString() });
         }
 
         [HttpPost]
@@ -122,12 +125,12 @@ namespace IVO.CMS.API.Controllers
         [HttpGet]
         [ActionName("compare")]
         [JsonHandleError]
-        public async Task<ActionResult> CompareBlobs(Errorable<BlobID.Partial> id, Errorable<BlobID.Partial> against)
+        public async Task<ActionResult> CompareBlobs(Errorable<BlobID.Partial> epida, Errorable<BlobID.Partial> epidb)
         {
-            if (id.HasErrors || against.HasErrors) return Json(new { errors = (id.Errors + against.Errors).ToJSON() }, JsonRequestBehavior.AllowGet);
+            if (epida.HasErrors || epidb.HasErrors) return Json(new { errors = (epida.Errors + epidb.Errors).ToJSON() }, JsonRequestBehavior.AllowGet);
 
             // Resolve the partial IDs:
-            var eids = await cms.blrepo.ResolvePartialIDs(id.Value, against.Value);
+            var eids = await cms.blrepo.ResolvePartialIDs(epida.Value, epidb.Value);
             if (eids[0].HasErrors || eids[1].HasErrors) return Json(new { errors = (eids[0].Errors + eids[1].Errors).ToJSON() }, JsonRequestBehavior.AllowGet);
 
             BlobID idA = eids[0].Value;
@@ -145,6 +148,8 @@ namespace IVO.CMS.API.Controllers
             
             var etextB = await blB.ReadStreamAsync<string>(async st => { using (var sr = new StreamReader(st, Encoding.UTF8)) return (Errorable<string>)await sr.ReadToEndAsync(); });
             if (etextB.HasErrors) return ErrorJson(etextB);
+
+            // TODO: update to a better diff engine that supports merging...
 
             // Create a diff engine:
             IDiffer differ = new Differ();

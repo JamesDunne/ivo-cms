@@ -8,6 +8,7 @@ using IVO.CMS.API.Models;
 using IVO.Definition.Models;
 using IVO.CMS.Web.Mvc;
 using IVO.Definition.Errors;
+using System.Diagnostics;
 
 namespace IVO.CMS.API.Controllers
 {
@@ -34,14 +35,18 @@ namespace IVO.CMS.API.Controllers
         [HttpGet]
         [ActionName("renderByTree")]
         [ValidateInput(false)]
-        public async Task<ActionResult> RenderBlob(TreeBlobPath rootedPath, DateTimeOffset? viewDate)
+        public async Task<ActionResult> RenderBlob(Errorable<TreeBlobPath> epath, DateTimeOffset? viewDate)
         {
+            Debug.Assert(epath != null);
+            if (epath.HasErrors) return ErrorJson(epath);
+            var path = epath.Value;
+
             // Get the stream for the blob by its path:
-            var eblob = await cms.tpsbrepo.GetBlobByTreePath(rootedPath);
+            var eblob = await cms.tpsbrepo.GetBlobByTreePath(epath.Value);
             if (eblob.HasErrors) return ErrorJson(eblob);
 
             TreePathStreamedBlob blob = eblob.Value;
-            if (blob == null) return new HttpNotFoundResult(String.Format("A blob could not be found off tree {0} by path '{0}'", rootedPath.RootTreeID.ToString(), rootedPath.Path.ToString()));
+            if (blob == null) return new HttpNotFoundResult(String.Format("A blob could not be found off tree {0} by path '{0}'", path.RootTreeID.ToString(), path.Path.ToString()));
 
             // Render the blob:
             var ehtml = await cms.GetContentEngine(viewDate).RenderBlob(blob);

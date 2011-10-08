@@ -30,10 +30,11 @@ namespace PerformanceTestHost
             displayResponse = true;
 #endif
 
-#if false
+#if true
             Console.WriteLine("POST blob/create");
             pr.TimeRequests(createPOSTRequest1, count, per).Wait();
-
+#endif
+#if false
             Console.WriteLine("POST blob/create");
             pr.TimeRequests(createPOSTRequest2, count, per).Wait();
 
@@ -45,9 +46,10 @@ namespace PerformanceTestHost
 
             Console.WriteLine("GET {0}", getURL2.Remove(0, "http://localhost/".Length));
             pr.TimeRequests(createGETRequest2, count, per).Wait();
-#endif
+
             Console.WriteLine("GET {0}", getURL3.Remove(0, "http://localhost/".Length));
             pr.TimeRequests(createGETRequest3, count, per).Wait();
+#endif
         }
 
         private static async Task readResponse(HttpWebRequest rq)
