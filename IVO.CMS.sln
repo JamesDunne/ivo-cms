@@ -31,6 +31,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerformanceTestHost", "Perf
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IVO.CMS.Web", "IVO.CMS.Web\IVO.CMS.Web.csproj", "{6F2B6A67-9668-430A-B8CB-7DB62995066A}"
 EndProject
+Project("{00000000-0000-0000-0000-000000000000}") = "IVO.CMS.Web.API", "IVO.CMS.Web.API\IVO.CMS.Web.API.csproj", "{FF52ACC3-CCBD-4C2D-BC31-BDB586FACBF5}"
+EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = IVO.CMS.vsmdi
@@ -146,6 +148,16 @@ Global
 		{FEE07321-315D-40C6-B82D-111ADF19F002}.Release|Mixed Platforms.Build.0 = Release|x86
 		{FEE07321-315D-40C6-B82D-111ADF19F002}.Release|x86.ActiveCfg = Release|x86
 		{FEE07321-315D-40C6-B82D-111ADF19F002}.Release|x86.Build.0 = Release|x86
+		{FF52ACC3-CCBD-4C2D-BC31-BDB586FACBF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF52ACC3-CCBD-4C2D-BC31-BDB586FACBF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF52ACC3-CCBD-4C2D-BC31-BDB586FACBF5}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{FF52ACC3-CCBD-4C2D-BC31-BDB586FACBF5}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{FF52ACC3-CCBD-4C2D-BC31-BDB586FACBF5}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FF52ACC3-CCBD-4C2D-BC31-BDB586FACBF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF52ACC3-CCBD-4C2D-BC31-BDB586FACBF5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF52ACC3-CCBD-4C2D-BC31-BDB586FACBF5}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{FF52ACC3-CCBD-4C2D-BC31-BDB586FACBF5}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{FF52ACC3-CCBD-4C2D-BC31-BDB586FACBF5}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
