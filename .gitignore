@@ -1,7 +1,7 @@
 bin/
 obj/
 TestResults/
-IVO.CMS.API/ivo/
+IVO.CMS.Web.API/ivo/
 .gitignore
 *.exe
 *.msi
