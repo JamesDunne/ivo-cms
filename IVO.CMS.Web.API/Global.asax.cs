@@ -31,11 +31,6 @@ namespace IVO.CMS.API
                 new { controller = "Blob", action = "getByPath" }
             );
 
-            routes.MapRoute("BlobCreate",
-                "blob/create/{*epath}",
-                new { controller = "Blob", action = "create" }
-            );
-
             routes.MapRoute("BlobGetByID",
                 "blob/get/blob/{epid}",
                 new { controller = "Blob", action = "get" }
@@ -44,6 +39,11 @@ namespace IVO.CMS.API
             routes.MapRoute("BlobCompare",
                 "blob/compare/{epida}/{epidb}",
                 new { controller = "Blob", action = "compare" }
+            );
+
+            routes.MapRoute("BlobCreate",
+                "blob/create/{*epath}",
+                new { controller = "Blob", action = "create" }
             );
 
 
@@ -119,6 +119,11 @@ namespace IVO.CMS.API
                 new { controller = "Tag", action = "getByName" }
             );
 
+            routes.MapRoute("TagCreate",
+                "tag/create",
+                new { controller = "Tag", action = "create" }
+            );
+
 
             // RefController
             routes.MapRoute("RefGetByName",
@@ -129,6 +134,11 @@ namespace IVO.CMS.API
             routes.MapRoute("RefGetAll",
                 "ref/all",
                 new { controller = "Ref", action = "getAll" }
+            );
+
+            routes.MapRoute("RefCreate",
+                "ref/create",
+                new { controller = "Ref", action = "create" }
             );
 
 #if false

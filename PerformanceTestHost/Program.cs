@@ -13,16 +13,16 @@ namespace PerformanceTestHost
 {
     class Program
     {
-        const string getURL1 = "http://localhost/blob/get/91a97f8a57480e24f710cabc675636d4b9c3a197";
-        const string getURL2 = "http://localhost/render/tree/56d4d6806f048c304fc68303c90955de6115f256/pages/home";
-        const string getURL3 = "http://localhost/blob/compare/91a97f8a57480e24f710cabc675636d4b9c3a197?against=e4ed960dead1600353ce2314df790ab376a9de7c";
+        const string getURL1 = "http://localhost/blob/get/blob/91a97f8a57480e24f710cabc675636d4b9c3a197";
+        const string getURL2 = "http://localhost/render/tree/def786b0292fcac947125982102c9a85a9c3e87a:pages/helloWorld";
+        const string getURL3 = "http://localhost/blob/compare/91a97f8a57480e24f710cabc675636d4b9c3a197/e4ed960dead1600353ce2314df790ab376a9de7c";
         static bool displayResponse = false;
 
         static void Main(string[] args)
         {
             var pr = new Program();
 
-#if false
+#if true
             int count = 3, per = 250;
             displayResponse = false;
 #else
@@ -34,12 +34,14 @@ namespace PerformanceTestHost
             Console.WriteLine("POST blob/create");
             pr.TimeRequests(createPOSTRequest1, count, per).Wait();
 #endif
-#if false
+#if true
             Console.WriteLine("POST blob/create");
             pr.TimeRequests(createPOSTRequest2, count, per).Wait();
-
-            Console.WriteLine("POST tree/create");
-            pr.TimeRequests(createPOSTRequest3, count, per).Wait();
+#endif
+#if true
+            // Now invalid:
+            //Console.WriteLine("POST tree/create");
+            //pr.TimeRequests(createPOSTRequest3, count, per).Wait();
 
             Console.WriteLine("GET {0}", getURL1.Remove(0, "http://localhost/".Length));
             pr.TimeRequests(createGETRequest1, count, per).Wait();
@@ -52,7 +54,7 @@ namespace PerformanceTestHost
 #endif
         }
 
-        private static async Task readResponse(HttpWebRequest rq)
+        private static async Task<string> readResponse(HttpWebRequest rq, string expectedContentType)
         {
             HttpWebResponse rsp;
             try
@@ -66,18 +68,19 @@ namespace PerformanceTestHost
 
             if (rsp.StatusCode != HttpStatusCode.OK) Console.Error.WriteLine(rsp.StatusCode.ToString());
 
+            string[] contentType = rsp.ContentType.Split(new string[1] { "; " }, StringSplitOptions.None);
+            if (contentType[0] != expectedContentType) Console.Error.WriteLine("Received Content-Type '{0}', expected '{1}'", contentType[0], expectedContentType);
+
             using (var st = rsp.GetResponseStream())
-                if (displayResponse)
-                    using (var tr = new StreamReader(st, Encoding.UTF8))
+                using (var tr = new StreamReader(st, Encoding.UTF8))
+                {
+                    string rspstr = await tr.ReadToEndAsync();
+                    if (displayResponse)
                     {
-                        string line;
-                        while ((line = await tr.ReadLineAsync()) != null)
-                        {
-                            await Console.Out.WriteAsync(line + Environment.NewLine);
-                        }
+                        Console.Out.WriteLineAsync(rspstr);
                     }
-                else
-                    st.Close();
+                    return rspstr;
+                }
         }
 
         private static async Task createPOSTRequest1()
@@ -96,17 +99,18 @@ namespace PerformanceTestHost
             using (var rqs = await rq.GetRequestStreamAsync())
                 await rqs.WriteAsync(msg, 0, msg.Length);
 
-            await readResponse(rq);
+            string rsp = await readResponse(rq, "application/json");
+            // {"blobid":"91a97f8a57480e24f710cabc675636d4b9c3a197","treeid":"333dd3d5cd48d4402f87fe26a93a1ee6684608b2"}
         }
 
         private static async Task createPOSTRequest2()
         {
-            HttpWebRequest rq = (HttpWebRequest)HttpWebRequest.Create("http://localhost/blob/create/pages/helloWorld");
+            HttpWebRequest rq = (HttpWebRequest)HttpWebRequest.Create("http://localhost/blob/create/333dd3d5cd48d4402f87fe26a93a1ee6684608b2:pages/helloWorld");
             rq.Method = "POST";
             rq.Accept = "application/json";
             rq.ContentType = "application/xhtml+xml";
             byte[] msg = Encoding.UTF8.GetBytes(
-@"<cms-import-template path=""/templates/page"">
+@"<cms-import-template path=""/templates/main"">
   <area id=""head""></area>
   <area id=""body""><div>
     Hello, world! This is a templated page.
@@ -116,7 +120,9 @@ namespace PerformanceTestHost
             using (var rqs = await rq.GetRequestStreamAsync())
                 await rqs.WriteAsync(msg, 0, msg.Length);
 
-            await readResponse(rq);
+            string rsp = await readResponse(rq, "application/json");
+
+            //{"blobid":"0d0a6d675674459214d970ebb9f7b0535313230e","treeid":"def786b0292fcac947125982102c9a85a9c3e87a"}
         }
 
         private static async Task createPOSTRequest3()
@@ -134,7 +140,7 @@ namespace PerformanceTestHost
                         name = "templates",
                         tree = new {
                             blobs = new[] {
-                                new { name = "page", blobid = "91a97f8a57480e24f710cabc675636d4b9c3a197" }
+                                new { name = "main", blobid = "91a97f8a57480e24f710cabc675636d4b9c3a197" }
                             },
                             trees = new object[0]
                         }
@@ -143,7 +149,7 @@ namespace PerformanceTestHost
                         name = "pages",
                         tree = new {
                             blobs = new[] {
-                                new { name = "home", blobid = "e4ed960dead1600353ce2314df790ab376a9de7c" }
+                                new { name = "helloWorld", blobid = "e4ed960dead1600353ce2314df790ab376a9de7c" }
                             },
                             trees = new object[0]
                         }
@@ -155,7 +161,7 @@ namespace PerformanceTestHost
             using (var rqs = await rq.GetRequestStreamAsync())
                 await rqs.WriteAsync(msg, 0, msg.Length);
 
-            await readResponse(rq);
+            string rsp = await readResponse(rq, "application/json");
         }
 
         private static async Task createGETRequest1()
@@ -164,7 +170,7 @@ namespace PerformanceTestHost
             rq.Method = "GET";
             rq.Accept = "*/*";
 
-            await readResponse(rq);
+            string rsp = await readResponse(rq, "application/xhtml+xml");
         }
 
         private static async Task createGETRequest2()
@@ -173,7 +179,7 @@ namespace PerformanceTestHost
             rq.Method = "GET";
             rq.Accept = "*/*";
 
-            await readResponse(rq);
+            string rsp = await readResponse(rq, "application/xhtml+xml");
         }
 
         private static async Task createGETRequest3()
@@ -182,7 +188,7 @@ namespace PerformanceTestHost
             rq.Method = "GET";
             rq.Accept = "*/*";
 
-            await readResponse(rq);
+            string rsp = await readResponse(rq, "application/json");
         }
 
         private async Task TimeRequests(Func<Task> createRequest, int count = 16, int per = 512)
