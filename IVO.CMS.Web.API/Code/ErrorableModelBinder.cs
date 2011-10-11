@@ -29,16 +29,18 @@ namespace IVO.CMS.API.Code
                 return Activator.CreateInstance(bindingContext.ModelType, (object)(ErrorBase)new InputError("Value for '{0}' not provided", bindingContext.ModelName));
 
             // Get the (string) value for this model:
-            var modelValue = bindingContext.ValueProvider.GetValue(bindingContext.ModelName);
+            ValueProviderResult modelValue = bindingContext.ValueProvider.GetValue(bindingContext.ModelName);
+            // No ValueProviderResult means no value set at all:
             if (modelValue == null)
                 return null;
-                //return Activator.CreateInstance(bindingContext.ModelType, (object)(ErrorBase)new InputError("Value for '{0}' not provided", bindingContext.ModelName));
 
+            // Null value means ... what?
             string value;
             object rawValue = modelValue.RawValue;
             if (rawValue == null)
                 return Activator.CreateInstance(bindingContext.ModelType, (object)(ErrorBase)new InputError("Value for '{0}' not provided", bindingContext.ModelName));
 
+            // Get the `string` or `string[]` and render a final string value:
             Type rawValueType = rawValue.GetType();
             if (rawValueType == typeof(string)) value = (string)modelValue.RawValue;
             else if (rawValueType == typeof(string[]))
@@ -52,7 +54,7 @@ namespace IVO.CMS.API.Code
             }
             else value = modelValue.RawValue.ToString();
 
-            // Run the converter:
+            // Run the converter from `string` to `Errorable<T>`:
             object result = cvt.ConvertTo(
                 (ITypeDescriptorContext)null,
                 System.Globalization.CultureInfo.InvariantCulture,
