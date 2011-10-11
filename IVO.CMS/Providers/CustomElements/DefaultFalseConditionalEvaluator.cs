@@ -22,7 +22,7 @@ namespace IVO.CMS.Providers.CustomElements
 
         public Task<Errorable<bool>> EvaluateConditional(Dictionary<string, string> attributes)
         {
-            return TaskEx.FromResult((Errorable<bool>) false);
+            return Task.FromResult((Errorable<bool>) false);
         }
 
         #endregion

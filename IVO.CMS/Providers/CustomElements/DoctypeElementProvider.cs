@@ -43,14 +43,14 @@ namespace IVO.CMS.Providers.CustomElements
             {
                 st.Error("cms-doctype must be an empty element");
                 st.SkipElementAndChildren("cms-doctype");
-                return TaskEx.FromResult(Errorable.NoErrors);
+                return Task.FromResult(Errorable.NoErrors);
             }
 
             if (!xr.MoveToAttribute("type"))
             {
                 st.Error("cms-doctype must have a type attribute");
                 xr.MoveToElement();
-                return TaskEx.FromResult(Errorable.NoErrors);
+                return Task.FromResult(Errorable.NoErrors);
             }
 
             string type = xr.Value;
@@ -60,12 +60,12 @@ namespace IVO.CMS.Providers.CustomElements
             {
                 // HTML5 doctype:
                 st.Writer.Append("<!DOCTYPE html>\r\n\r\n");
-                return TaskEx.FromResult(Errorable.NoErrors);
+                return Task.FromResult(Errorable.NoErrors);
             }
             else
             {
                 st.Error("cms-doctype has unknown type value '{0}'", type);
-                return TaskEx.FromResult(Errorable.NoErrors);
+                return Task.FromResult(Errorable.NoErrors);
             }
         }
     }

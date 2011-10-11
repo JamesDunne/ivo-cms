@@ -200,7 +200,7 @@ namespace PerformanceTestHost
                     rt[j] = createRequest();
                 }
 
-                await TaskEx.WhenAll(rt);
+                await Task.WhenAll(rt);
                 long currTicks = sw.ElapsedTicks;
                 long em = ((currTicks - lastTicks) * 1000) / Stopwatch.Frequency;
 

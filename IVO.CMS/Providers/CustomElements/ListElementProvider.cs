@@ -21,7 +21,7 @@ namespace IVO.CMS.Providers.CustomElements
         public Task<Errorable<bool>> ProcessCustomElement(string elementName, RenderState state)
         {
             // TODO: design and implement a 'cms-list' element handler.
-            return TaskEx.FromResult((Errorable<bool>)false);
+            return Task.FromResult((Errorable<bool>)false);
         }
 
         #endregion

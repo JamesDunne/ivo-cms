@@ -767,10 +767,10 @@ namespace TestCMS.CommonTest
 
                 if (attributes.TryGetValue("a", out strA) && Boolean.TryParse(strA, out testA))
                 {
-                    return TaskEx.FromResult((IVO.Definition.Errors.Errorable<bool>)(testA == setA));
+                    return Task.FromResult((IVO.Definition.Errors.Errorable<bool>)(testA == setA));
                 }
 
-                return TaskEx.FromResult((IVO.Definition.Errors.Errorable<bool>)false);
+                return Task.FromResult((IVO.Definition.Errors.Errorable<bool>)false);
             }
         }
 
