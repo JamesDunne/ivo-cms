@@ -82,7 +82,7 @@ namespace PerformanceTestHost
 
         private static async Task createPOSTRequest1()
         {
-            HttpWebRequest rq = (HttpWebRequest)HttpWebRequest.Create("http://localhost/blob/create");
+            HttpWebRequest rq = (HttpWebRequest)HttpWebRequest.Create("http://localhost/blob/create/templates/main");
             rq.Method = "POST";
             rq.Accept = "application/json;*/*";
             rq.ContentType = "application/xhtml+xml";
@@ -101,7 +101,7 @@ namespace PerformanceTestHost
 
         private static async Task createPOSTRequest2()
         {
-            HttpWebRequest rq = (HttpWebRequest)HttpWebRequest.Create("http://localhost/blob/create");
+            HttpWebRequest rq = (HttpWebRequest)HttpWebRequest.Create("http://localhost/blob/create/pages/helloWorld");
             rq.Method = "POST";
             rq.Accept = "application/json";
             rq.ContentType = "application/xhtml+xml";

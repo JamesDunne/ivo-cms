@@ -72,7 +72,7 @@ namespace IVO.CMS.API.Controllers
         [HttpPost]
         [ActionName("create")]
         [JsonHandleError]
-        public async Task<ActionResult> CreateBlob(Errorable<TreeBlobPath> epath, Errorable<StageName> estage)
+        public async Task<ActionResult> CreateBlob(Errorable<MaybeTreeBlobPath> epath, Errorable<StageName> estage)
         {
             Debug.Assert(epath != null);
             //if (path == null) return Json(new { errors = new[] { new { message = "path required" } } }, JsonRequestBehavior.AllowGet);

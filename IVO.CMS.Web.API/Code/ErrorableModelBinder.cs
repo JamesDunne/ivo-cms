@@ -26,14 +26,20 @@ namespace IVO.CMS.API.Code
             // Check if the T type can be converted from `string` to `Errorable<T>`:
             TypeConverter cvt = TypeDescriptor.GetConverter(errorableContainedType);
             if (!cvt.CanConvertTo(bindingContext.ModelType))
-                return Activator.CreateInstance(bindingContext.ModelType, (object)new InputError("Value for '{0}' not provided", bindingContext.ModelName));
+                return Activator.CreateInstance(bindingContext.ModelType, (object)(ErrorBase)new InputError("Value for '{0}' not provided", bindingContext.ModelName));
 
             // Get the (string) value for this model:
             var modelValue = bindingContext.ValueProvider.GetValue(bindingContext.ModelName);
+            if (modelValue == null)
+                return null;
+                //return Activator.CreateInstance(bindingContext.ModelType, (object)(ErrorBase)new InputError("Value for '{0}' not provided", bindingContext.ModelName));
 
             string value;
+            object rawValue = modelValue.RawValue;
+            if (rawValue == null)
+                return Activator.CreateInstance(bindingContext.ModelType, (object)(ErrorBase)new InputError("Value for '{0}' not provided", bindingContext.ModelName));
 
-            Type rawValueType = modelValue.RawValue.GetType();
+            Type rawValueType = rawValue.GetType();
             if (rawValueType == typeof(string)) value = (string)modelValue.RawValue;
             else if (rawValueType == typeof(string[]))
             {
