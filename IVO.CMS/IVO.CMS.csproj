@@ -62,9 +62,7 @@
     <Compile Include="SemanticWarning.cs" />
     <Compile Include="ValidationResult.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Internal\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\IVO\Asynq\Asynq.csproj">
       <Project>{42EFAFD3-5939-492C-8B93-DFD1969BA925}</Project>

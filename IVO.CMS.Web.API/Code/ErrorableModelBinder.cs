@@ -16,6 +16,12 @@ namespace IVO.CMS.API.Code
             // Assert that we're binding an Errorable<T> model:
             Debug.Assert(bindingContext.ModelType.IsGenericType && bindingContext.ModelType.Name == "Errorable`1" && bindingContext.ModelType.Namespace == "IVO.Definition.Errors");
 
+            // Get the (string) value for this model:
+            ValueProviderResult modelValue = bindingContext.ValueProvider.GetValue(bindingContext.ModelName);
+            // No ValueProviderResult means no value set at all:
+            if (modelValue == null)
+                return null;
+
             // Pick out the T so we know what to convert:
             Type[] args = bindingContext.ModelType.GetGenericArguments();
             Debug.Assert(args.Length == 1);
@@ -26,15 +32,9 @@ namespace IVO.CMS.API.Code
             // Check if the T type can be converted from `string` to `Errorable<T>`:
             TypeConverter cvt = TypeDescriptor.GetConverter(errorableContainedType);
             if (!cvt.CanConvertTo(bindingContext.ModelType))
-                return Activator.CreateInstance(bindingContext.ModelType, (object)(ErrorBase)new InputError("Value for '{0}' not provided", bindingContext.ModelName));
+                return Activator.CreateInstance(bindingContext.ModelType, (object)(ErrorBase)new InputError("TypeConverter '{0}' cannot convert to '{1}' for model name '{2}'", cvt.GetType().FullName, bindingContext.ModelType.FullName, bindingContext.ModelName));
 
-            // Get the (string) value for this model:
-            ValueProviderResult modelValue = bindingContext.ValueProvider.GetValue(bindingContext.ModelName);
-            // No ValueProviderResult means no value set at all:
-            if (modelValue == null)
-                return null;
-
-            // Null value means ... what?
+            // Null RawValue means ... what?
             string value;
             object rawValue = modelValue.RawValue;
             if (rawValue == null)
