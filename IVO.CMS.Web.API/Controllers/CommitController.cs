@@ -149,15 +149,22 @@ namespace IVO.CMS.API.Controllers
             if (cmj == null) return Json(new { success = false });
 
             // First get the ref and its CommitID, if it exists:
+            Ref rf;
             var erf = await cms.rfrepo.GetRefByName(erefName.Value);
-            if (erf.HasErrors) return ErrorJson(erf);
+            if (erf.HasErrors)
+            {
+                // Skip the RefNameDoesNotExistError error (should only be one - using All() makes sure that any other errors will fall out):
+                if (!erf.Errors.All(err => err is RefNameDoesNotExistError))
+                    return ErrorJson(erf);
+                rf = null;
+            }
+            else rf = erf.Value;
 
             // Map from the JSON CommitModel:
             var ecb = cmj.FromJSON();
             if (ecb.HasErrors) return ErrorJson(ecb);
 
             Commit.Builder cb = ecb.Value;
-            Ref rf = erf.Value;
             
             // Add the ref's CommitID as the parent, if the ref exists:
             if ((rf != null) && (cb.Parents.Count == 0))
@@ -175,6 +182,8 @@ namespace IVO.CMS.API.Controllers
             Ref.Builder rfb = new Ref.Builder(erefName.Value, pcm.ID);
             erf = await cms.rfrepo.PersistRef(rfb);
             if (erf.HasErrors) return ErrorJson(erf);
+
+            rf = erf.Value;
 
             // Return the commit model as JSON again:
             return Json(new { @ref = rf.ToJSON(), commit = pcm.ToJSON() }, JsonRequestBehavior.AllowGet);

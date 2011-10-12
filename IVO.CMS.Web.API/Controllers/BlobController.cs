@@ -75,7 +75,6 @@ namespace IVO.CMS.API.Controllers
         public async Task<ActionResult> CreateBlob(Errorable<MaybeTreeBlobPath> epath, Errorable<StageName> estage)
         {
             Debug.Assert(epath != null);
-            //if (path == null) return Json(new { errors = new[] { new { message = "path required" } } }, JsonRequestBehavior.AllowGet);
             if (epath.HasErrors) return ErrorJson(epath);
             if (estage != null && estage.HasErrors) return ErrorJson(estage);
 

@@ -39,10 +39,10 @@ namespace PerformanceTestHost
             pr.TimeRequests(createPOSTRequest2, count, per).Wait();
 #endif
 #if true
-            // Now invalid:
-            //Console.WriteLine("POST tree/create");
-            //pr.TimeRequests(createPOSTRequest3, count, per).Wait();
-
+            Console.WriteLine("POST commit/create/jsd/master/HEAD");
+            pr.TimeRequests(createPOSTRequest3, 5, 1).Wait();
+#endif
+#if true
             Console.WriteLine("GET {0}", getURL1.Remove(0, "http://localhost/".Length));
             pr.TimeRequests(createGETRequest1, count, per).Wait();
 
@@ -127,34 +127,18 @@ namespace PerformanceTestHost
 
         private static async Task createPOSTRequest3()
         {
-            HttpWebRequest rq = (HttpWebRequest)HttpWebRequest.Create("http://localhost/tree/create");
+            HttpWebRequest rq = (HttpWebRequest)HttpWebRequest.Create("http://localhost/commit/create/jsd/master/HEAD");
             rq.Method = "POST";
             rq.Accept = "application/json";
             rq.ContentType = "application/json";
 
             string json = new JavaScriptSerializer().Serialize(new
             {
-                blobs = new object[0],
-                trees = new[] {
-                    new {
-                        name = "templates",
-                        tree = new {
-                            blobs = new[] {
-                                new { name = "main", blobid = "91a97f8a57480e24f710cabc675636d4b9c3a197" }
-                            },
-                            trees = new object[0]
-                        }
-                    },
-                    new {
-                        name = "pages",
-                        tree = new {
-                            blobs = new[] {
-                                new { name = "helloWorld", blobid = "e4ed960dead1600353ce2314df790ab376a9de7c" }
-                            },
-                            trees = new object[0]
-                        }
-                    }
-                }
+                treeid = "def786b0292fcac947125982102c9a85a9c3e87a",
+                parents = new string[0],
+                committer = "James S. Dunne <james.jdunne@gmail.com>",
+                date_committed = DateTimeOffset.Now.ToString("s"),
+                message = "Test commit."
             });
             byte[] msg = Encoding.UTF8.GetBytes(json);
 
