@@ -14,8 +14,8 @@ namespace PerformanceTestHost
     class Program
     {
         const string getURL1 = "http://localhost/blob/get/blob/91a97f8a57480e24f710cabc675636d4b9c3a197";
-        const string getURL2 = "http://localhost/render/tree/def786b0292fcac947125982102c9a85a9c3e87a:pages/helloWorld";
-        const string getURL3 = "http://localhost/blob/compare/91a97f8a57480e24f710cabc675636d4b9c3a197/e4ed960dead1600353ce2314df790ab376a9de7c";
+        const string getURL2 = "http://localhost/render/tree/84fff720f95ef66fe6dff04b62c36d74ca39d1c4:pages/helloWorld";
+        const string getURL3 = "http://localhost/blob/compare/91a97f8a57480e24f710cabc675636d4b9c3a197/0d0a6d675674459214d970ebb9f7b0535313230e";
         static bool displayResponse = false;
 
         static void Main(string[] args)
@@ -32,15 +32,15 @@ namespace PerformanceTestHost
 
 #if true
             Console.WriteLine("POST blob/create");
-            pr.TimeRequests(createPOSTRequest1, count, per).Wait();
+            pr.TimeRequests(createPOSTRequest1, count * 100, 1).Wait();
 #endif
 #if true
             Console.WriteLine("POST blob/create");
-            pr.TimeRequests(createPOSTRequest2, count, per).Wait();
+            pr.TimeRequests(createPOSTRequest2, count * 100, 1).Wait();
 #endif
 #if true
             Console.WriteLine("POST commit/create/jsd/master/HEAD");
-            pr.TimeRequests(createPOSTRequest3, 5, 1).Wait();
+            pr.TimeRequests(createPOSTRequest3, 3, 1).Wait();
 #endif
 #if true
             Console.WriteLine("GET {0}", getURL1.Remove(0, "http://localhost/".Length));
@@ -100,12 +100,12 @@ namespace PerformanceTestHost
                 await rqs.WriteAsync(msg, 0, msg.Length);
 
             string rsp = await readResponse(rq, "application/json");
-            // {"blobid":"91a97f8a57480e24f710cabc675636d4b9c3a197","treeid":"333dd3d5cd48d4402f87fe26a93a1ee6684608b2"}
+            // {"blobid":"91a97f8a57480e24f710cabc675636d4b9c3a197","treeid":"c9bf735654356fa45a66a15e512dae6ef9fbbd15"}
         }
 
         private static async Task createPOSTRequest2()
         {
-            HttpWebRequest rq = (HttpWebRequest)HttpWebRequest.Create("http://localhost/blob/create/333dd3d5cd48d4402f87fe26a93a1ee6684608b2:pages/helloWorld");
+            HttpWebRequest rq = (HttpWebRequest)HttpWebRequest.Create("http://localhost/blob/create/c9bf735654356fa45a66a15e512dae6ef9fbbd15:pages/helloWorld");
             rq.Method = "POST";
             rq.Accept = "application/json";
             rq.ContentType = "application/xhtml+xml";
@@ -122,7 +122,7 @@ namespace PerformanceTestHost
 
             string rsp = await readResponse(rq, "application/json");
 
-            //{"blobid":"0d0a6d675674459214d970ebb9f7b0535313230e","treeid":"def786b0292fcac947125982102c9a85a9c3e87a"}
+            // {"blobid":"0d0a6d675674459214d970ebb9f7b0535313230e","treeid":"84fff720f95ef66fe6dff04b62c36d74ca39d1c4"}
         }
 
         private static async Task createPOSTRequest3()
@@ -134,7 +134,7 @@ namespace PerformanceTestHost
 
             string json = new JavaScriptSerializer().Serialize(new
             {
-                treeid = "def786b0292fcac947125982102c9a85a9c3e87a",
+                treeid = "84fff720f95ef66fe6dff04b62c36d74ca39d1c4",
                 parents = new string[0],
                 committer = "James S. Dunne <james.jdunne@gmail.com>",
                 date_committed = DateTimeOffset.Now.ToString("s"),
