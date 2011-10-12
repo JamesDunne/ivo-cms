@@ -23,7 +23,7 @@ namespace PerformanceTestHost
             var pr = new Program();
 
 #if true
-            int count = 3, per = 250;
+            int count = 6, per = 25;
             displayResponse = false;
 #else
             int count = 1, per = 1;
@@ -32,11 +32,11 @@ namespace PerformanceTestHost
 
 #if true
             Console.WriteLine("POST blob/create");
-            pr.TimeRequests(createPOSTRequest1, count * 100, 1).Wait();
+            pr.TimeRequests(createPOSTRequest1, count, per * 2).Wait();
 #endif
 #if true
             Console.WriteLine("POST blob/create");
-            pr.TimeRequests(createPOSTRequest2, count * 100, 1).Wait();
+            pr.TimeRequests(createPOSTRequest2, count, per * 2).Wait();
 #endif
 #if true
             Console.WriteLine("POST commit/create/jsd/master/HEAD");
@@ -44,13 +44,13 @@ namespace PerformanceTestHost
 #endif
 #if true
             Console.WriteLine("GET {0}", getURL1.Remove(0, "http://localhost/".Length));
-            pr.TimeRequests(createGETRequest1, count, per).Wait();
+            pr.TimeRequests(createGETRequest1, count, per * 20).Wait();
 
-            Console.WriteLine("GET {0}", getURL2.Remove(0, "http://localhost/".Length));
-            pr.TimeRequests(createGETRequest2, count, per).Wait();
+            Console.WriteLine("GET {0}", getURL2.Remove(0 * 20, "http://localhost/".Length));
+            pr.TimeRequests(createGETRequest2, count, per * 20).Wait();
 
-            Console.WriteLine("GET {0}", getURL3.Remove(0, "http://localhost/".Length));
-            pr.TimeRequests(createGETRequest3, count, per).Wait();
+            Console.WriteLine("GET {0}", getURL3.Remove(0 * 20, "http://localhost/".Length));
+            pr.TimeRequests(createGETRequest3, count, per * 20).Wait();
 #endif
         }
 
