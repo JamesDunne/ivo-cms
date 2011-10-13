@@ -46,7 +46,7 @@
     <Compile Include="Providers\CustomElements\DoctypeElementProvider.cs" />
     <Compile Include="Providers\CustomElements\ImportTemplateElementProvider.cs" />
     <Compile Include="SemanticWarningMessageComparer.cs" />
-    <Compile Include="HTMLFragment.cs" />
+    <Compile Include="HtmlFragment.cs" />
     <Compile Include="Providers\CustomElements\DefaultFalseConditionalEvaluator.cs" />
     <Compile Include="Providers\CustomElements\IConditionalEvaluator.cs" />
     <Compile Include="Providers\CustomElements\ICustomElementProvider.cs" />

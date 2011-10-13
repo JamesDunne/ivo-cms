@@ -35,15 +35,15 @@ namespace TestCMS
         
         protected GetTestContextDelegate getTestContext;
 
-        protected void output(HTMLFragment fragment)
+        protected void output(HtmlFragment fragment)
         {
             Console.WriteLine(((string)fragment).Replace("\n", Environment.NewLine));
         }
 
         protected void output(TreePathStreamedBlob item)
         {
-            output((HTMLFragment)(item.TreeBlobPath.Path.ToString() + ":"));
-            output((HTMLFragment)Encoding.UTF8.GetString(
+            output((HtmlFragment)(item.TreeBlobPath.Path.ToString() + ":"));
+            output((HtmlFragment)Encoding.UTF8.GetString(
                 item.StreamedBlob.ReadStream( (Func<System.IO.Stream, Errorable<byte[]>>) (sr =>
                 {
                     byte[] tmp = new byte[sr.Length];
@@ -51,7 +51,7 @@ namespace TestCMS
                     return tmp;
                 })).Value
             ));
-            output((HTMLFragment)"-----------------------------------------");
+            output((HtmlFragment)"-----------------------------------------");
         }
 
         protected void assertTranslated(string blob, string expected, params SemanticWarning[] expectedWarnings)

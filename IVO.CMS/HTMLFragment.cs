@@ -5,16 +5,16 @@ using System.Text;
 
 namespace IVO.CMS
 {
-    public sealed class HTMLFragment
+    public sealed class HtmlFragment
     {
         private string _fragment;
 
-        public HTMLFragment(string fragment)
+        public HtmlFragment(string fragment)
         {
             _fragment = fragment;
         }
 
-        public static explicit operator string(HTMLFragment fragment) { return fragment._fragment; }
-        public static implicit operator HTMLFragment(string fragment) { return new HTMLFragment(fragment); }
+        public static explicit operator string(HtmlFragment fragment) { return fragment._fragment; }
+        public static implicit operator HtmlFragment(string fragment) { return new HtmlFragment(fragment); }
     }
 }

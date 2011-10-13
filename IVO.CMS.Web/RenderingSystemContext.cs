@@ -51,7 +51,7 @@ namespace IVO.CMS.Web
             return erfcm.Value.Item2.TreeID;
         }
 
-        public async Task<Errorable<HTMLFragment>> RenderBlobAsync(CanonicalBlobPath path)
+        public async Task<Errorable<HtmlFragment>> RenderBlobAsync(CanonicalBlobPath path)
         {
             var mroot = await GetRoot();
             // The most popular error message will be...

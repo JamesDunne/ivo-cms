@@ -152,7 +152,7 @@ namespace IVO.CMS
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        public async Task<Errorable<HTMLFragment>> RenderBlob(TreePathStreamedBlob item, StringBuilder writeTo = null, Func<RenderState, bool> earlyExit = null, Func<RenderState, Task<Errorable<bool>>> processElements = null)
+        public async Task<Errorable<HtmlFragment>> RenderBlob(TreePathStreamedBlob item, StringBuilder writeTo = null, Func<RenderState, bool> earlyExit = null, Func<RenderState, Task<Errorable<bool>>> processElements = null)
         {
             // Refresh the error and warning lists:
             errors = new List<SemanticError>( (int)((item.StreamedBlob.Length ?? 16384L) / 5L) );
@@ -165,7 +165,7 @@ namespace IVO.CMS
             StringBuilder writer = ewriter.Value;
             string result = writer.ToString();
 
-            return new HTMLFragment(result);
+            return new HtmlFragment(result);
         }
 
         public ValidationResult ValidateBlob(System.IO.Stream stream)
