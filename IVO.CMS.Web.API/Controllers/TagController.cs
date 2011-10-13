@@ -10,30 +10,13 @@ using IVO.CMS.API.Models;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using IVO.Definition.Errors;
+using IVO.CMS.Web.API.Code;
 
 namespace IVO.CMS.API.Controllers
 {
     [JsonHandleError]
-    public class TagController : TaskAsyncController
+    public class TagController : CMSTaskAsyncController
     {
-        #region Private implementation
-
-        private CMSContext cms;
-
-        protected override void OnActionExecuting(ActionExecutingContext filterContext)
-        {
-            this.cms = new CMSContext(new DirectoryInfo(Server.MapPath("~/ivo/")));
-
-            base.OnActionExecuting(filterContext);
-        }
-
-        private JsonResult ErrorJson<T>(Errorable<T> errored)
-        {
-            return Json(new { errors = errored.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
-        }
-
-        #endregion
-
         [HttpGet]
         [ActionName("getByID")]
         public async Task<ActionResult> GetTagByID(Errorable<TagID.Partial> epid)

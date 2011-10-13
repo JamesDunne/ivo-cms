@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UseFileSystem</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -36,6 +36,8 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Web.Mvc, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -44,10 +46,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Mvc\RenderBlobResult.cs" />
+    <Compile Include="RenderingSystemContext.cs" />
+    <Compile Include="SQLSystemContext.cs" />
+    <Compile Include="FileSystemContext.cs" />
     <Compile Include="Internal\Mvc\ReflectedTaskAsyncActionDescriptor.cs" />
     <Compile Include="Internal\Mvc\ReflectedTaskAsyncControllerDescriptor.cs" />
     <Compile Include="Internal\Mvc\TaskAsyncController.cs" />
     <Compile Include="Internal\Mvc\TaskAsyncControllerActionInvoker.cs" />
+    <Compile Include="ISystemContext.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />
@@ -56,9 +63,21 @@
       <Project>{0DA004BF-4D35-459C-99D3-956C4DF7EE9E}</Project>
       <Name>IVO.CMS</Name>
     </ProjectReference>
+    <ProjectReference Include="..\IVO\Asynq\Asynq.csproj">
+      <Project>{42efafd3-5939-492c-8b93-dfd1969ba925}</Project>
+      <Name>Asynq</Name>
+    </ProjectReference>
     <ProjectReference Include="..\IVO\IVO\IVO.Definition\IVO.Definition.csproj">
       <Project>{29D4825B-A343-45AA-99FB-CE6671E78178}</Project>
       <Name>IVO.Definition</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\IVO\IVO\IVO.Implementation.FileSystem\IVO.Implementation.FileSystem.csproj">
+      <Project>{8fe335ec-1e14-489f-a00d-1c56e2058dc9}</Project>
+      <Name>IVO.Implementation.FileSystem</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\IVO\IVO\IVO.Implementation.SQL\IVO.Implementation.SQL.csproj">
+      <Project>{bcd16f4b-3915-43b7-b1c8-5a9132d97615}</Project>
+      <Name>IVO.Implementation.SQL</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

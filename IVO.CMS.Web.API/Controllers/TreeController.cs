@@ -10,26 +10,13 @@ using IVO.CMS.Web.Internal.Mvc;
 using IVO.Definition.Containers;
 using IVO.Definition.Models;
 using IVO.Definition.Errors;
+using IVO.CMS.Web.API.Code;
 
 namespace IVO.CMS.API.Controllers
 {
-    public class TreeController : TaskAsyncController
+    public class TreeController : CMSTaskAsyncController
     {
         #region Private implementation
-
-        private CMSContext cms;
-
-        protected override void OnActionExecuting(ActionExecutingContext filterContext)
-        {
-            this.cms = new CMSContext(new DirectoryInfo(Server.MapPath("~/ivo/")));
-
-            base.OnActionExecuting(filterContext);
-        }
-
-        private JsonResult ErrorJson<T>(Errorable<T> errored)
-        {
-            return Json(new { errors = errored.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
-        }
 
         private static TreeResponse projectTreeJSON(TreeNode tree)
         {

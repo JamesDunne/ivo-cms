@@ -9,29 +9,13 @@ using IVO.Definition.Models;
 using IVO.CMS.Web.Internal.Mvc;
 using IVO.Definition.Errors;
 using System.Diagnostics;
+using IVO.CMS.Web.API.Code;
+using IVO.CMS.Web;
 
 namespace IVO.CMS.API.Controllers
 {
-    public class RenderController : TaskAsyncController
+    public class RenderController : CMSTaskAsyncController
     {
-        #region Private implementation
-
-        private CMSContext cms;
-
-        protected override void OnActionExecuting(ActionExecutingContext filterContext)
-        {
-            this.cms = new CMSContext(new DirectoryInfo(Server.MapPath("~/ivo/")));
-
-            base.OnActionExecuting(filterContext);
-        }
-
-        private JsonResult ErrorJson<T>(Errorable<T> errored)
-        {
-            return Json(new { errors = errored.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
-        }
-
-        #endregion
-
         [HttpGet]
         [ActionName("renderByTree")]
         [ValidateInput(false)]
@@ -49,7 +33,8 @@ namespace IVO.CMS.API.Controllers
             if (blob == null) return new HttpNotFoundResult(String.Format("A blob could not be found off tree {0} by path '{0}'", path.RootTreeID.ToString(), path.Path.ToString()));
 
             // Render the blob:
-            var ehtml = await cms.GetContentEngine(viewDate).RenderBlob(blob);
+            var renderer = new RenderingSystemContext(cms, viewDate);
+            var ehtml = await renderer.Engine.RenderBlob(blob);
             if (ehtml.HasErrors) return ErrorJson(ehtml);
 
             var html = ehtml.Value;

@@ -69,7 +69,7 @@
     <Reference Include="System.EnterpriseServices" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Code\CMSContext.cs" />
+    <Compile Include="Code\CMSTaskAsyncController.cs" />
     <Compile Include="Code\ErrorableModelBinder.cs" />
     <Compile Include="Code\ErrorableModelBinderProvider.cs" />
     <Compile Include="Code\JsonHandleError.cs" />

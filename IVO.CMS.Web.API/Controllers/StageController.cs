@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Web.Mvc;
 using IVO.CMS.API.Code;
 using IVO.CMS.API.Models;
+using IVO.CMS.Web.API.Code;
 using IVO.CMS.Web.Internal.Mvc;
 using IVO.Definition.Errors;
 using IVO.Definition.Models;
@@ -11,26 +12,8 @@ using IVO.Definition.Models;
 namespace IVO.CMS.API.Controllers
 {
     [JsonHandleError]
-    public class StageController : TaskAsyncController
+    public class StageController : CMSTaskAsyncController
     {
-        #region Private implementation
-
-        private CMSContext cms;
-
-        protected override void OnActionExecuting(ActionExecutingContext filterContext)
-        {
-            this.cms = new CMSContext(new DirectoryInfo(Server.MapPath("~/ivo/")));
-
-            base.OnActionExecuting(filterContext);
-        }
-
-        private JsonResult ErrorJson<T>(Errorable<T> errored)
-        {
-            return Json(new { errors = errored.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
-        }
-
-        #endregion
-
         [HttpGet]
         [ActionName("getByName")]
         public async Task<ActionResult> GetStageByName(Errorable<StageName> estageName)

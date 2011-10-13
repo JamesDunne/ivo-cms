@@ -14,29 +14,13 @@ using IVO.CMS.Web.Internal.Mvc;
 using IVO.Definition.Errors;
 using IVO.Definition.Models;
 using IVO.Definition.Containers;
+using IVO.CMS.Web;
+using IVO.CMS.Web.API.Code;
 
 namespace IVO.CMS.API.Controllers
 {
-    public class BlobController : TaskAsyncController
+    public class BlobController : CMSTaskAsyncController
     {
-        #region Private implementation
-
-        private CMSContext cms;
-
-        protected override void OnActionExecuting(ActionExecutingContext filterContext)
-        {
-            this.cms = new CMSContext(new DirectoryInfo(Server.MapPath("~/ivo/")));
-
-            base.OnActionExecuting(filterContext);
-        }
-
-        private JsonResult ErrorJson<T>(Errorable<T> errored)
-        {
-            return Json(new { errors = errored.Errors.ToJSON() }, JsonRequestBehavior.AllowGet);
-        }
-
-        #endregion
-
         [HttpGet]
         [ActionName("get")]
         [JsonHandleError]
@@ -111,7 +95,8 @@ namespace IVO.CMS.API.Controllers
         public ActionResult ValidateBlob()
         {
             // Validate the blob's contents:
-            var vr = cms.GetContentEngine().ValidateBlob(Request.InputStream);
+            var renderer = new RenderingSystemContext(cms);
+            var vr = renderer.Engine.ValidateBlob(Request.InputStream);
 
             // Return the validation results:
             return Json(new
