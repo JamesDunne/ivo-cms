@@ -44,10 +44,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Mvc\ReflectedTaskAsyncActionDescriptor.cs" />
-    <Compile Include="Mvc\ReflectedTaskAsyncControllerDescriptor.cs" />
-    <Compile Include="Mvc\TaskAsyncController.cs" />
-    <Compile Include="Mvc\TaskAsyncControllerActionInvoker.cs" />
+    <Compile Include="Internal\Mvc\ReflectedTaskAsyncActionDescriptor.cs" />
+    <Compile Include="Internal\Mvc\ReflectedTaskAsyncControllerDescriptor.cs" />
+    <Compile Include="Internal\Mvc\TaskAsyncController.cs" />
+    <Compile Include="Internal\Mvc\TaskAsyncControllerActionInvoker.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />

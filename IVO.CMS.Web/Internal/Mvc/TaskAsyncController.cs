@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Web.Mvc;
 
-namespace IVO.CMS.Web.Mvc
+namespace IVO.CMS.Web.Internal.Mvc
 {
     public class TaskAsyncController : AsyncController
     {

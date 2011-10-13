@@ -6,7 +6,7 @@ using System.Web.Mvc;
 using IVO.CMS.API.Code;
 using IVO.CMS.API.Models;
 using IVO.Definition.Models;
-using IVO.CMS.Web.Mvc;
+using IVO.CMS.Web.Internal.Mvc;
 using IVO.Definition.Errors;
 using System.Diagnostics;
 

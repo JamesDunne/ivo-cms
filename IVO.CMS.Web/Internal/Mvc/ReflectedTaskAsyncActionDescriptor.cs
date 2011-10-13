@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Web.Mvc;
 using System.Threading.Tasks;
+using System.Web.Mvc;
 using System.Web.Mvc.Async;
 
-namespace IVO.CMS.Web.Mvc
+namespace IVO.CMS.Web.Internal.Mvc
 {
     public class ReflectedTaskAsyncActionDescriptor : AsyncActionDescriptor
     {

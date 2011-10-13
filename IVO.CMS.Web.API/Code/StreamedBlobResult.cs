@@ -30,6 +30,7 @@ namespace IVO.CMS.API.Code
             rsp.ContentType = "application/xhtml+xml";
 
             // TODO: this kinda sucks; I'd like to see truly async streaming via MVC.
+            // That will only happen if MVC supports async ActionResult executors.
             blob.ReadStream(sr => { sr.CopyTo(rsp.OutputStream); return Errorable.NoErrors; });
         }
     }

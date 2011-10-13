@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Mvc;
 using IVO.CMS.API.Code;
-using IVO.CMS.Web.Mvc;
+using IVO.CMS.Web.Internal.Mvc;
 using IVO.Definition.Models;
 using IVO.CMS.API.Models;
 using System.Collections.ObjectModel;
